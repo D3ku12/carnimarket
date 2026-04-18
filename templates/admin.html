@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CarniMarket — Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; color: #333; }
+    header {
+      background: #1a1a1a; color: white;
+      padding: 16px 20px; display: flex;
+      align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 20px; }
+    header span { font-size: 12px; background: #c0392b; padding: 4px 10px; border-radius: 99px; }
+    .container { max-width: 700px; margin: 30px auto; padding: 0 16px; }
+    .card {
+      background: white; border-radius: 12px;
+      padding: 20px; margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .card h2 { font-size: 16px; margin-bottom: 16px; color: #1a1a1a; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { background: #f5f5f5; padding: 10px; text-align: left; }
+    td { padding: 10px; border-bottom: 1px solid #f0f0f0; }
+    .badge { padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: bold; }
+    .ok { background: #e8f5e9; color: #2e7d32; }
+    .bajo { background: #fff8e1; color: #f57f17; }
+    input, select {
+      padding: 10px; border-radius: 8px;
+      border: 1px solid #ddd; font-size: 14px;
+      width: 100%; margin-bottom: 10px;
+    }
+    .row { display: flex; gap: 10px; }
+    .row input { margin-bottom: 0; }
+    button {
+      padding: 10px 20px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: bold; cursor: pointer;
+      width: 100%; margin-top: 10px;
+    }
+    .btn-green { background: #2e7d32; color: white; }
+    .btn-red { background: #c0392b; color: white; }
+    .btn-blue { background: #1a5276; color: white; }
+    .mensaje { padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 10px; display: none; }
+    .exito { background: #e8f5e9; color: #2e7d32; }
+    .error { background: #fdecea; color: #c0392b; }
+    .edit-stock { 
+      display: flex; gap: 8px; align-items: center;
+    }
+    .edit-stock input { 
+      width: 80px; margin: 0; padding: 6px;
+      text-align: center;
+    }
+    .btn-small {
+      padding: 6px 12px; font-size: 12px;
+      border: none; border-radius: 6px;
+      cursor: pointer; font-weight: bold;
+      width: auto; margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🥩 CarniMarket</h1>
+  <span>Panel Admin</span>
+</header>
+
+<div class="container">
+
+  <!-- Inventario con edición -->
+  <div class="card">
+    <h2>📦 Inventario — Actualizar Stock</h2>
+    <div id="msg-stock" class="mensaje"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Stock actual</th>
+          <th>Estado</th>
+          <th>Actualizar</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-admin"></tbody>
+    </table>
+  </div>
+
+  <!-- Agregar producto -->
+  <div class="card">
+    <h2>➕ Agregar Producto Nuevo</h2>
+    <div id="msg-nuevo" class="mensaje"></div>
+    <input type="text" id="nuevo-nombre" placeholder="Nombre del corte (ej: Chuleta)">
+    <div class="row">
+      <input type="number" id="nuevo-stock" placeholder="Stock inicial (kg)" step="0.1">
+      <input type="number" id="nuevo-minimo" placeholder="Stock mínimo (kg)" step="0.1">
+    </div>
+    <input type="number" id="nuevo-precio" placeholder="Precio por kilo ($)">
+    <button class="btn-green" onclick="agregarProducto()">➕ Agregar Producto</button>
+  </div>
+
+  <!-- Reporte rápido -->
+  <div class="card">
+    <h2>📊 Reporte de Ventas</h2>
+    <div id="reporte-contenido">Cargando...</div>
+  </div>
+
+</div>
+
+<script>
+async function cargarAdmin() {
+  const res = await fetch("/inventario");
+  const data = await res.json();
+  const tbody = document.getElementById("tabla-admin");
+  tbody.innerHTML = "";
+
+  for (const [nombre, info] of Object.entries(data)) {
+    let estado, clase;
+    if (info.stock === 0) { estado = "Agotado"; clase = "bajo"; }
+    else if (info.stock <= info.minimo) { estado = "Stock bajo"; clase = "bajo"; }
+    else { estado = "OK"; clase = "ok"; }
+
+    tbody.innerHTML += `
+      <tr>
+        <td><strong>${nombre}</strong><br><small>$${info.precio_kilo.toLocaleString()}/kg</small></td>
+        <td>${info.stock}kg</td>
+        <td><span class="badge ${clase}">${estado}</span></td>
+        <td>
+          <div class="edit-stock">
+            <input type="number" id="stock-${nombre}" value="${info.stock}" step="0.1" min="0">
+            <button class="btn-small btn-blue" onclick="actualizarStock('${nombre}')">💾</button>
+          </div>
+        </td>
+      </tr>`;
+  }
+}
+
+async function actualizarStock(nombre) {
+  const stock = parseFloat(document.getElementById(`stock-${nombre}`).value);
+  const msg = document.getElementById("msg-stock");
+
+  const res = await fetch("/admin/stock", {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({nombre, stock})
+  });
+
+  const data = await res.json();
+  msg.style.display = "block";
+
+  if (data.error) {
+    msg.className = "mensaje error";
+    msg.textContent = "❌ " + data.error;
+  } else {
+    msg.className = "mensaje exito";
+    msg.textContent = "✅ " + data.mensaje;
+    cargarAdmin();
+  }
+}
+
+async function agregarProducto() {
+  const nombre = document.getElementById("nuevo-nombre").value.trim();
+  const stock = parseFloat(document.getElementById("nuevo-stock").value);
+  const minimo = parseFloat(document.getElementById("nuevo-minimo").value);
+  const precio_kilo = parseFloat(document.getElementById("nuevo-precio").value);
+  const msg = document.getElementById("msg-nuevo");
+
+  if (!nombre || !stock || !minimo || !precio_kilo) {
+    msg.className = "mensaje error";
+    msg.style.display = "block";
+    msg.textContent = "❌ Completa todos los campos.";
+    return;
+  }
+
+  const res = await fetch("/admin/producto", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({nombre, stock, minimo, precio_kilo})
+  });
+
+  const data = await res.json();
+  msg.style.display = "block";
+
+  if (data.error) {
+    msg.className = "mensaje error";
+    msg.textContent = "❌ " + data.error;
+  } else {
+    msg.className = "mensaje exito";
+    msg.textContent = "✅ " + data.mensaje;
+    document.getElementById("nuevo-nombre").value = "";
+    document.getElementById("nuevo-stock").value = "";
+    document.getElementById("nuevo-minimo").value = "";
+    document.getElementById("nuevo-precio").value = "";
+    cargarAdmin();
+  }
+}
+
+async function cargarReporte() {
+  const res = await fetch("/reportes");
+  const data = await res.json();
+  const div = document.getElementById("reporte-contenido");
+
+  if (Object.keys(data.resumen).length === 0) {
+    div.innerHTML = "<p style='color:#999;font-size:13px;'>No hay ventas registradas aún.</p>";
+    return;
+  }
+
+  let html = "<table><thead><tr><th>Producto</th><th>Total vendido</th></tr></thead><tbody>";
+  for (const [producto, total] of Object.entries(data.resumen)) {
+    html += `<tr><td>${producto}</td><td>$${total.toLocaleString()}</td></tr>`;
+  }
+  html += `</tbody></table><p style='margin-top:12px;font-weight:bold;'>TOTAL: $${data.total.toLocaleString()}</p>`;
+  div.innerHTML = html;
+}
+
+cargarAdmin();
+cargarReporte();
+</script>
+</body>
+</html>
