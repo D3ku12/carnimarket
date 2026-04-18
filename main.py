@@ -16,7 +16,12 @@ def startup():
 def inicio():
     with open("templates/index.html", "r", encoding="utf-8") as f:
         return f.read()
-
+    
+@app.get("/admin", response_class=HTMLResponse)
+def admin():
+    with open("templates/admin.html", "r", encoding="utf-8") as f:
+        return f.read()
+    
 @app.get("/inventario")
 def ver_inventario(db: Session = Depends(get_db)):
     productos = db.query(Producto).all()
