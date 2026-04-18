@@ -4,6 +4,9 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import init_db, seed_db, get_db, Producto, Venta
 from datetime import datetime
+from fastapi import Cookie, Response
+from fastapi.responses import RedirectResponse
+from auth import verificar_password, crear_token, verificar_token, ADMIN_USER, ADMIN_PASSWORD
 
 app = FastAPI()
 
@@ -22,6 +25,30 @@ def admin():
     with open("templates/admin.html", "r", encoding="utf-8") as f:
         return f.read()
     
+    @app.get("/login", response_class=HTMLResponse)
+def login_page():
+    with open("templates/login.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+class LoginRequest(BaseModel):
+    usuario: str
+    password: str
+
+@app.post("/auth/login")
+def auth_login(data: LoginRequest, response: Response):
+    if data.usuario != ADMIN_USER or not verificar_password(data.password, ADMIN_PASSWORD):
+        return {"error": "Credenciales incorrectas"}
+    token = crear_token({"sub": data.usuario})
+    response.set_cookie(key="token", value=token, httponly=True, max_age=28800)
+    return {"token": token}
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin(token: str = Cookie(default=None)):
+    if not token or not verificar_token(token):
+        return RedirectResponse(url="/login")
+    with open("templates/admin.html", "r", encoding="utf-8") as f:
+        return f.read()
+
 @app.get("/inventario")
 def ver_inventario(db: Session = Depends(get_db)):
     productos = db.query(Producto).all()

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CarniMarket — Login</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: white; border-radius: 16px;
+      padding: 40px 32px; width: 100%;
+      max-width: 380px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .logo {
+      text-align: center; margin-bottom: 28px;
+    }
+    .logo h1 { font-size: 24px; color: #1a1a1a; }
+    .logo p { font-size: 13px; color: #999; margin-top: 4px; }
+    .badge {
+      background: #c0392b; color: white;
+      font-size: 11px; padding: 3px 10px;
+      border-radius: 99px; margin-top: 8px;
+      display: inline-block;
+    }
+    label {
+      display: block; font-size: 13px;
+      font-weight: bold; margin-bottom: 6px;
+      color: #333;
+    }
+    input {
+      width: 100%; padding: 12px; border-radius: 8px;
+      border: 1px solid #ddd; font-size: 14px;
+      margin-bottom: 16px;
+    }
+    input:focus { outline: none; border-color: #c0392b; }
+    button {
+      width: 100%; padding: 13px;
+      background: #c0392b; color: white;
+      border: none; border-radius: 8px;
+      font-size: 15px; font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover { background: #a93226; }
+    .error {
+      background: #fdecea; color: #c0392b;
+      padding: 10px; border-radius: 8px;
+      font-size: 13px; margin-bottom: 16px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <h1>🥩 CarniMarket</h1>
+      <p>Panel de administración</p>
+      <span class="badge">Acceso restringido</span>
+    </div>
+    <div id="error" class="error">❌ Usuario o contraseña incorrectos</div>
+    <label>Usuario</label>
+    <input type="text" id="usuario" placeholder="admin">
+    <label>Contraseña</label>
+    <input type="password" id="password" placeholder="••••••••">
+    <button onclick="login()">Entrar</button>
+  </div>
+
+  <script>
+    async function login() {
+      const usuario = document.getElementById("usuario").value;
+      const password = document.getElementById("password").value;
+      const error = document.getElementById("error");
+
+      const res = await fetch("/auth/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({usuario, password})
+      });
+
+      const data = await res.json();
+
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        window.location.href = "/admin";
+      } else {
+        error.style.display = "block";
+      }
+    }
+
+    // Entrar con Enter
+    document.addEventListener("keydown", e => {
+      if (e.key === "Enter") login();
+    });
+  </script>
+</body>
+</html>
