@@ -1,12 +1,11 @@
-from fastapi import FastAPI, Depends
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Depends, Cookie, Response, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from database import init_db, seed_db, get_db, Producto, Venta
+from database import init_db, seed_db, get_db, Producto, Venta, Cliente
 from datetime import datetime
-from fastapi import Cookie, Response
-from fastapi.responses import RedirectResponse
 from auth import verificar_password, crear_token, verificar_token, ADMIN_USER, ADMIN_PASSWORD
+from typing import Optional
 
 app = FastAPI()
 
@@ -34,13 +33,13 @@ def auth_login(data: LoginRequest, response: Response):
     if data.usuario != ADMIN_USER or not verificar_password(data.password, ADMIN_PASSWORD):
         return {"error": "Credenciales incorrectas"}
     token = crear_token({"sub": data.usuario})
-    response.set_cookie(key="token", value=token, httponly=True, max_age=28800)
+    response.set_cookie(key="token", value=token, httponly=True, max_age=28800, samesite="lax", secure=False)
     return {"token": token}
 
 @app.get("/admin", response_class=HTMLResponse)
 def admin(token: str = Cookie(default=None)):
     if not token or not verificar_token(token):
-        return RedirectResponse(url="/login")
+        return RedirectResponse(url="/login", status_code=302)
     with open("templates/admin.html", "r", encoding="utf-8") as f:
         return f.read()
 
@@ -64,10 +63,10 @@ class VentaRequest(BaseModel):
     producto: str
     kilos: float
     cliente_nombre: str = "Cliente general"
-    cliente_id: int = None
+    cliente_id: Optional[int] = None
     pagado: str = "pagado"
-    fecha_venta: str = None
-    fecha_vencimiento: str = None
+    fecha_venta: Optional[str] = None
+    fecha_vencimiento: Optional[str] = None
     notas: str = ""
 
 @app.post("/vender")
@@ -88,26 +87,25 @@ def vender(venta: VentaRequest, db: Session = Depends(get_db)):
         except:
             pass
 
-nueva_venta = Venta(
-    producto=venta.producto,
-    kilos=venta.kilos,
-    precio_kilo=producto.precio_kilo,
-    subtotal=subtotal,
-    fecha_venta=fecha,
-    fecha_vencimiento=fecha_venc,
-    cliente_nombre=venta.cliente_nombre,
-    cliente_id=venta.cliente_id,
-    pagado=venta.pagado,
-    notas=venta.notas
-)
-    )
     fecha_venc = None
-if venta.fecha_vencimiento:
-    try:
-        fecha_venc = datetime.strptime(venta.fecha_vencimiento, "%Y-%m-%d")
-    except:
-        pass
+    if venta.fecha_vencimiento:
+        try:
+            fecha_venc = datetime.strptime(venta.fecha_vencimiento, "%Y-%m-%d")
+        except:
+            pass
 
+    nueva_venta = Venta(
+        producto=venta.producto,
+        kilos=venta.kilos,
+        precio_kilo=producto.precio_kilo,
+        subtotal=subtotal,
+        fecha_venta=fecha,
+        fecha_vencimiento=fecha_venc,
+        cliente_nombre=venta.cliente_nombre,
+        cliente_id=venta.cliente_id,
+        pagado=venta.pagado,
+        notas=venta.notas
+    )
     db.add(nueva_venta)
     db.commit()
 
@@ -123,12 +121,6 @@ def reportes(db: Session = Depends(get_db)):
         total += v.subtotal
     return {"resumen": resumen, "total": total}
 
-# Panel admin - ver productos
-@app.get("/admin/productos")
-def admin_productos(db: Session = Depends(get_db)):
-    return db.query(Producto).all()
-
-# Panel admin - actualizar stock
 class StockUpdate(BaseModel):
     nombre: str
     stock: float
@@ -142,7 +134,6 @@ def actualizar_stock(data: StockUpdate, db: Session = Depends(get_db)):
     db.commit()
     return {"mensaje": f"Stock de {data.nombre} actualizado a {data.stock}kg"}
 
-# Panel admin - agregar producto
 class ProductoNuevo(BaseModel):
     nombre: str
     stock: float
@@ -164,7 +155,6 @@ def agregar_producto(data: ProductoNuevo, db: Session = Depends(get_db)):
     db.commit()
     return {"mensaje": f"Producto {data.nombre} agregado exitosamente"}
 
-# Eliminar producto
 @app.delete("/admin/producto/{nombre}")
 def eliminar_producto(nombre: str, db: Session = Depends(get_db)):
     producto = db.query(Producto).filter(Producto.nombre == nombre).first()
@@ -174,7 +164,6 @@ def eliminar_producto(nombre: str, db: Session = Depends(get_db)):
     db.commit()
     return {"mensaje": f"{nombre} eliminado correctamente"}
 
-# Ver ventas con filtros
 @app.get("/admin/ventas")
 def ver_ventas(
     fecha: str = None,
@@ -184,98 +173,35 @@ def ver_ventas(
 ):
     query = db.query(Venta)
     if fecha:
-        from datetime import datetime as dt
-        fecha_dt = dt.strptime(fecha, "%Y-%m-%d")
+        fecha_dt = datetime.strptime(fecha, "%Y-%m-%d")
         query = query.filter(
-            Venta.fecha >= fecha_dt,
-            Venta.fecha < fecha_dt.replace(hour=23, minute=59)
+            Venta.fecha_venta >= fecha_dt,
+            Venta.fecha_venta < fecha_dt.replace(hour=23, minute=59)
         )
     if cliente:
-        query = query.filter(Venta.cliente.ilike(f"%{cliente}%"))
+        query = query.filter(Venta.cliente_nombre.ilike(f"%{cliente}%"))
     if pagado:
         query = query.filter(Venta.pagado == pagado)
 
-    ventas = query.order_by(Venta.fecha.desc()).all()
+    ventas = query.order_by(Venta.fecha_venta.desc()).all()
     return [
         {
             "id": v.id,
-            "fecha": v.fecha.strftime("%Y-%m-%d %H:%M"),
+            "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M") if v.fecha_venta else "—",
+            "fecha_pago": v.fecha_pago.strftime("%Y-%m-%d %H:%M") if v.fecha_pago else "—",
+            "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else "—",
             "producto": v.producto,
             "kilos": v.kilos,
             "subtotal": v.subtotal,
-            "cliente": v.cliente,
+            "cliente_nombre": v.cliente_nombre,
             "pagado": v.pagado,
             "notas": v.notas
-            "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else "—",
         } for v in ventas
     ]
 
-# Actualizar estado de pago
 class PagoUpdate(BaseModel):
     pagado: str
-
-@app.put("/admin/venta/{venta_id}/pago")
-def actualizar_pago(venta_id: int, data: PagoUpdate, db: Session = Depends(get_db)):
-    venta = db.query(Venta).filter(Venta.id == venta_id).first()
-    if not venta:
-        return {"error": "Venta no encontrada"}
-    venta.pagado = data.pagado
-    db.commit()
-    return {"mensaje": "Estado de pago actualizado"}
-
-# Resumen de deudas
-@app.get("/admin/deudas")
-def ver_deudas(db: Session = Depends(get_db)):
-    ventas = db.query(Venta).filter(Venta.pagado == "debe").all()
-    deudas = {}
-    for v in ventas:
-        if v.cliente not in deudas:
-            deudas[v.cliente] = 0
-        deudas[v.cliente] += v.subtotal
-    total = sum(deudas.values())
-    return {"deudas": deudas, "total_pendiente": total}
-# Listar clientes
-@app.get("/admin/clientes")
-def ver_clientes(db: Session = Depends(get_db)):
-    from database import Cliente
-    clientes = db.query(Cliente).order_by(Cliente.nombre).all()
-    return [
-        {
-            "id": c.id,
-            "nombre": c.nombre,
-            "telefono": c.telefono,
-            "direccion": c.direccion,
-            "fecha_registro": c.fecha_registro.strftime("%Y-%m-%d"),
-        } for c in clientes
-    ]
-
-# Agregar cliente
-@app.post("/admin/cliente")
-def agregar_cliente(data: ClienteRequest, db: Session = Depends(get_db)):
-    from database import Cliente
-    existe = db.query(Cliente).filter(Cliente.nombre == data.nombre).first()
-    if existe:
-        return {"error": "El cliente ya existe"}
-    nuevo = Cliente(nombre=data.nombre, telefono=data.telefono, direccion=data.direccion)
-    db.add(nuevo)
-    db.commit()
-    return {"mensaje": f"Cliente {data.nombre} agregado", "id": nuevo.id}
-
-# Eliminar cliente
-@app.delete("/admin/cliente/{cliente_id}")
-def eliminar_cliente(cliente_id: int, db: Session = Depends(get_db)):
-    from database import Cliente
-    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
-    if not cliente:
-        return {"error": "Cliente no encontrado"}
-    db.delete(cliente)
-    db.commit()
-    return {"mensaje": "Cliente eliminado"}
-
-# Marcar fecha de pago
-class PagoUpdate(BaseModel):
-    pagado: str
-    fecha_pago: str = None
+    fecha_pago: Optional[str] = None
 
 @app.put("/admin/venta/{venta_id}/pago")
 def actualizar_pago(venta_id: int, data: PagoUpdate, db: Session = Depends(get_db)):
@@ -289,3 +215,47 @@ def actualizar_pago(venta_id: int, data: PagoUpdate, db: Session = Depends(get_d
         venta.fecha_pago = None
     db.commit()
     return {"mensaje": "Estado de pago actualizado"}
+
+@app.get("/admin/deudas")
+def ver_deudas(db: Session = Depends(get_db)):
+    ventas = db.query(Venta).filter(Venta.pagado == "debe").all()
+    deudas = {}
+    for v in ventas:
+        nombre = v.cliente_nombre or "Cliente general"
+        if nombre not in deudas:
+            deudas[nombre] = 0
+        deudas[nombre] += v.subtotal
+    total = sum(deudas.values())
+    return {"deudas": deudas, "total_pendiente": total}
+
+@app.get("/admin/clientes")
+def ver_clientes(db: Session = Depends(get_db)):
+    clientes = db.query(Cliente).order_by(Cliente.nombre).all()
+    return [
+        {
+            "id": c.id,
+            "nombre": c.nombre,
+            "telefono": c.telefono,
+            "direccion": c.direccion,
+            "fecha_registro": c.fecha_registro.strftime("%Y-%m-%d"),
+        } for c in clientes
+    ]
+
+@app.post("/admin/cliente")
+def agregar_cliente(data: ClienteRequest, db: Session = Depends(get_db)):
+    existe = db.query(Cliente).filter(Cliente.nombre == data.nombre).first()
+    if existe:
+        return {"error": "El cliente ya existe"}
+    nuevo = Cliente(nombre=data.nombre, telefono=data.telefono, direccion=data.direccion)
+    db.add(nuevo)
+    db.commit()
+    return {"mensaje": f"Cliente {data.nombre} agregado", "id": nuevo.id}
+
+@app.delete("/admin/cliente/{cliente_id}")
+def eliminar_cliente(cliente_id: int, db: Session = Depends(get_db)):
+    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+    if not cliente:
+        return {"error": "Cliente no encontrado"}
+    db.delete(cliente)
+    db.commit()
+    return {"mensaje": "Cliente eliminado"}
