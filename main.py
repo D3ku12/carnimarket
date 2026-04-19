@@ -109,6 +109,18 @@ def vender(venta: VentaRequest, db: Session = Depends(get_db)):
     db.add(nueva_venta)
     db.commit()
 
+    # Registrar en historial
+    from database import Historial
+    historial = Historial(
+        producto=venta.producto,
+        tipo="salida",
+        cantidad=venta.kilos,
+        motivo=f"Venta a {venta.cliente_nombre}",
+        fecha=datetime.now()
+    )
+    db.add(historial)
+    db.commit()
+
     return {"producto": venta.producto, "kilos": venta.kilos, "subtotal": subtotal}
 
 @app.get("/reportes")
@@ -127,10 +139,21 @@ class StockUpdate(BaseModel):
 
 @app.put("/admin/stock")
 def actualizar_stock(data: StockUpdate, db: Session = Depends(get_db)):
+    from database import Historial
     producto = db.query(Producto).filter(Producto.nombre == data.nombre).first()
     if not producto:
         return {"error": "Producto no encontrado"}
+    diferencia = data.stock - producto.stock
+    tipo = "entrada" if diferencia > 0 else "salida"
     producto.stock = data.stock
+    historial = Historial(
+        producto=data.nombre,
+        tipo=tipo,
+        cantidad=abs(diferencia),
+        motivo="Actualización manual de stock",
+        fecha=datetime.now()
+    )
+    db.add(historial)
     db.commit()
     return {"mensaje": f"Stock de {data.nombre} actualizado a {data.stock}kg"}
 
@@ -154,6 +177,31 @@ def agregar_producto(data: ProductoNuevo, db: Session = Depends(get_db)):
     db.add(nuevo)
     db.commit()
     return {"mensaje": f"Producto {data.nombre} agregado exitosamente"}
+
+class ProductoEdit(BaseModel):
+    stock: Optional[float] = None
+    minimo: Optional[float] = None
+    precio_kilo: Optional[float] = None
+    nombre_nuevo: Optional[str] = None
+
+@app.put("/admin/producto/{nombre}")
+def editar_producto(nombre: str, data: ProductoEdit, db: Session = Depends(get_db)):
+    producto = db.query(Producto).filter(Producto.nombre == nombre).first()
+    if not producto:
+        return {"error": "Producto no encontrado"}
+    if data.stock is not None:
+        producto.stock = data.stock
+    if data.minimo is not None:
+        producto.minimo = data.minimo
+    if data.precio_kilo is not None:
+        producto.precio_kilo = data.precio_kilo
+    if data.nombre_nuevo:
+        existe = db.query(Producto).filter(Producto.nombre == data.nombre_nuevo).first()
+        if existe:
+            return {"error": "Ya existe un producto con ese nombre"}
+        producto.nombre = data.nombre_nuevo
+    db.commit()
+    return {"mensaje": "Producto actualizado correctamente"}
 
 @app.delete("/admin/producto/{nombre}")
 def eliminar_producto(nombre: str, db: Session = Depends(get_db)):
@@ -192,6 +240,7 @@ def ver_ventas(
             "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else "—",
             "producto": v.producto,
             "kilos": v.kilos,
+            "precio_kilo": v.precio_kilo,
             "subtotal": v.subtotal,
             "cliente_nombre": v.cliente_nombre,
             "pagado": v.pagado,
@@ -215,6 +264,45 @@ def actualizar_pago(venta_id: int, data: PagoUpdate, db: Session = Depends(get_d
         venta.fecha_pago = None
     db.commit()
     return {"mensaje": "Estado de pago actualizado"}
+
+class VentaEdit(BaseModel):
+    kilos: Optional[float] = None
+    pagado: Optional[str] = None
+    cliente_nombre: Optional[str] = None
+    notas: Optional[str] = None
+    fecha_venta: Optional[str] = None
+    fecha_vencimiento: Optional[str] = None
+
+@app.put("/admin/venta/{venta_id}")
+def editar_venta(venta_id: int, data: VentaEdit, db: Session = Depends(get_db)):
+    venta = db.query(Venta).filter(Venta.id == venta_id).first()
+    if not venta:
+        return {"error": "Venta no encontrada"}
+    if data.kilos is not None:
+        venta.kilos = data.kilos
+        venta.subtotal = data.kilos * venta.precio_kilo
+    if data.pagado is not None:
+        venta.pagado = data.pagado
+        if data.pagado == "pagado" and not venta.fecha_pago:
+            venta.fecha_pago = datetime.now()
+        elif data.pagado == "debe":
+            venta.fecha_pago = None
+    if data.cliente_nombre is not None:
+        venta.cliente_nombre = data.cliente_nombre
+    if data.notas is not None:
+        venta.notas = data.notas
+    if data.fecha_venta is not None:
+        try:
+            venta.fecha_venta = datetime.strptime(data.fecha_venta, "%Y-%m-%d")
+        except:
+            pass
+    if data.fecha_vencimiento is not None:
+        try:
+            venta.fecha_vencimiento = datetime.strptime(data.fecha_vencimiento, "%Y-%m-%d")
+        except:
+            venta.fecha_vencimiento = None
+    db.commit()
+    return {"mensaje": "Venta actualizada correctamente"}
 
 @app.get("/admin/deudas")
 def ver_deudas(db: Session = Depends(get_db)):
@@ -251,6 +339,25 @@ def agregar_cliente(data: ClienteRequest, db: Session = Depends(get_db)):
     db.commit()
     return {"mensaje": f"Cliente {data.nombre} agregado", "id": nuevo.id}
 
+class ClienteEdit(BaseModel):
+    nombre: Optional[str] = None
+    telefono: Optional[str] = None
+    direccion: Optional[str] = None
+
+@app.put("/admin/cliente/{cliente_id}")
+def editar_cliente(cliente_id: int, data: ClienteEdit, db: Session = Depends(get_db)):
+    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+    if not cliente:
+        return {"error": "Cliente no encontrado"}
+    if data.nombre:
+        cliente.nombre = data.nombre
+    if data.telefono is not None:
+        cliente.telefono = data.telefono
+    if data.direccion is not None:
+        cliente.direccion = data.direccion
+    db.commit()
+    return {"mensaje": "Cliente actualizado correctamente"}
+
 @app.delete("/admin/cliente/{cliente_id}")
 def eliminar_cliente(cliente_id: int, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
@@ -259,7 +366,7 @@ def eliminar_cliente(cliente_id: int, db: Session = Depends(get_db)):
     db.delete(cliente)
     db.commit()
     return {"mensaje": "Cliente eliminado"}
-# ── Gastos ──
+
 class GastoRequest(BaseModel):
     descripcion: str
     categoria: str = "general"
@@ -315,26 +422,16 @@ def eliminar_gasto(gasto_id: int, db: Session = Depends(get_db)):
 @app.get("/admin/caja")
 def ver_caja(db: Session = Depends(get_db)):
     from database import Gasto
-    # Solo ventas ya cobradas
     ventas_cobradas = db.query(Venta).filter(Venta.pagado == "pagado").all()
     total_ingresos = sum(v.subtotal for v in ventas_cobradas)
-
-    # Total pendiente por cobrar
     ventas_pendientes = db.query(Venta).filter(Venta.pagado == "debe").all()
     total_pendiente = sum(v.subtotal for v in ventas_pendientes)
-
-    # Total gastos
     gastos = db.query(Gasto).all()
     total_gastos = sum(g.monto for g in gastos)
-
-    # Saldo real
     saldo_real = total_ingresos - total_gastos
-
-    # Gastos por categoria
     categorias = {}
     for g in gastos:
         categorias[g.categoria] = categorias.get(g.categoria, 0) + g.monto
-
     return {
         "total_ingresos": total_ingresos,
         "total_gastos": total_gastos,
@@ -342,3 +439,38 @@ def ver_caja(db: Session = Depends(get_db)):
         "total_pendiente": total_pendiente,
         "categorias": categorias
     }
+
+class HistorialRequest(BaseModel):
+    producto: str
+    tipo: str
+    cantidad: float
+    motivo: str = ""
+
+@app.post("/admin/historial")
+def registrar_historial(data: HistorialRequest, db: Session = Depends(get_db)):
+    from database import Historial
+    nuevo = Historial(
+        producto=data.producto,
+        tipo=data.tipo,
+        cantidad=data.cantidad,
+        motivo=data.motivo,
+        fecha=datetime.now()
+    )
+    db.add(nuevo)
+    db.commit()
+    return {"mensaje": "Movimiento registrado"}
+
+@app.get("/admin/historial")
+def ver_historial(db: Session = Depends(get_db)):
+    from database import Historial
+    movimientos = db.query(Historial).order_by(Historial.fecha.desc()).limit(100).all()
+    return [
+        {
+            "id": m.id,
+            "fecha": m.fecha.strftime("%Y-%m-%d %H:%M"),
+            "producto": m.producto,
+            "tipo": m.tipo,
+            "cantidad": m.cantidad,
+            "motivo": m.motivo
+        } for m in movimientos
+    ]
