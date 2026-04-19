@@ -10,7 +10,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Usuario admin — cambia la contraseña aquí
 ADMIN_USER = "admin"
-ADMIN_PASSWORD = "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"  # "secret"
+ADMIN_PASSWORD = "$2b$12$TXMu/gX1qmmTgn4RIhXTcO7NzJ0Y5ayupmQVgkj2UedKFmfRG3o.y"
 
 def verificar_password(plain, hashed):
     return pwd_context.verify(plain, hashed)
