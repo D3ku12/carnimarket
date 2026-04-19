@@ -88,17 +88,18 @@ def vender(venta: VentaRequest, db: Session = Depends(get_db)):
         except:
             pass
 
-    nueva_venta = Venta(
-        producto=venta.producto,
-        kilos=venta.kilos,
-        precio_kilo=producto.precio_kilo,
-        subtotal=subtotal,
-        fecha_venta=fecha,
-        cliente_nombre=venta.cliente_nombre,
-        cliente_id=venta.cliente_id,
-        pagado=venta.pagado,
-        notas=venta.notas
-        fecha_vencimiento=fecha_venc,
+nueva_venta = Venta(
+    producto=venta.producto,
+    kilos=venta.kilos,
+    precio_kilo=producto.precio_kilo,
+    subtotal=subtotal,
+    fecha_venta=fecha,
+    fecha_vencimiento=fecha_venc,
+    cliente_nombre=venta.cliente_nombre,
+    cliente_id=venta.cliente_id,
+    pagado=venta.pagado,
+    notas=venta.notas
+)
     )
     fecha_venc = None
 if venta.fecha_vencimiento:
