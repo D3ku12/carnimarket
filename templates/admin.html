@@ -39,11 +39,12 @@
     .bajo { background: #fff8e1; color: #f57f17; }
     .pagado { background: #e8f5e9; color: #2e7d32; }
     .debe { background: #fdecea; color: #c0392b; }
-    input, select {
+    input, select, textarea {
       padding: 9px; border-radius: 8px;
       border: 1px solid #ddd; font-size: 13px;
       width: 100%; margin-bottom: 10px;
     }
+    textarea { resize: vertical; min-height: 60px; }
     label { font-size: 12px; color: #999; display: block; margin-bottom: 4px; }
     .row { display: flex; gap: 10px; }
     .row input, .row select, .row > div { margin-bottom: 0; flex: 1; }
@@ -57,6 +58,7 @@
     .btn-red { background: #c0392b; color: white; }
     .btn-blue { background: #1a5276; color: white; }
     .btn-dark { background: #1a1a1a; color: white; }
+    .btn-orange { background: #e67e22; color: white; }
     .btn-small {
       padding: 4px 9px; font-size: 11px;
       border: none; border-radius: 6px;
@@ -78,9 +80,119 @@
     .vencido { color: #c0392b; font-weight: bold; }
     .dos-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     @media (max-width: 600px) { .dos-col { grid-template-columns: 1fr; } }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; display: none;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: white; border-radius: 16px;
+      padding: 24px; width: 100%; max-width: 480px;
+      max-height: 90vh; overflow-y: auto;
+      margin: 16px;
+    }
+    .modal h3 { font-size: 16px; margin-bottom: 16px; color: #1a1a1a; }
+    .modal-btns { display: flex; gap: 10px; margin-top: 10px; }
+    .modal-btns button { flex: 1; }
+
+    /* Historial badges */
+    .entrada { background: #e8f5e9; color: #2e7d32; }
+    .salida { background: #fdecea; color: #c0392b; }
   </style>
 </head>
 <body>
+
+<!-- MODALES -->
+
+<!-- Modal editar producto -->
+<div class="modal-overlay" id="modal-producto">
+  <div class="modal">
+    <h3>✏️ Editar Producto</h3>
+    <input type="hidden" id="edit-prod-original">
+    <label>Nombre</label>
+    <input type="text" id="edit-prod-nombre">
+    <div class="row">
+      <div>
+        <label>Stock (kg)</label>
+        <input type="number" id="edit-prod-stock" step="0.1">
+      </div>
+      <div>
+        <label>Stock mínimo (kg)</label>
+        <input type="number" id="edit-prod-minimo" step="0.1">
+      </div>
+    </div>
+    <label>Precio por kilo ($)</label>
+    <input type="number" id="edit-prod-precio">
+    <div id="msg-edit-prod" class="mensaje"></div>
+    <div class="modal-btns">
+      <button class="btn-blue" onclick="guardarProducto()">💾 Guardar</button>
+      <button class="btn-dark" onclick="cerrarModal('modal-producto')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal editar cliente -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal">
+    <h3>✏️ Editar Cliente</h3>
+    <input type="hidden" id="edit-cli-id">
+    <label>Nombre</label>
+    <input type="text" id="edit-cli-nombre">
+    <label>Teléfono</label>
+    <input type="text" id="edit-cli-telefono">
+    <label>Dirección</label>
+    <input type="text" id="edit-cli-direccion">
+    <div id="msg-edit-cli" class="mensaje"></div>
+    <div class="modal-btns">
+      <button class="btn-blue" onclick="guardarCliente()">💾 Guardar</button>
+      <button class="btn-dark" onclick="cerrarModal('modal-cliente')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal editar venta -->
+<div class="modal-overlay" id="modal-venta">
+  <div class="modal">
+    <h3>✏️ Editar Venta</h3>
+    <input type="hidden" id="edit-venta-id">
+    <div class="row">
+      <div>
+        <label>Kilos</label>
+        <input type="number" id="edit-venta-kilos" step="0.1">
+      </div>
+      <div>
+        <label>Estado de pago</label>
+        <select id="edit-venta-pagado">
+          <option value="pagado">✅ Pagado</option>
+          <option value="debe">⚠️ Debe</option>
+        </select>
+      </div>
+    </div>
+    <label>Cliente</label>
+    <input type="text" id="edit-venta-cliente">
+    <div class="row">
+      <div>
+        <label>Fecha de venta</label>
+        <input type="date" id="edit-venta-fecha">
+      </div>
+      <div>
+        <label>Fecha límite de pago</label>
+        <input type="date" id="edit-venta-vencimiento">
+      </div>
+    </div>
+    <label>Notas</label>
+    <textarea id="edit-venta-notas"></textarea>
+    <div id="msg-edit-venta" class="mensaje"></div>
+    <div class="modal-btns">
+      <button class="btn-blue" onclick="guardarVenta()">💾 Guardar</button>
+      <button class="btn-dark" onclick="cerrarModal('modal-venta')">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <header>
   <h1>🥩 CarniMarket — Admin</h1>
@@ -91,6 +203,7 @@
     <button onclick="showTab('deudas', this)">⚠️ Deudas</button>
     <button onclick="showTab('gastos', this)">💸 Gastos</button>
     <button onclick="showTab('caja', this)">🏦 Caja</button>
+    <button onclick="showTab('historial', this)">📋 Historial</button>
   </div>
 </header>
 
@@ -102,7 +215,7 @@
       <h2>📦 Inventario — Actualizar Stock</h2>
       <div id="msg-stock" class="mensaje"></div>
       <table>
-        <thead><tr><th>Producto</th><th>Stock</th><th>Estado</th><th>Actualizar</th><th>Eliminar</th></tr></thead>
+        <thead><tr><th>Producto</th><th>Stock</th><th>Mínimo</th><th>Precio/kg</th><th>Estado</th><th>Stock rápido</th><th>Acciones</th></tr></thead>
         <tbody id="tabla-admin"></tbody>
       </table>
     </div>
@@ -184,9 +297,9 @@
       <table>
         <thead>
           <tr>
-            <th>Fecha venta</th><th>Cliente</th><th>Producto</th>
+            <th>Fecha</th><th>Cliente</th><th>Producto</th>
             <th>Kilos</th><th>Total</th><th>Estado</th>
-            <th>Fecha pago</th><th>Vence</th><th>Acción</th>
+            <th>Fecha pago</th><th>Vence</th><th>Acciones</th>
           </tr>
         </thead>
         <tbody id="tabla-ventas"><tr><td colspan="9">Cargando...</td></tr></tbody>
@@ -209,7 +322,7 @@
     <div class="card">
       <h2>👤 Lista de Clientes</h2>
       <table>
-        <thead><tr><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>Registro</th><th>Eliminar</th></tr></thead>
+        <thead><tr><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>Registro</th><th>Acciones</th></tr></thead>
         <tbody id="tabla-clientes"><tr><td colspan="5">Cargando...</td></tr></tbody>
       </table>
     </div>
@@ -288,6 +401,26 @@
     </div>
   </div>
 
+  <!-- TAB HISTORIAL -->
+  <div id="tab-historial" class="tab">
+    <div class="card">
+      <h2>📋 Historial de Movimientos de Inventario</h2>
+      <div class="filtros">
+        <input type="text" id="filtro-historial-producto" placeholder="Buscar producto...">
+        <select id="filtro-historial-tipo">
+          <option value="">Todos</option>
+          <option value="entrada">📥 Entradas</option>
+          <option value="salida">📤 Salidas</option>
+        </select>
+        <button class="btn-dark" style="width:auto;margin:0;padding:8px 14px" onclick="cargarHistorial()">🔍 Filtrar</button>
+      </div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Motivo</th></tr></thead>
+        <tbody id="tabla-historial"><tr><td colspan="5">Cargando...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -303,7 +436,12 @@ function showTab(name, btn) {
   if (name === 'deudas') cargarDeudas();
   if (name === 'gastos') cargarGastos();
   if (name === 'caja') cargarCaja();
+  if (name === 'historial') cargarHistorial();
 }
+
+// ── Modales ──
+function abrirModal(id) { document.getElementById(id).classList.add('open'); }
+function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
 
 // ── Inventario ──
 async function cargarAdmin() {
@@ -316,15 +454,54 @@ async function cargarAdmin() {
     let clase = estado === "OK" ? "ok" : "bajo";
     tbody.innerHTML += `
       <tr>
-        <td><strong>${nombre}</strong><br><small>$${info.precio_kilo.toLocaleString()}/kg</small></td>
+        <td><strong>${nombre}</strong></td>
         <td>${info.stock}kg</td>
+        <td>${info.minimo}kg</td>
+        <td>$${info.precio_kilo.toLocaleString()}</td>
         <td><span class="badge ${clase}">${estado}</span></td>
         <td><div class="edit-stock">
           <input type="number" id="stock-${nombre}" value="${info.stock}" step="0.1" min="0">
           <button class="btn-small btn-blue" onclick="actualizarStock('${nombre}')">💾</button>
         </div></td>
-        <td><button class="btn-small btn-red" onclick="eliminarProducto('${nombre}')">🗑️</button></td>
+        <td>
+          <button class="btn-small btn-orange" onclick="abrirEditarProducto('${nombre}', ${info.stock}, ${info.minimo}, ${info.precio_kilo})" style="margin-right:4px">✏️</button>
+          <button class="btn-small btn-red" onclick="eliminarProducto('${nombre}')">🗑️</button>
+        </td>
       </tr>`;
+  }
+}
+
+function abrirEditarProducto(nombre, stock, minimo, precio_kilo) {
+  document.getElementById("edit-prod-original").value = nombre;
+  document.getElementById("edit-prod-nombre").value = nombre;
+  document.getElementById("edit-prod-stock").value = stock;
+  document.getElementById("edit-prod-minimo").value = minimo;
+  document.getElementById("edit-prod-precio").value = precio_kilo;
+  document.getElementById("msg-edit-prod").style.display = "none";
+  abrirModal("modal-producto");
+}
+
+async function guardarProducto() {
+  const original = document.getElementById("edit-prod-original").value;
+  const nombre_nuevo = document.getElementById("edit-prod-nombre").value.trim();
+  const stock = parseFloat(document.getElementById("edit-prod-stock").value);
+  const minimo = parseFloat(document.getElementById("edit-prod-minimo").value);
+  const precio_kilo = parseFloat(document.getElementById("edit-prod-precio").value);
+  const msg = document.getElementById("msg-edit-prod");
+
+  const body = { stock, minimo, precio_kilo };
+  if (nombre_nuevo !== original) body.nombre_nuevo = nombre_nuevo;
+
+  const res = await fetch(`/admin/producto/${original}`, {
+    method: "PUT", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  msg.style.display = "block";
+  msg.className = data.error ? "mensaje error" : "mensaje exito";
+  msg.textContent = data.error ? "❌ " + data.error : "✅ " + data.mensaje;
+  if (!data.error) {
+    setTimeout(() => { cerrarModal("modal-producto"); cargarAdmin(); }, 800);
   }
 }
 
@@ -401,9 +578,7 @@ async function cargarClientesSelect() {
 function seleccionarCliente() {
   const select = document.getElementById("venta-cliente-select");
   const opt = select.options[select.selectedIndex];
-  if (opt.dataset.nombre) {
-    document.getElementById("venta-cliente-nombre").value = opt.dataset.nombre;
-  }
+  if (opt.dataset.nombre) document.getElementById("venta-cliente-nombre").value = opt.dataset.nombre;
 }
 
 async function registrarVenta() {
@@ -476,13 +651,49 @@ async function cargarVentas() {
         <td style="font-size:12px;color:#999">${v.fecha_pago || "—"}</td>
         <td class="${venceClass}" style="font-size:12px">${venceTexto}</td>
         <td>
+          <button class="btn-small btn-orange" onclick="abrirEditarVenta(${v.id}, '${v.cliente_nombre}', ${v.kilos}, '${v.pagado}', '${v.notas}', '${v.fecha_venta}', '${v.fecha_vencimiento}')" style="margin-right:4px">✏️</button>
           ${v.pagado === 'debe'
-            ? `<button class="btn-small btn-green" onclick="marcarPagado(${v.id})">✅ Pagado</button>`
-            : `<button class="btn-small" style="background:#eee;color:#666" onclick="marcarDebe(${v.id})">↩️ Debe</button>`
+            ? `<button class="btn-small btn-green" onclick="marcarPagado(${v.id})">✅</button>`
+            : `<button class="btn-small" style="background:#eee;color:#666" onclick="marcarDebe(${v.id})">↩️</button>`
           }
         </td>
       </tr>`;
   }).join("");
+}
+
+function abrirEditarVenta(id, cliente, kilos, pagado, notas, fecha_venta, fecha_vencimiento) {
+  document.getElementById("edit-venta-id").value = id;
+  document.getElementById("edit-venta-cliente").value = cliente === 'undefined' ? '' : cliente;
+  document.getElementById("edit-venta-kilos").value = kilos;
+  document.getElementById("edit-venta-pagado").value = pagado;
+  document.getElementById("edit-venta-notas").value = notas === 'undefined' ? '' : notas;
+  document.getElementById("edit-venta-fecha").value = fecha_venta && fecha_venta !== '—' ? fecha_venta.split(' ')[0] : '';
+  document.getElementById("edit-venta-vencimiento").value = fecha_vencimiento && fecha_vencimiento !== '—' ? fecha_vencimiento : '';
+  document.getElementById("msg-edit-venta").style.display = "none";
+  abrirModal("modal-venta");
+}
+
+async function guardarVenta() {
+  const id = document.getElementById("edit-venta-id").value;
+  const kilos = parseFloat(document.getElementById("edit-venta-kilos").value);
+  const pagado = document.getElementById("edit-venta-pagado").value;
+  const cliente_nombre = document.getElementById("edit-venta-cliente").value;
+  const notas = document.getElementById("edit-venta-notas").value;
+  const fecha_venta = document.getElementById("edit-venta-fecha").value;
+  const fecha_vencimiento = document.getElementById("edit-venta-vencimiento").value;
+  const msg = document.getElementById("msg-edit-venta");
+
+  const res = await fetch(`/admin/venta/${id}`, {
+    method: "PUT", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({kilos, pagado, cliente_nombre, notas, fecha_venta, fecha_vencimiento})
+  });
+  const data = await res.json();
+  msg.style.display = "block";
+  msg.className = data.error ? "mensaje error" : "mensaje exito";
+  msg.textContent = data.error ? "❌ " + data.error : "✅ " + data.mensaje;
+  if (!data.error) {
+    setTimeout(() => { cerrarModal("modal-venta"); cargarVentas(); }, 800);
+  }
 }
 
 async function marcarPagado(id) {
@@ -516,8 +727,40 @@ async function cargarClientes() {
       <td>${c.telefono || "—"}</td>
       <td>${c.direccion || "—"}</td>
       <td style="font-size:12px;color:#999">${c.fecha_registro}</td>
-      <td><button class="btn-small btn-red" onclick="eliminarCliente(${c.id})">🗑️</button></td>
+      <td>
+        <button class="btn-small btn-orange" onclick="abrirEditarCliente(${c.id}, '${c.nombre}', '${c.telefono}', '${c.direccion}')" style="margin-right:4px">✏️</button>
+        <button class="btn-small btn-red" onclick="eliminarCliente(${c.id})">🗑️</button>
+      </td>
     </tr>`).join("");
+}
+
+function abrirEditarCliente(id, nombre, telefono, direccion) {
+  document.getElementById("edit-cli-id").value = id;
+  document.getElementById("edit-cli-nombre").value = nombre;
+  document.getElementById("edit-cli-telefono").value = telefono === 'undefined' ? '' : telefono;
+  document.getElementById("edit-cli-direccion").value = direccion === 'undefined' ? '' : direccion;
+  document.getElementById("msg-edit-cli").style.display = "none";
+  abrirModal("modal-cliente");
+}
+
+async function guardarCliente() {
+  const id = document.getElementById("edit-cli-id").value;
+  const nombre = document.getElementById("edit-cli-nombre").value.trim();
+  const telefono = document.getElementById("edit-cli-telefono").value.trim();
+  const direccion = document.getElementById("edit-cli-direccion").value.trim();
+  const msg = document.getElementById("msg-edit-cli");
+
+  const res = await fetch(`/admin/cliente/${id}`, {
+    method: "PUT", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({nombre, telefono, direccion})
+  });
+  const data = await res.json();
+  msg.style.display = "block";
+  msg.className = data.error ? "mensaje error" : "mensaje exito";
+  msg.textContent = data.error ? "❌ " + data.error : "✅ " + data.mensaje;
+  if (!data.error) {
+    setTimeout(() => { cerrarModal("modal-cliente"); cargarClientes(); }, 800);
+  }
 }
 
 async function agregarCliente() {
@@ -587,7 +830,6 @@ async function registrarGasto() {
   const fecha = document.getElementById("gasto-fecha").value;
   const notas = document.getElementById("gasto-notas").value;
   const msg = document.getElementById("msg-gasto");
-
   if (!descripcion || !monto) {
     msg.className = "mensaje error"; msg.style.display = "block";
     msg.textContent = "❌ Descripción y monto son obligatorios."; return;
@@ -602,8 +844,7 @@ async function registrarGasto() {
   msg.textContent = data.error ? "❌ " + data.error : "✅ " + data.mensaje;
   if (!data.error) {
     ["gasto-descripcion","gasto-monto","gasto-notas","gasto-fecha"].forEach(id => document.getElementById(id).value = "");
-    cargarGastos();
-    cargarCaja();
+    cargarGastos(); cargarCaja();
   }
 }
 
@@ -612,13 +853,9 @@ async function cargarGastos() {
   const gastos = await res.json();
   const tbody = document.getElementById("tabla-gastos");
   const categoriaLabels = {
-    compra_carne: "🥩 Compra carne",
-    servicios: "💡 Servicios",
-    transporte: "🚗 Transporte",
-    empaque: "📦 Empaque",
-    nomina: "👷 Nómina",
-    mantenimiento: "🔧 Mantenimiento",
-    general: "📋 General"
+    compra_carne: "🥩 Compra carne", servicios: "💡 Servicios",
+    transporte: "🚗 Transporte", empaque: "📦 Empaque",
+    nomina: "👷 Nómina", mantenimiento: "🔧 Mantenimiento", general: "📋 General"
   };
   if (!gastos.length) {
     tbody.innerHTML = "<tr><td colspan='6' style='color:#999;text-align:center'>No hay gastos registrados</td></tr>";
@@ -638,8 +875,7 @@ async function cargarGastos() {
 async function eliminarGasto(id) {
   if (!confirm("¿Eliminar este gasto?")) return;
   await fetch(`/admin/gasto/${id}`, { method: "DELETE" });
-  cargarGastos();
-  cargarCaja();
+  cargarGastos(); cargarCaja();
 }
 
 // ── Caja ──
@@ -648,7 +884,6 @@ async function cargarCaja() {
   const data = await res.json();
   const saldoColor = data.saldo_real >= 0 ? "#2e7d32" : "#c0392b";
   const saldoIcon = data.saldo_real >= 0 ? "✅" : "⚠️";
-
   document.getElementById("stats-caja").innerHTML = `
     <div class="stat">
       <div class="valor" style="color:#2e7d32">$${data.total_ingresos.toLocaleString()}</div>
@@ -666,30 +901,20 @@ async function cargarCaja() {
       <div class="valor" style="color:#e67e22">$${data.total_pendiente.toLocaleString()}</div>
       <div class="label">⏳ Pendiente por cobrar</div>
     </div>`;
-
   const categoriaLabels = {
-    compra_carne: "🥩 Compra carne",
-    servicios: "💡 Servicios",
-    transporte: "🚗 Transporte",
-    empaque: "📦 Empaque",
-    nomina: "👷 Nómina",
-    mantenimiento: "🔧 Mantenimiento",
-    general: "📋 General"
+    compra_carne: "🥩 Compra carne", servicios: "💡 Servicios",
+    transporte: "🚗 Transporte", empaque: "📦 Empaque",
+    nomina: "👷 Nómina", mantenimiento: "🔧 Mantenimiento", general: "📋 General"
   };
-
   const tbody = document.getElementById("tabla-categorias");
   if (!Object.keys(data.categorias).length) {
-    tbody.innerHTML = "<tr><td colspan='2' style='color:#999;text-align:center'>Sin gastos registrados</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='2' style='color:#999;text-align:center'>Sin gastos</td></tr>";
   } else {
     tbody.innerHTML = Object.entries(data.categorias)
       .sort((a,b) => b[1]-a[1])
-      .map(([cat, total]) => `
-        <tr>
-          <td>${categoriaLabels[cat] || cat}</td>
-          <td style="color:#c0392b;font-weight:bold">$${total.toLocaleString()}</td>
-        </tr>`).join("");
+      .map(([cat, total]) => `<tr><td>${categoriaLabels[cat] || cat}</td><td style="color:#c0392b;font-weight:bold">$${total.toLocaleString()}</td></tr>`)
+      .join("");
   }
-
   document.getElementById("resumen-caja").innerHTML = `
     <table>
       <tr><td>💰 Ventas cobradas</td><td style="color:#2e7d32;font-weight:bold;text-align:right">+ $${data.total_ingresos.toLocaleString()}</td></tr>
@@ -699,12 +924,39 @@ async function cargarCaja() {
         <td style="color:${saldoColor};font-weight:bold;font-size:16px;text-align:right">$${data.saldo_real.toLocaleString()}</td>
       </tr>
       <tr><td colspan="2" style="height:12px"></td></tr>
-      <tr><td>⏳ Por cobrar (deudas)</td><td style="color:#e67e22;font-weight:bold;text-align:right">$${data.total_pendiente.toLocaleString()}</td></tr>
+      <tr><td>⏳ Por cobrar</td><td style="color:#e67e22;font-weight:bold;text-align:right">$${data.total_pendiente.toLocaleString()}</td></tr>
       <tr>
         <td><strong>💎 Si cobran todo</strong></td>
         <td style="color:#1a5276;font-weight:bold;text-align:right">$${(data.saldo_real + data.total_pendiente).toLocaleString()}</td>
       </tr>
     </table>`;
+}
+
+// ── Historial ──
+async function cargarHistorial() {
+  const res = await fetch("/admin/historial");
+  const movimientos = await res.json();
+  const producto = document.getElementById("filtro-historial-producto")?.value.toLowerCase() || "";
+  const tipo = document.getElementById("filtro-historial-tipo")?.value || "";
+  const tbody = document.getElementById("tabla-historial");
+
+  const filtrados = movimientos.filter(m => {
+    return (!producto || m.producto.toLowerCase().includes(producto)) &&
+           (!tipo || m.tipo === tipo);
+  });
+
+  if (!filtrados.length) {
+    tbody.innerHTML = "<tr><td colspan='5' style='color:#999;text-align:center'>No hay movimientos</td></tr>";
+    return;
+  }
+  tbody.innerHTML = filtrados.map(m => `
+    <tr>
+      <td>${m.fecha}</td>
+      <td><strong>${m.producto}</strong></td>
+      <td><span class="badge ${m.tipo}">${m.tipo === 'entrada' ? '📥 Entrada' : '📤 Salida'}</span></td>
+      <td>${m.cantidad}kg</td>
+      <td style="font-size:12px;color:#999">${m.motivo || "—"}</td>
+    </tr>`).join("");
 }
 
 cargarAdmin();
