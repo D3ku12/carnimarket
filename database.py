@@ -45,6 +45,7 @@ class Venta(Base):
     cliente_nombre = Column(String, default="Cliente general")
     pagado = Column(String, default="pagado")
     notas = Column(String, default="")
+    fecha_vencimiento = Column(DateTime, nullable=True)
 
 def init_db():
     Base.metadata.create_all(bind=engine)

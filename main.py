@@ -67,6 +67,7 @@ class VentaRequest(BaseModel):
     cliente_id: int = None
     pagado: str = "pagado"
     fecha_venta: str = None
+    fecha_vencimiento: str = None
     notas: str = ""
 
 @app.post("/vender")
@@ -97,7 +98,15 @@ def vender(venta: VentaRequest, db: Session = Depends(get_db)):
         cliente_id=venta.cliente_id,
         pagado=venta.pagado,
         notas=venta.notas
+        fecha_vencimiento=fecha_venc,
     )
+    fecha_venc = None
+if venta.fecha_vencimiento:
+    try:
+        fecha_venc = datetime.strptime(venta.fecha_vencimiento, "%Y-%m-%d")
+    except:
+        pass
+
     db.add(nueva_venta)
     db.commit()
 
@@ -196,6 +205,7 @@ def ver_ventas(
             "cliente": v.cliente,
             "pagado": v.pagado,
             "notas": v.notas
+            "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else "—",
         } for v in ventas
     ]
 

@@ -44,8 +44,10 @@
       border: 1px solid #ddd; font-size: 13px;
       width: 100%; margin-bottom: 10px;
     }
+    label { font-size: 12px; color: #999; display: block; margin-bottom: 4px; }
     .row { display: flex; gap: 10px; }
-    .row input, .row select { margin-bottom: 0; }
+    .row input, .row select, .row > div { margin-bottom: 0; flex: 1; }
+    .row input { margin-bottom: 0; }
     button {
       padding: 10px 16px; border: none; border-radius: 8px;
       font-size: 13px; font-weight: bold; cursor: pointer;
@@ -72,6 +74,8 @@
     .stat { background: white; border-radius: 12px; padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     .stat .valor { font-size: 22px; font-weight: 800; color: #c0392b; }
     .stat .label { font-size: 12px; color: #999; margin-top: 2px; }
+    .vence-pronto { color: #e67e22; font-weight: bold; }
+    .vencido { color: #c0392b; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -117,28 +121,48 @@
       <h2>💰 Registrar Venta</h2>
       <div id="msg-venta" class="mensaje"></div>
       <div class="row">
-        <select id="venta-producto"></select>
-        <input type="number" id="venta-kilos" placeholder="Kilos" step="0.1" min="0.1">
+        <div>
+          <label>Producto</label>
+          <select id="venta-producto"></select>
+        </div>
+        <div>
+          <label>Kilos</label>
+          <input type="number" id="venta-kilos" placeholder="Ej: 2.5" step="0.1" min="0.1">
+        </div>
       </div>
       <div class="row" style="margin-top:10px">
-        <select id="venta-cliente-select" onchange="seleccionarCliente()">
-          <option value="">Selecciona cliente o escribe nuevo...</option>
-        </select>
-        <input type="text" id="venta-cliente-nombre" placeholder="Nombre del cliente">
+        <div>
+          <label>Cliente registrado</label>
+          <select id="venta-cliente-select" onchange="seleccionarCliente()">
+            <option value="">Selecciona cliente existente...</option>
+          </select>
+        </div>
+        <div>
+          <label>Nombre del cliente</label>
+          <input type="text" id="venta-cliente-nombre" placeholder="O escribe un nombre nuevo">
+        </div>
       </div>
       <div class="row" style="margin-top:10px">
-        <div style="flex:1">
-          <label style="font-size:12px;color:#999">Fecha de venta</label>
+        <div>
+          <label>Fecha de venta</label>
           <input type="date" id="venta-fecha">
         </div>
-        <div style="flex:1">
+        <div>
+          <label>Estado de pago</label>
           <select id="venta-pagado">
             <option value="pagado">✅ Pagado</option>
             <option value="debe">⚠️ Debe</option>
           </select>
         </div>
+        <div>
+          <label>Fecha límite de pago</label>
+          <input type="date" id="venta-fecha-vencimiento">
+        </div>
       </div>
-      <input type="text" id="venta-notas" placeholder="Notas (opcional)" style="margin-top:10px">
+      <div style="margin-top:10px">
+        <label>Notas (opcional)</label>
+        <input type="text" id="venta-notas" placeholder="Ej: cliente habitual, pagará el viernes...">
+      </div>
       <button class="btn-red" onclick="registrarVenta()">💰 Registrar Venta</button>
     </div>
 
@@ -156,9 +180,19 @@
       </div>
       <table>
         <thead>
-          <tr><th>Fecha venta</th><th>Cliente</th><th>Producto</th><th>Kilos</th><th>Total</th><th>Estado</th><th>Fecha pago</th><th>Acción</th></tr>
+          <tr>
+            <th>Fecha venta</th>
+            <th>Cliente</th>
+            <th>Producto</th>
+            <th>Kilos</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Fecha pago</th>
+            <th>Vence</th>
+            <th>Acción</th>
+          </tr>
         </thead>
-        <tbody id="tabla-ventas"><tr><td colspan="8">Cargando...</td></tr></tbody>
+        <tbody id="tabla-ventas"><tr><td colspan="9">Cargando...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -199,7 +233,6 @@
 </div>
 
 <script>
-// ── Navegación ──
 function showTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
@@ -319,6 +352,7 @@ async function registrarVenta() {
   const pagado = document.getElementById("venta-pagado").value;
   const notas = document.getElementById("venta-notas").value;
   const fecha_venta = document.getElementById("venta-fecha").value;
+  const fecha_vencimiento = document.getElementById("venta-fecha-vencimiento").value;
   const select = document.getElementById("venta-cliente-select");
   const cliente_id = select.value ? parseInt(select.value) : null;
   const msg = document.getElementById("msg-venta");
@@ -329,7 +363,7 @@ async function registrarVenta() {
   }
   const res = await fetch("/vender", {
     method: "POST", headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({producto, kilos, cliente_nombre, cliente_id, pagado, notas, fecha_venta})
+    body: JSON.stringify({producto, kilos, cliente_nombre, cliente_id, pagado, notas, fecha_venta, fecha_vencimiento})
   });
   const data = await res.json();
   msg.style.display = "block";
@@ -338,7 +372,7 @@ async function registrarVenta() {
   } else {
     msg.className = "mensaje exito";
     msg.textContent = `✅ ${data.producto} ${data.kilos}kg = $${data.subtotal.toLocaleString()}`;
-    ["venta-kilos","venta-cliente-nombre","venta-notas","venta-fecha"].forEach(id => document.getElementById(id).value = "");
+    ["venta-kilos","venta-cliente-nombre","venta-notas","venta-fecha","venta-fecha-vencimiento"].forEach(id => document.getElementById(id).value = "");
     document.getElementById("venta-cliente-select").value = "";
     cargarVentas(); cargarProductosSelect();
   }
@@ -357,25 +391,38 @@ async function cargarVentas() {
   const ventas = await res.json();
   const tbody = document.getElementById("tabla-ventas");
   if (!ventas.length) {
-    tbody.innerHTML = "<tr><td colspan='8' style='color:#999;text-align:center'>No hay ventas</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='9' style='color:#999;text-align:center'>No hay ventas</td></tr>";
     return;
   }
-  tbody.innerHTML = ventas.map(v => `
-    <tr>
-      <td>${v.fecha_venta || v.fecha || ""}</td>
-      <td>${v.cliente_nombre || v.cliente || ""}</td>
-      <td>${v.producto}</td>
-      <td>${v.kilos}kg</td>
-      <td>$${v.subtotal.toLocaleString()}</td>
-      <td><span class="badge ${v.pagado}">${v.pagado === 'pagado' ? '✅ Pagado' : '⚠️ Debe'}</span></td>
-      <td style="font-size:12px;color:#999">${v.fecha_pago || "—"}</td>
-      <td>
-        ${v.pagado === 'debe'
-          ? `<button class="btn-small btn-green" onclick="marcarPagado(${v.id})">✅ Pagado</button>`
-          : `<button class="btn-small" style="background:#eee;color:#666" onclick="marcarDebe(${v.id})">↩️ Debe</button>`
-        }
-      </td>
-    </tr>`).join("");
+
+  const hoy = new Date();
+  tbody.innerHTML = ventas.map(v => {
+    let venceClass = "";
+    let venceTexto = v.fecha_vencimiento || "—";
+    if (v.fecha_vencimiento && v.pagado === "debe") {
+      const fv = new Date(v.fecha_vencimiento);
+      const diff = (fv - hoy) / (1000 * 60 * 60 * 24);
+      if (diff < 0) { venceClass = "vencido"; venceTexto = "⛔ " + v.fecha_vencimiento; }
+      else if (diff <= 3) { venceClass = "vence-pronto"; venceTexto = "⚠️ " + v.fecha_vencimiento; }
+    }
+    return `
+      <tr>
+        <td>${v.fecha_venta || v.fecha || ""}</td>
+        <td>${v.cliente_nombre || v.cliente || ""}</td>
+        <td>${v.producto}</td>
+        <td>${v.kilos}kg</td>
+        <td>$${v.subtotal.toLocaleString()}</td>
+        <td><span class="badge ${v.pagado}">${v.pagado === 'pagado' ? '✅ Pagado' : '⚠️ Debe'}</span></td>
+        <td style="font-size:12px;color:#999">${v.fecha_pago || "—"}</td>
+        <td class="${venceClass}" style="font-size:12px">${venceTexto}</td>
+        <td>
+          ${v.pagado === 'debe'
+            ? `<button class="btn-small btn-green" onclick="marcarPagado(${v.id})">✅ Pagado</button>`
+            : `<button class="btn-small" style="background:#eee;color:#666" onclick="marcarDebe(${v.id})">↩️ Debe</button>`
+          }
+        </td>
+      </tr>`;
+  }).join("");
 }
 
 async function marcarPagado(id) {
@@ -472,7 +519,6 @@ async function cargarDeudas() {
     .join("");
 }
 
-// Inicializar
 cargarAdmin();
 </script>
 </body>
