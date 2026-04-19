@@ -76,6 +76,8 @@
     .stat .label { font-size: 12px; color: #999; margin-top: 2px; }
     .vence-pronto { color: #e67e22; font-weight: bold; }
     .vencido { color: #c0392b; font-weight: bold; }
+    .dos-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .dos-col { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -87,6 +89,8 @@
     <button onclick="showTab('ventas', this)">💰 Ventas</button>
     <button onclick="showTab('clientes', this)">👤 Clientes</button>
     <button onclick="showTab('deudas', this)">⚠️ Deudas</button>
+    <button onclick="showTab('gastos', this)">💸 Gastos</button>
+    <button onclick="showTab('caja', this)">🏦 Caja</button>
   </div>
 </header>
 
@@ -165,7 +169,6 @@
       </div>
       <button class="btn-red" onclick="registrarVenta()">💰 Registrar Venta</button>
     </div>
-
     <div class="card">
       <h2>📋 Historial de Ventas</h2>
       <div class="filtros">
@@ -181,15 +184,9 @@
       <table>
         <thead>
           <tr>
-            <th>Fecha venta</th>
-            <th>Cliente</th>
-            <th>Producto</th>
-            <th>Kilos</th>
-            <th>Total</th>
-            <th>Estado</th>
-            <th>Fecha pago</th>
-            <th>Vence</th>
-            <th>Acción</th>
+            <th>Fecha venta</th><th>Cliente</th><th>Producto</th>
+            <th>Kilos</th><th>Total</th><th>Estado</th>
+            <th>Fecha pago</th><th>Vence</th><th>Acción</th>
           </tr>
         </thead>
         <tbody id="tabla-ventas"><tr><td colspan="9">Cargando...</td></tr></tbody>
@@ -230,9 +227,71 @@
     </div>
   </div>
 
+  <!-- TAB GASTOS -->
+  <div id="tab-gastos" class="tab">
+    <div class="card">
+      <h2>💸 Registrar Gasto</h2>
+      <div id="msg-gasto" class="mensaje"></div>
+      <input type="text" id="gasto-descripcion" placeholder="Descripción (ej: Compra de carne, luz, transporte...)">
+      <div class="row">
+        <div>
+          <label>Categoría</label>
+          <select id="gasto-categoria">
+            <option value="compra_carne">🥩 Compra de carne</option>
+            <option value="servicios">💡 Servicios (luz, agua...)</option>
+            <option value="transporte">🚗 Transporte</option>
+            <option value="empaque">📦 Empaque y materiales</option>
+            <option value="nomina">👷 Nómina</option>
+            <option value="mantenimiento">🔧 Mantenimiento</option>
+            <option value="general">📋 General</option>
+          </select>
+        </div>
+        <div>
+          <label>Monto ($)</label>
+          <input type="number" id="gasto-monto" placeholder="Ej: 50000">
+        </div>
+        <div>
+          <label>Fecha</label>
+          <input type="date" id="gasto-fecha">
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <label>Notas (opcional)</label>
+        <input type="text" id="gasto-notas" placeholder="Ej: proveedor X, factura #123...">
+      </div>
+      <button class="btn-red" onclick="registrarGasto()">💸 Registrar Gasto</button>
+    </div>
+    <div class="card">
+      <h2>📋 Historial de Gastos</h2>
+      <table>
+        <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Monto</th><th>Notas</th><th>Eliminar</th></tr></thead>
+        <tbody id="tabla-gastos"><tr><td colspan="6">Cargando...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB CAJA -->
+  <div id="tab-caja" class="tab">
+    <div class="stat-grid" id="stats-caja"></div>
+    <div class="dos-col">
+      <div class="card">
+        <h2>📊 Gastos por categoría</h2>
+        <table>
+          <thead><tr><th>Categoría</th><th>Total</th></tr></thead>
+          <tbody id="tabla-categorias"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h2>📋 Resumen financiero</h2>
+        <div id="resumen-caja"></div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
+// ── Navegación ──
 function showTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
@@ -242,6 +301,8 @@ function showTab(name, btn) {
   if (name === 'ventas') { cargarVentas(); cargarProductosSelect(); cargarClientesSelect(); }
   if (name === 'clientes') cargarClientes();
   if (name === 'deudas') cargarDeudas();
+  if (name === 'gastos') cargarGastos();
+  if (name === 'caja') cargarCaja();
 }
 
 // ── Inventario ──
@@ -394,12 +455,11 @@ async function cargarVentas() {
     tbody.innerHTML = "<tr><td colspan='9' style='color:#999;text-align:center'>No hay ventas</td></tr>";
     return;
   }
-
   const hoy = new Date();
   tbody.innerHTML = ventas.map(v => {
     let venceClass = "";
     let venceTexto = v.fecha_vencimiento || "—";
-    if (v.fecha_vencimiento && v.pagado === "debe") {
+    if (v.fecha_vencimiento && v.fecha_vencimiento !== "—" && v.pagado === "debe") {
       const fv = new Date(v.fecha_vencimiento);
       const diff = (fv - hoy) / (1000 * 60 * 60 * 24);
       if (diff < 0) { venceClass = "vencido"; venceTexto = "⛔ " + v.fecha_vencimiento; }
@@ -407,8 +467,8 @@ async function cargarVentas() {
     }
     return `
       <tr>
-        <td>${v.fecha_venta || v.fecha || ""}</td>
-        <td>${v.cliente_nombre || v.cliente || ""}</td>
+        <td>${v.fecha_venta || "—"}</td>
+        <td>${v.cliente_nombre || "—"}</td>
         <td>${v.producto}</td>
         <td>${v.kilos}kg</td>
         <td>$${v.subtotal.toLocaleString()}</td>
@@ -517,6 +577,134 @@ async function cargarDeudas() {
     .sort((a,b) => b[1]-a[1])
     .map(([c,t]) => `<tr><td><strong>${c}</strong></td><td style="color:#c0392b;font-weight:bold">$${t.toLocaleString()}</td></tr>`)
     .join("");
+}
+
+// ── Gastos ──
+async function registrarGasto() {
+  const descripcion = document.getElementById("gasto-descripcion").value.trim();
+  const categoria = document.getElementById("gasto-categoria").value;
+  const monto = parseFloat(document.getElementById("gasto-monto").value);
+  const fecha = document.getElementById("gasto-fecha").value;
+  const notas = document.getElementById("gasto-notas").value;
+  const msg = document.getElementById("msg-gasto");
+
+  if (!descripcion || !monto) {
+    msg.className = "mensaje error"; msg.style.display = "block";
+    msg.textContent = "❌ Descripción y monto son obligatorios."; return;
+  }
+  const res = await fetch("/admin/gasto", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({descripcion, categoria, monto, fecha, notas})
+  });
+  const data = await res.json();
+  msg.style.display = "block";
+  msg.className = data.error ? "mensaje error" : "mensaje exito";
+  msg.textContent = data.error ? "❌ " + data.error : "✅ " + data.mensaje;
+  if (!data.error) {
+    ["gasto-descripcion","gasto-monto","gasto-notas","gasto-fecha"].forEach(id => document.getElementById(id).value = "");
+    cargarGastos();
+    cargarCaja();
+  }
+}
+
+async function cargarGastos() {
+  const res = await fetch("/admin/gastos");
+  const gastos = await res.json();
+  const tbody = document.getElementById("tabla-gastos");
+  const categoriaLabels = {
+    compra_carne: "🥩 Compra carne",
+    servicios: "💡 Servicios",
+    transporte: "🚗 Transporte",
+    empaque: "📦 Empaque",
+    nomina: "👷 Nómina",
+    mantenimiento: "🔧 Mantenimiento",
+    general: "📋 General"
+  };
+  if (!gastos.length) {
+    tbody.innerHTML = "<tr><td colspan='6' style='color:#999;text-align:center'>No hay gastos registrados</td></tr>";
+    return;
+  }
+  tbody.innerHTML = gastos.map(g => `
+    <tr>
+      <td>${g.fecha}</td>
+      <td><strong>${g.descripcion}</strong></td>
+      <td>${categoriaLabels[g.categoria] || g.categoria}</td>
+      <td style="color:#c0392b;font-weight:bold">$${g.monto.toLocaleString()}</td>
+      <td style="font-size:12px;color:#999">${g.notas || "—"}</td>
+      <td><button class="btn-small btn-red" onclick="eliminarGasto(${g.id})">🗑️</button></td>
+    </tr>`).join("");
+}
+
+async function eliminarGasto(id) {
+  if (!confirm("¿Eliminar este gasto?")) return;
+  await fetch(`/admin/gasto/${id}`, { method: "DELETE" });
+  cargarGastos();
+  cargarCaja();
+}
+
+// ── Caja ──
+async function cargarCaja() {
+  const res = await fetch("/admin/caja");
+  const data = await res.json();
+  const saldoColor = data.saldo_real >= 0 ? "#2e7d32" : "#c0392b";
+  const saldoIcon = data.saldo_real >= 0 ? "✅" : "⚠️";
+
+  document.getElementById("stats-caja").innerHTML = `
+    <div class="stat">
+      <div class="valor" style="color:#2e7d32">$${data.total_ingresos.toLocaleString()}</div>
+      <div class="label">💰 Ingresos cobrados</div>
+    </div>
+    <div class="stat">
+      <div class="valor" style="color:#c0392b">$${data.total_gastos.toLocaleString()}</div>
+      <div class="label">💸 Total gastos</div>
+    </div>
+    <div class="stat">
+      <div class="valor" style="color:${saldoColor}">${saldoIcon} $${data.saldo_real.toLocaleString()}</div>
+      <div class="label">🏦 Saldo real</div>
+    </div>
+    <div class="stat">
+      <div class="valor" style="color:#e67e22">$${data.total_pendiente.toLocaleString()}</div>
+      <div class="label">⏳ Pendiente por cobrar</div>
+    </div>`;
+
+  const categoriaLabels = {
+    compra_carne: "🥩 Compra carne",
+    servicios: "💡 Servicios",
+    transporte: "🚗 Transporte",
+    empaque: "📦 Empaque",
+    nomina: "👷 Nómina",
+    mantenimiento: "🔧 Mantenimiento",
+    general: "📋 General"
+  };
+
+  const tbody = document.getElementById("tabla-categorias");
+  if (!Object.keys(data.categorias).length) {
+    tbody.innerHTML = "<tr><td colspan='2' style='color:#999;text-align:center'>Sin gastos registrados</td></tr>";
+  } else {
+    tbody.innerHTML = Object.entries(data.categorias)
+      .sort((a,b) => b[1]-a[1])
+      .map(([cat, total]) => `
+        <tr>
+          <td>${categoriaLabels[cat] || cat}</td>
+          <td style="color:#c0392b;font-weight:bold">$${total.toLocaleString()}</td>
+        </tr>`).join("");
+  }
+
+  document.getElementById("resumen-caja").innerHTML = `
+    <table>
+      <tr><td>💰 Ventas cobradas</td><td style="color:#2e7d32;font-weight:bold;text-align:right">+ $${data.total_ingresos.toLocaleString()}</td></tr>
+      <tr><td>💸 Gastos totales</td><td style="color:#c0392b;font-weight:bold;text-align:right">- $${data.total_gastos.toLocaleString()}</td></tr>
+      <tr style="border-top:2px solid #f0f0f0">
+        <td><strong>🏦 Saldo real</strong></td>
+        <td style="color:${saldoColor};font-weight:bold;font-size:16px;text-align:right">$${data.saldo_real.toLocaleString()}</td>
+      </tr>
+      <tr><td colspan="2" style="height:12px"></td></tr>
+      <tr><td>⏳ Por cobrar (deudas)</td><td style="color:#e67e22;font-weight:bold;text-align:right">$${data.total_pendiente.toLocaleString()}</td></tr>
+      <tr>
+        <td><strong>💎 Si cobran todo</strong></td>
+        <td style="color:#1a5276;font-weight:bold;text-align:right">$${(data.saldo_real + data.total_pendiente).toLocaleString()}</td>
+      </tr>
+    </table>`;
 }
 
 cargarAdmin();

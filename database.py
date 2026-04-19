@@ -37,6 +37,7 @@ class Venta(Base):
     id = Column(Integer, primary_key=True, index=True)
     fecha_venta = Column(DateTime, default=datetime.now)
     fecha_pago = Column(DateTime, nullable=True)
+    fecha_vencimiento = Column(DateTime, nullable=True)
     producto = Column(String)
     kilos = Column(Float)
     precio_kilo = Column(Float)
@@ -45,7 +46,16 @@ class Venta(Base):
     cliente_nombre = Column(String, default="Cliente general")
     pagado = Column(String, default="pagado")
     notas = Column(String, default="")
-    fecha_vencimiento = Column(DateTime, nullable=True)
+
+# Tabla de gastos
+class Gasto(Base):
+    __tablename__ = "gastos"
+    id = Column(Integer, primary_key=True, index=True)
+    fecha = Column(DateTime, default=datetime.now)
+    descripcion = Column(String)
+    categoria = Column(String, default="general")
+    monto = Column(Float)
+    notas = Column(String, default="")
 
 def init_db():
     Base.metadata.create_all(bind=engine)

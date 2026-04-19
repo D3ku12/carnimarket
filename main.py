@@ -259,3 +259,86 @@ def eliminar_cliente(cliente_id: int, db: Session = Depends(get_db)):
     db.delete(cliente)
     db.commit()
     return {"mensaje": "Cliente eliminado"}
+# ── Gastos ──
+class GastoRequest(BaseModel):
+    descripcion: str
+    categoria: str = "general"
+    monto: float
+    fecha: Optional[str] = None
+    notas: str = ""
+
+@app.post("/admin/gasto")
+def agregar_gasto(data: GastoRequest, db: Session = Depends(get_db)):
+    from database import Gasto
+    fecha = datetime.now()
+    if data.fecha:
+        try:
+            fecha = datetime.strptime(data.fecha, "%Y-%m-%d")
+        except:
+            pass
+    nuevo = Gasto(
+        descripcion=data.descripcion,
+        categoria=data.categoria,
+        monto=data.monto,
+        fecha=fecha,
+        notas=data.notas
+    )
+    db.add(nuevo)
+    db.commit()
+    return {"mensaje": f"Gasto registrado: ${data.monto:,.0f}"}
+
+@app.get("/admin/gastos")
+def ver_gastos(db: Session = Depends(get_db)):
+    from database import Gasto
+    gastos = db.query(Gasto).order_by(Gasto.fecha.desc()).all()
+    return [
+        {
+            "id": g.id,
+            "fecha": g.fecha.strftime("%Y-%m-%d"),
+            "descripcion": g.descripcion,
+            "categoria": g.categoria,
+            "monto": g.monto,
+            "notas": g.notas
+        } for g in gastos
+    ]
+
+@app.delete("/admin/gasto/{gasto_id}")
+def eliminar_gasto(gasto_id: int, db: Session = Depends(get_db)):
+    from database import Gasto
+    gasto = db.query(Gasto).filter(Gasto.id == gasto_id).first()
+    if not gasto:
+        return {"error": "Gasto no encontrado"}
+    db.delete(gasto)
+    db.commit()
+    return {"mensaje": "Gasto eliminado"}
+
+@app.get("/admin/caja")
+def ver_caja(db: Session = Depends(get_db)):
+    from database import Gasto
+    # Solo ventas ya cobradas
+    ventas_cobradas = db.query(Venta).filter(Venta.pagado == "pagado").all()
+    total_ingresos = sum(v.subtotal for v in ventas_cobradas)
+
+    # Total pendiente por cobrar
+    ventas_pendientes = db.query(Venta).filter(Venta.pagado == "debe").all()
+    total_pendiente = sum(v.subtotal for v in ventas_pendientes)
+
+    # Total gastos
+    gastos = db.query(Gasto).all()
+    total_gastos = sum(g.monto for g in gastos)
+
+    # Saldo real
+    saldo_real = total_ingresos - total_gastos
+
+    # Gastos por categoria
+    categorias = {}
+    for g in gastos:
+        categorias[g.categoria] = categorias.get(g.categoria, 0) + g.monto
+
+    return {
+        "total_ingresos": total_ingresos,
+        "total_gastos": total_gastos,
+        "saldo_real": saldo_real,
+        "total_pendiente": total_pendiente,
+        "categorias": categorias
+    }
