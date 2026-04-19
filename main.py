@@ -55,11 +55,18 @@ def ver_inventario(db: Session = Depends(get_db)):
         } for p in productos
     }
 
+class ClienteRequest(BaseModel):
+    nombre: str
+    telefono: str = ""
+    direccion: str = ""
+
 class VentaRequest(BaseModel):
     producto: str
     kilos: float
-    cliente: str = "Cliente general"
+    cliente_nombre: str = "Cliente general"
+    cliente_id: int = None
     pagado: str = "pagado"
+    fecha_venta: str = None
     notas: str = ""
 
 @app.post("/vender")
@@ -73,13 +80,21 @@ def vender(venta: VentaRequest, db: Session = Depends(get_db)):
     producto.stock -= venta.kilos
     subtotal = venta.kilos * producto.precio_kilo
 
+    fecha = datetime.now()
+    if venta.fecha_venta:
+        try:
+            fecha = datetime.strptime(venta.fecha_venta, "%Y-%m-%d")
+        except:
+            pass
+
     nueva_venta = Venta(
         producto=venta.producto,
         kilos=venta.kilos,
         precio_kilo=producto.precio_kilo,
         subtotal=subtotal,
-        fecha=datetime.now(),
-        cliente=venta.cliente,
+        fecha_venta=fecha,
+        cliente_nombre=venta.cliente_nombre,
+        cliente_id=venta.cliente_id,
         pagado=venta.pagado,
         notas=venta.notas
     )
@@ -208,3 +223,58 @@ def ver_deudas(db: Session = Depends(get_db)):
         deudas[v.cliente] += v.subtotal
     total = sum(deudas.values())
     return {"deudas": deudas, "total_pendiente": total}
+# Listar clientes
+@app.get("/admin/clientes")
+def ver_clientes(db: Session = Depends(get_db)):
+    from database import Cliente
+    clientes = db.query(Cliente).order_by(Cliente.nombre).all()
+    return [
+        {
+            "id": c.id,
+            "nombre": c.nombre,
+            "telefono": c.telefono,
+            "direccion": c.direccion,
+            "fecha_registro": c.fecha_registro.strftime("%Y-%m-%d"),
+        } for c in clientes
+    ]
+
+# Agregar cliente
+@app.post("/admin/cliente")
+def agregar_cliente(data: ClienteRequest, db: Session = Depends(get_db)):
+    from database import Cliente
+    existe = db.query(Cliente).filter(Cliente.nombre == data.nombre).first()
+    if existe:
+        return {"error": "El cliente ya existe"}
+    nuevo = Cliente(nombre=data.nombre, telefono=data.telefono, direccion=data.direccion)
+    db.add(nuevo)
+    db.commit()
+    return {"mensaje": f"Cliente {data.nombre} agregado", "id": nuevo.id}
+
+# Eliminar cliente
+@app.delete("/admin/cliente/{cliente_id}")
+def eliminar_cliente(cliente_id: int, db: Session = Depends(get_db)):
+    from database import Cliente
+    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+    if not cliente:
+        return {"error": "Cliente no encontrado"}
+    db.delete(cliente)
+    db.commit()
+    return {"mensaje": "Cliente eliminado"}
+
+# Marcar fecha de pago
+class PagoUpdate(BaseModel):
+    pagado: str
+    fecha_pago: str = None
+
+@app.put("/admin/venta/{venta_id}/pago")
+def actualizar_pago(venta_id: int, data: PagoUpdate, db: Session = Depends(get_db)):
+    venta = db.query(Venta).filter(Venta.id == venta_id).first()
+    if not venta:
+        return {"error": "Venta no encontrada"}
+    venta.pagado = data.pagado
+    if data.pagado == "pagado":
+        venta.fecha_pago = datetime.now()
+    else:
+        venta.fecha_pago = None
+    db.commit()
+    return {"mensaje": "Estado de pago actualizado"}

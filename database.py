@@ -6,7 +6,6 @@ from datetime import datetime
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./carnimarket.db")
 
-# SQLAlchemy necesita este formato para PostgreSQL
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
@@ -14,7 +13,16 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
-# Tabla de productos/inventario
+# Tabla de clientes
+class Cliente(Base):
+    __tablename__ = "clientes"
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String, unique=True, index=True)
+    telefono = Column(String, default="")
+    direccion = Column(String, default="")
+    fecha_registro = Column(DateTime, default=datetime.now)
+
+# Tabla de productos
 class Producto(Base):
     __tablename__ = "productos"
     id = Column(Integer, primary_key=True, index=True)
@@ -27,20 +35,20 @@ class Producto(Base):
 class Venta(Base):
     __tablename__ = "ventas"
     id = Column(Integer, primary_key=True, index=True)
-    fecha = Column(DateTime, default=datetime.now)
+    fecha_venta = Column(DateTime, default=datetime.now)
+    fecha_pago = Column(DateTime, nullable=True)
     producto = Column(String)
     kilos = Column(Float)
     precio_kilo = Column(Float)
     subtotal = Column(Float)
-    cliente = Column(String, default="Cliente general")
-    pagado = Column(String, default="pagado")  # "pagado" o "debe"
+    cliente_id = Column(Integer, default=None)
+    cliente_nombre = Column(String, default="Cliente general")
+    pagado = Column(String, default="pagado")
     notas = Column(String, default="")
 
-# Crear tablas
 def init_db():
     Base.metadata.create_all(bind=engine)
 
-# Datos iniciales
 def seed_db():
     db = SessionLocal()
     if db.query(Producto).count() == 0:
