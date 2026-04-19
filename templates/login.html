@@ -73,7 +73,7 @@
     <button onclick="login()">Entrar</button>
   </div>
 
-  <script>
+<script>
     async function login() {
       const usuario = document.getElementById("usuario").value;
       const password = document.getElementById("password").value;
@@ -88,17 +88,15 @@
       const data = await res.json();
 
       if (data.token) {
-        localStorage.setItem("token", data.token);
         window.location.href = "/admin";
       } else {
         error.style.display = "block";
       }
     }
 
-    // Entrar con Enter
     document.addEventListener("keydown", e => {
       if (e.key === "Enter") login();
     });
-  </script>
+</script>
 </body>
 </html>
