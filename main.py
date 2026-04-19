@@ -58,6 +58,9 @@ def ver_inventario(db: Session = Depends(get_db)):
 class VentaRequest(BaseModel):
     producto: str
     kilos: float
+    cliente: str = "Cliente general"
+    pagado: str = "pagado"
+    notas: str = ""
 
 @app.post("/vender")
 def vender(venta: VentaRequest, db: Session = Depends(get_db)):
@@ -75,7 +78,10 @@ def vender(venta: VentaRequest, db: Session = Depends(get_db)):
         kilos=venta.kilos,
         precio_kilo=producto.precio_kilo,
         subtotal=subtotal,
-        fecha=datetime.now()
+        fecha=datetime.now(),
+        cliente=venta.cliente,
+        pagado=venta.pagado,
+        notas=venta.notas
     )
     db.add(nueva_venta)
     db.commit()
@@ -132,3 +138,73 @@ def agregar_producto(data: ProductoNuevo, db: Session = Depends(get_db)):
     db.add(nuevo)
     db.commit()
     return {"mensaje": f"Producto {data.nombre} agregado exitosamente"}
+
+# Eliminar producto
+@app.delete("/admin/producto/{nombre}")
+def eliminar_producto(nombre: str, db: Session = Depends(get_db)):
+    producto = db.query(Producto).filter(Producto.nombre == nombre).first()
+    if not producto:
+        return {"error": "Producto no encontrado"}
+    db.delete(producto)
+    db.commit()
+    return {"mensaje": f"{nombre} eliminado correctamente"}
+
+# Ver ventas con filtros
+@app.get("/admin/ventas")
+def ver_ventas(
+    fecha: str = None,
+    cliente: str = None,
+    pagado: str = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(Venta)
+    if fecha:
+        from datetime import datetime as dt
+        fecha_dt = dt.strptime(fecha, "%Y-%m-%d")
+        query = query.filter(
+            Venta.fecha >= fecha_dt,
+            Venta.fecha < fecha_dt.replace(hour=23, minute=59)
+        )
+    if cliente:
+        query = query.filter(Venta.cliente.ilike(f"%{cliente}%"))
+    if pagado:
+        query = query.filter(Venta.pagado == pagado)
+
+    ventas = query.order_by(Venta.fecha.desc()).all()
+    return [
+        {
+            "id": v.id,
+            "fecha": v.fecha.strftime("%Y-%m-%d %H:%M"),
+            "producto": v.producto,
+            "kilos": v.kilos,
+            "subtotal": v.subtotal,
+            "cliente": v.cliente,
+            "pagado": v.pagado,
+            "notas": v.notas
+        } for v in ventas
+    ]
+
+# Actualizar estado de pago
+class PagoUpdate(BaseModel):
+    pagado: str
+
+@app.put("/admin/venta/{venta_id}/pago")
+def actualizar_pago(venta_id: int, data: PagoUpdate, db: Session = Depends(get_db)):
+    venta = db.query(Venta).filter(Venta.id == venta_id).first()
+    if not venta:
+        return {"error": "Venta no encontrada"}
+    venta.pagado = data.pagado
+    db.commit()
+    return {"mensaje": "Estado de pago actualizado"}
+
+# Resumen de deudas
+@app.get("/admin/deudas")
+def ver_deudas(db: Session = Depends(get_db)):
+    ventas = db.query(Venta).filter(Venta.pagado == "debe").all()
+    deudas = {}
+    for v in ventas:
+        if v.cliente not in deudas:
+            deudas[v.cliente] = 0
+        deudas[v.cliente] += v.subtotal
+    total = sum(deudas.values())
+    return {"deudas": deudas, "total_pendiente": total}

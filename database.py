@@ -32,6 +32,9 @@ class Venta(Base):
     kilos = Column(Float)
     precio_kilo = Column(Float)
     subtotal = Column(Float)
+    cliente = Column(String, default="Cliente general")
+    pagado = Column(String, default="pagado")  # "pagado" o "debe"
+    notas = Column(String, default="")
 
 # Crear tablas
 def init_db():

@@ -13,104 +13,180 @@
       align-items: center; justify-content: space-between;
     }
     header h1 { font-size: 20px; }
-    header span { font-size: 12px; background: #c0392b; padding: 4px 10px; border-radius: 99px; }
-    .container { max-width: 700px; margin: 30px auto; padding: 0 16px; }
+    .nav { display: flex; gap: 8px; }
+    .nav button {
+      background: rgba(255,255,255,0.1); color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 6px 14px; border-radius: 6px;
+      cursor: pointer; font-size: 13px; width: auto; margin: 0;
+    }
+    .nav button.active { background: #c0392b; border-color: #c0392b; }
+    .container { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+    .tab { display: none; }
+    .tab.active { display: block; }
     .card {
       background: white; border-radius: 12px;
       padding: 20px; margin-bottom: 20px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     .card h2 { font-size: 16px; margin-bottom: 16px; color: #1a1a1a; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th { background: #f5f5f5; padding: 10px; text-align: left; }
-    td { padding: 10px; border-bottom: 1px solid #f0f0f0; }
-    .badge { padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: bold; }
+    td { padding: 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    .badge { padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: bold; }
     .ok { background: #e8f5e9; color: #2e7d32; }
     .bajo { background: #fff8e1; color: #f57f17; }
+    .pagado { background: #e8f5e9; color: #2e7d32; }
+    .debe { background: #fdecea; color: #c0392b; }
     input, select {
-      padding: 10px; border-radius: 8px;
-      border: 1px solid #ddd; font-size: 14px;
+      padding: 9px; border-radius: 8px;
+      border: 1px solid #ddd; font-size: 13px;
       width: 100%; margin-bottom: 10px;
     }
     .row { display: flex; gap: 10px; }
-    .row input { margin-bottom: 0; }
+    .row input, .row select { margin-bottom: 0; }
     button {
-      padding: 10px 20px; border: none; border-radius: 8px;
-      font-size: 14px; font-weight: bold; cursor: pointer;
+      padding: 10px 16px; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: bold; cursor: pointer;
       width: 100%; margin-top: 10px;
     }
     .btn-green { background: #2e7d32; color: white; }
     .btn-red { background: #c0392b; color: white; }
     .btn-blue { background: #1a5276; color: white; }
-    .mensaje { padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 10px; display: none; }
-    .exito { background: #e8f5e9; color: #2e7d32; }
-    .error { background: #fdecea; color: #c0392b; }
-    .edit-stock { 
-      display: flex; gap: 8px; align-items: center;
-    }
-    .edit-stock input { 
-      width: 80px; margin: 0; padding: 6px;
-      text-align: center;
-    }
     .btn-small {
-      padding: 6px 12px; font-size: 12px;
+      padding: 5px 10px; font-size: 11px;
       border: none; border-radius: 6px;
       cursor: pointer; font-weight: bold;
       width: auto; margin: 0;
     }
+    .mensaje { padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 10px; display: none; }
+    .exito { background: #e8f5e9; color: #2e7d32; }
+    .error { background: #fdecea; color: #c0392b; }
+    .edit-stock { display: flex; gap: 8px; align-items: center; }
+    .edit-stock input { width: 80px; margin: 0; padding: 6px; text-align: center; }
+    .filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .filtros input, .filtros select { margin: 0; flex: 1; min-width: 140px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .stat { background: white; border-radius: 12px; padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .stat .valor { font-size: 22px; font-weight: 800; color: #c0392b; }
+    .stat .label { font-size: 12px; color: #999; margin-top: 2px; }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>🥩 CarniMarket</h1>
-  <span>Panel Admin</span>
+  <h1>🥩 CarniMarket — Admin</h1>
+  <div class="nav">
+    <button class="active" onclick="showTab('inventario', this)">📦 Inventario</button>
+    <button onclick="showTab('ventas', this)">💰 Ventas</button>
+    <button onclick="showTab('deudas', this)">⚠️ Deudas</button>
+  </div>
 </header>
 
 <div class="container">
 
-  <!-- Inventario con edición -->
-  <div class="card">
-    <h2>📦 Inventario — Actualizar Stock</h2>
-    <div id="msg-stock" class="mensaje"></div>
-    <table>
-      <thead>
-        <tr>
-          <th>Producto</th>
-          <th>Stock actual</th>
-          <th>Estado</th>
-          <th>Actualizar</th>
-        </tr>
-      </thead>
-      <tbody id="tabla-admin"></tbody>
-    </table>
-  </div>
+  <!-- TAB INVENTARIO -->
+  <div id="tab-inventario" class="tab active">
 
-  <!-- Agregar producto -->
-  <div class="card">
-    <h2>➕ Agregar Producto Nuevo</h2>
-    <div id="msg-nuevo" class="mensaje"></div>
-    <input type="text" id="nuevo-nombre" placeholder="Nombre del corte (ej: Chuleta)">
-    <div class="row">
-      <input type="number" id="nuevo-stock" placeholder="Stock inicial (kg)" step="0.1">
-      <input type="number" id="nuevo-minimo" placeholder="Stock mínimo (kg)" step="0.1">
+    <div class="card">
+      <h2>📦 Inventario — Actualizar Stock</h2>
+      <div id="msg-stock" class="mensaje"></div>
+      <table>
+        <thead>
+          <tr><th>Producto</th><th>Stock</th><th>Estado</th><th>Actualizar</th><th>Eliminar</th></tr>
+        </thead>
+        <tbody id="tabla-admin"></tbody>
+      </table>
     </div>
-    <input type="number" id="nuevo-precio" placeholder="Precio por kilo ($)">
-    <button class="btn-green" onclick="agregarProducto()">➕ Agregar Producto</button>
+
+    <div class="card">
+      <h2>➕ Agregar Producto</h2>
+      <div id="msg-nuevo" class="mensaje"></div>
+      <input type="text" id="nuevo-nombre" placeholder="Nombre del corte (ej: Chuleta)">
+      <div class="row">
+        <input type="number" id="nuevo-stock" placeholder="Stock inicial (kg)" step="0.1">
+        <input type="number" id="nuevo-minimo" placeholder="Stock mínimo (kg)" step="0.1">
+      </div>
+      <input type="number" id="nuevo-precio" placeholder="Precio por kilo ($)">
+      <button class="btn-green" onclick="agregarProducto()">➕ Agregar Producto</button>
+    </div>
+
   </div>
 
-  <!-- Reporte rápido -->
-  <div class="card">
-    <h2>📊 Reporte de Ventas</h2>
-    <div id="reporte-contenido">Cargando...</div>
+  <!-- TAB VENTAS -->
+  <div id="tab-ventas" class="tab">
+
+    <div class="card">
+      <h2>💰 Registrar Venta</h2>
+      <div id="msg-venta" class="mensaje"></div>
+      <div class="row">
+        <select id="venta-producto"></select>
+        <input type="number" id="venta-kilos" placeholder="Kilos" step="0.1" min="0.1">
+      </div>
+      <div class="row" style="margin-top:10px">
+        <input type="text" id="venta-cliente" placeholder="Nombre del cliente">
+        <select id="venta-pagado">
+          <option value="pagado">✅ Pagado</option>
+          <option value="debe">⚠️ Debe</option>
+        </select>
+      </div>
+      <input type="text" id="venta-notas" placeholder="Notas (opcional)" style="margin-top:10px">
+      <button class="btn-red" onclick="registrarVenta()">💰 Registrar Venta</button>
+    </div>
+
+    <div class="card">
+      <h2>📋 Historial de Ventas</h2>
+      <div class="filtros">
+        <input type="date" id="filtro-fecha" placeholder="Fecha">
+        <input type="text" id="filtro-cliente" placeholder="Buscar cliente...">
+        <select id="filtro-pagado">
+          <option value="">Todos</option>
+          <option value="pagado">✅ Pagados</option>
+          <option value="debe">⚠️ Deben</option>
+        </select>
+        <button style="width:auto;margin:0;padding:8px 16px;background:#1a1a1a;color:white;border-radius:8px" onclick="cargarVentas()">🔍 Filtrar</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Kilos</th><th>Total</th><th>Estado</th><th>Acción</th></tr>
+        </thead>
+        <tbody id="tabla-ventas"><tr><td colspan="7">Cargando...</td></tr></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- TAB DEUDAS -->
+  <div id="tab-deudas" class="tab">
+    <div class="stat-grid" id="stats-deudas"></div>
+    <div class="card">
+      <h2>⚠️ Clientes que Deben</h2>
+      <table>
+        <thead>
+          <tr><th>Cliente</th><th>Total pendiente</th></tr>
+        </thead>
+        <tbody id="tabla-deudas"><tr><td colspan="2">Cargando...</td></tr></tbody>
+      </table>
+    </div>
   </div>
 
 </div>
 
 <script>
+function showTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'inventario') cargarAdmin();
+  if (name === 'ventas') { cargarVentas(); cargarProductosSelect(); }
+  if (name === 'deudas') cargarDeudas();
+}
+
 async function cargarAdmin() {
   const res = await fetch("/inventario");
   const data = await res.json();
+  const select = document.getElementById("venta-producto");
   const tbody = document.getElementById("tabla-admin");
   tbody.innerHTML = "";
 
@@ -131,29 +207,53 @@ async function cargarAdmin() {
             <button class="btn-small btn-blue" onclick="actualizarStock('${nombre}')">💾</button>
           </div>
         </td>
+        <td>
+          <button class="btn-small btn-red" onclick="eliminarProducto('${nombre}')">🗑️</button>
+        </td>
       </tr>`;
+  }
+}
+
+async function cargarProductosSelect() {
+  const res = await fetch("/inventario");
+  const data = await res.json();
+  const select = document.getElementById("venta-producto");
+  select.innerHTML = '<option value="">Selecciona producto...</option>';
+  for (const [nombre, info] of Object.entries(data)) {
+    if (info.stock > 0) {
+      select.innerHTML += `<option value="${nombre}">${nombre} — ${info.stock}kg</option>`;
+    }
   }
 }
 
 async function actualizarStock(nombre) {
   const stock = parseFloat(document.getElementById(`stock-${nombre}`).value);
   const msg = document.getElementById("msg-stock");
-
   const res = await fetch("/admin/stock", {
     method: "PUT",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({nombre, stock})
   });
-
   const data = await res.json();
   msg.style.display = "block";
-
   if (data.error) {
-    msg.className = "mensaje error";
-    msg.textContent = "❌ " + data.error;
+    msg.className = "mensaje error"; msg.textContent = "❌ " + data.error;
   } else {
-    msg.className = "mensaje exito";
-    msg.textContent = "✅ " + data.mensaje;
+    msg.className = "mensaje exito"; msg.textContent = "✅ " + data.mensaje;
+    cargarAdmin();
+  }
+}
+
+async function eliminarProducto(nombre) {
+  if (!confirm(`¿Seguro que quieres eliminar ${nombre}?`)) return;
+  const res = await fetch(`/admin/producto/${nombre}`, { method: "DELETE" });
+  const data = await res.json();
+  const msg = document.getElementById("msg-stock");
+  msg.style.display = "block";
+  if (data.error) {
+    msg.className = "mensaje error"; msg.textContent = "❌ " + data.error;
+  } else {
+    msg.className = "mensaje exito"; msg.textContent = "✅ " + data.mensaje;
     cargarAdmin();
   }
 }
@@ -164,29 +264,20 @@ async function agregarProducto() {
   const minimo = parseFloat(document.getElementById("nuevo-minimo").value);
   const precio_kilo = parseFloat(document.getElementById("nuevo-precio").value);
   const msg = document.getElementById("msg-nuevo");
-
   if (!nombre || !stock || !minimo || !precio_kilo) {
-    msg.className = "mensaje error";
-    msg.style.display = "block";
-    msg.textContent = "❌ Completa todos los campos.";
-    return;
+    msg.className = "mensaje error"; msg.style.display = "block";
+    msg.textContent = "❌ Completa todos los campos."; return;
   }
-
   const res = await fetch("/admin/producto", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
+    method: "POST", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({nombre, stock, minimo, precio_kilo})
   });
-
   const data = await res.json();
   msg.style.display = "block";
-
   if (data.error) {
-    msg.className = "mensaje error";
-    msg.textContent = "❌ " + data.error;
+    msg.className = "mensaje error"; msg.textContent = "❌ " + data.error;
   } else {
-    msg.className = "mensaje exito";
-    msg.textContent = "✅ " + data.mensaje;
+    msg.className = "mensaje exito"; msg.textContent = "✅ " + data.mensaje;
     document.getElementById("nuevo-nombre").value = "";
     document.getElementById("nuevo-stock").value = "";
     document.getElementById("nuevo-minimo").value = "";
@@ -195,26 +286,116 @@ async function agregarProducto() {
   }
 }
 
-async function cargarReporte() {
-  const res = await fetch("/reportes");
-  const data = await res.json();
-  const div = document.getElementById("reporte-contenido");
+async function registrarVenta() {
+  const producto = document.getElementById("venta-producto").value;
+  const kilos = parseFloat(document.getElementById("venta-kilos").value);
+  const cliente = document.getElementById("venta-cliente").value || "Cliente general";
+  const pagado = document.getElementById("venta-pagado").value;
+  const notas = document.getElementById("venta-notas").value;
+  const msg = document.getElementById("msg-venta");
 
-  if (Object.keys(data.resumen).length === 0) {
-    div.innerHTML = "<p style='color:#999;font-size:13px;'>No hay ventas registradas aún.</p>";
+  if (!producto || !kilos) {
+    msg.className = "mensaje error"; msg.style.display = "block";
+    msg.textContent = "❌ Selecciona producto y kilos."; return;
+  }
+  const res = await fetch("/vender", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({producto, kilos, cliente, pagado, notas})
+  });
+  const data = await res.json();
+  msg.style.display = "block";
+  if (data.error) {
+    msg.className = "mensaje error"; msg.textContent = "❌ " + data.error;
+  } else {
+    msg.className = "mensaje exito";
+    msg.textContent = `✅ Venta: ${data.producto} ${data.kilos}kg = $${data.subtotal.toLocaleString()}`;
+    document.getElementById("venta-kilos").value = "";
+    document.getElementById("venta-cliente").value = "";
+    document.getElementById("venta-notas").value = "";
+    cargarVentas(); cargarProductosSelect();
+  }
+}
+
+async function cargarVentas() {
+  const fecha = document.getElementById("filtro-fecha")?.value || "";
+  const cliente = document.getElementById("filtro-cliente")?.value || "";
+  const pagado = document.getElementById("filtro-pagado")?.value || "";
+  let url = "/admin/ventas?";
+  if (fecha) url += `fecha=${fecha}&`;
+  if (cliente) url += `cliente=${cliente}&`;
+  if (pagado) url += `pagado=${pagado}&`;
+
+  const res = await fetch(url);
+  const ventas = await res.json();
+  const tbody = document.getElementById("tabla-ventas");
+  if (!ventas.length) {
+    tbody.innerHTML = "<tr><td colspan='7' style='color:#999;text-align:center'>No hay ventas registradas</td></tr>";
     return;
   }
+  tbody.innerHTML = ventas.map(v => `
+    <tr>
+      <td>${v.fecha}</td>
+      <td>${v.cliente}</td>
+      <td>${v.producto}</td>
+      <td>${v.kilos}kg</td>
+      <td>$${v.subtotal.toLocaleString()}</td>
+      <td><span class="badge ${v.pagado}">${v.pagado === 'pagado' ? '✅ Pagado' : '⚠️ Debe'}</span></td>
+      <td>
+        ${v.pagado === 'debe'
+          ? `<button class="btn-small btn-green" onclick="marcarPagado(${v.id})">✅ Marcar pagado</button>`
+          : `<button class="btn-small" style="background:#eee;color:#666" onclick="marcarDebe(${v.id})">↩️ Marcar debe</button>`
+        }
+      </td>
+    </tr>`).join("");
+}
 
-  let html = "<table><thead><tr><th>Producto</th><th>Total vendido</th></tr></thead><tbody>";
-  for (const [producto, total] of Object.entries(data.resumen)) {
-    html += `<tr><td>${producto}</td><td>$${total.toLocaleString()}</td></tr>`;
+async function marcarPagado(id) {
+  await fetch(`/admin/venta/${id}/pago`, {
+    method: "PUT", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({pagado: "pagado"})
+  });
+  cargarVentas(); cargarDeudas();
+}
+
+async function marcarDebe(id) {
+  await fetch(`/admin/venta/${id}/pago`, {
+    method: "PUT", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({pagado: "debe"})
+  });
+  cargarVentas(); cargarDeudas();
+}
+
+async function cargarDeudas() {
+  const res = await fetch("/admin/deudas");
+  const data = await res.json();
+  const stats = document.getElementById("stats-deudas");
+  const tbody = document.getElementById("tabla-deudas");
+
+  const numDeudores = Object.keys(data.deudas).length;
+  stats.innerHTML = `
+    <div class="stat">
+      <div class="valor">$${data.total_pendiente.toLocaleString()}</div>
+      <div class="label">Total pendiente de cobro</div>
+    </div>
+    <div class="stat">
+      <div class="valor">${numDeudores}</div>
+      <div class="label">Clientes que deben</div>
+    </div>`;
+
+  if (!numDeudores) {
+    tbody.innerHTML = "<tr><td colspan='2' style='color:#2e7d32;text-align:center'>✅ No hay deudas pendientes</td></tr>";
+    return;
   }
-  html += `</tbody></table><p style='margin-top:12px;font-weight:bold;'>TOTAL: $${data.total.toLocaleString()}</p>`;
-  div.innerHTML = html;
+  tbody.innerHTML = Object.entries(data.deudas)
+    .sort((a, b) => b[1] - a[1])
+    .map(([cliente, total]) => `
+      <tr>
+        <td><strong>${cliente}</strong></td>
+        <td style="color:#c0392b;font-weight:bold">$${total.toLocaleString()}</td>
+      </tr>`).join("");
 }
 
 cargarAdmin();
-cargarReporte();
 </script>
 </body>
 </html>
