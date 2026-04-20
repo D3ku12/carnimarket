@@ -431,7 +431,11 @@ function showTab(name, btn) {
   document.getElementById('tab-' + name).classList.add('active');
   btn.classList.add('active');
   if (name === 'inventario') cargarAdmin();
-  if (name === 'ventas') { cargarVentas(); cargarProductosSelect(); cargarClientesSelect(); }
+  if (name === 'ventas') { 
+    cargarVentas(); 
+    cargarProductosSelect(); 
+    cargarClientesSelect(); 
+  }
   if (name === 'clientes') cargarClientes();
   if (name === 'deudas') cargarDeudas();
   if (name === 'gastos') cargarGastos();
@@ -960,6 +964,8 @@ async function cargarHistorial() {
 }
 
 cargarAdmin();
+cargarProductosSelect();
+cargarClientesSelect();
 </script>
 </body>
 </html>
