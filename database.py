@@ -3,7 +3,6 @@ from sqlalchemy import create_engine, Column, String, Float, Integer, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
-from sqlalchemy import text
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./carnimarket.db")
 
@@ -58,6 +57,16 @@ class Gasto(Base):
     monto = Column(Float)
     notas = Column(String, default="")
 
+# Tabla de historial
+class Historial(Base):
+    __tablename__ = "historial"
+    id = Column(Integer, primary_key=True, index=True)
+    fecha = Column(DateTime, default=datetime.now)
+    producto = Column(String)
+    tipo = Column(String)
+    cantidad = Column(Float)
+    motivo = Column(String, default="")
+
 def init_db():
     Base.metadata.create_all(bind=engine)
 
@@ -81,22 +90,3 @@ def get_db():
         yield db
     finally:
         db.close()
-        @app.get("/admin/migrar-db")
-def migrar_db(db: Session = Depends(get_db)):
-    try:
-        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_venta TIMESTAMP"))
-        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_pago TIMESTAMP"))
-        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_vencimiento TIMESTAMP"))
-        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente_id INTEGER"))
-        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente_nombre VARCHAR"))
-        db.execute(text("UPDATE ventas SET fecha_venta = fecha WHERE fecha_venta IS NULL"))
-        db.execute(text("UPDATE ventas SET cliente_nombre = cliente WHERE cliente_nombre IS NULL"))
-        db.execute(text("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS telefono VARCHAR"))
-        db.execute(text("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS direccion VARCHAR"))
-        db.execute(text("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS fecha_registro TIMESTAMP"))
-        db.execute(text("CREATE TABLE IF NOT EXISTS historial (id SERIAL PRIMARY KEY, fecha TIMESTAMP, producto VARCHAR, tipo VARCHAR, cantidad FLOAT, motivo VARCHAR)"))
-        db.execute(text("CREATE TABLE IF NOT EXISTS gastos (id SERIAL PRIMARY KEY, fecha TIMESTAMP, descripcion VARCHAR, categoria VARCHAR, monto FLOAT, notas VARCHAR)"))
-        db.commit()
-        return {"mensaje": "Migración completada exitosamente"}
-    except Exception as e:
-        return {"error": str(e)}
