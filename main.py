@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, Cookie, Response, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from database import init_db, seed_db, get_db, Producto, Venta, Cliente
 from datetime import datetime
 from auth import verificar_password, crear_token, verificar_token, ADMIN_USER, ADMIN_PASSWORD
@@ -42,6 +43,24 @@ def admin(token: str = Cookie(default=None)):
         return RedirectResponse(url="/login", status_code=302)
     with open("templates/admin.html", "r", encoding="utf-8") as f:
         return f.read()
+
+@app.get("/admin/migrar-db")
+def migrar_db(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_venta TIMESTAMP"))
+        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_pago TIMESTAMP"))
+        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_vencimiento TIMESTAMP"))
+        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente_id INTEGER"))
+        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente_nombre VARCHAR"))
+        db.execute(text("UPDATE ventas SET fecha_venta = fecha WHERE fecha_venta IS NULL"))
+        db.execute(text("UPDATE ventas SET cliente_nombre = 'Cliente general' WHERE cliente_nombre IS NULL"))
+        db.execute(text("CREATE TABLE IF NOT EXISTS historial (id SERIAL PRIMARY KEY, fecha TIMESTAMP, producto VARCHAR, tipo VARCHAR, cantidad FLOAT, motivo VARCHAR)"))
+        db.execute(text("CREATE TABLE IF NOT EXISTS gastos (id SERIAL PRIMARY KEY, fecha TIMESTAMP, descripcion VARCHAR, categoria VARCHAR, monto FLOAT, notas VARCHAR)"))
+        db.commit()
+        return {"mensaje": "Migración completada exitosamente"}
+    except Exception as e:
+        db.rollback()
+        return {"error": str(e)}
 
 @app.get("/inventario")
 def ver_inventario(db: Session = Depends(get_db)):
@@ -109,7 +128,6 @@ def vender(venta: VentaRequest, db: Session = Depends(get_db)):
     db.add(nueva_venta)
     db.commit()
 
-    # Registrar en historial
     from database import Historial
     historial = Historial(
         producto=venta.producto,
