@@ -47,24 +47,71 @@ def admin(token: str = Cookie(default=None)):
 @app.get("/admin/migrar-db")
 def migrar_db(db: Session = Depends(get_db)):
     try:
-        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_venta TIMESTAMP"))
-        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_pago TIMESTAMP"))
-        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_vencimiento TIMESTAMP"))
-        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente_id INTEGER"))
-        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente_nombre VARCHAR"))
-        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS pagado VARCHAR DEFAULT 'pagado'"))
-        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS notas VARCHAR DEFAULT ''"))
-        db.execute(text("ALTER TABLE ventas ADD COLUMN IF NOT EXISTS precio_kilo FLOAT DEFAULT 0"))
-        db.execute(text("UPDATE ventas SET fecha_venta = fecha WHERE fecha_venta IS NULL"))
-        db.execute(text("UPDATE ventas SET cliente_nombre = 'Cliente general' WHERE cliente_nombre IS NULL"))
-        db.execute(text("UPDATE ventas SET pagado = 'pagado' WHERE pagado IS NULL"))
+        # Renombrar tabla vieja
+        db.execute(text("ALTER TABLE ventas RENAME TO ventas_backup"))
+        
+        # Crear tabla nueva con estructura correcta
+        db.execute(text("""
+            CREATE TABLE ventas (
+                id SERIAL PRIMARY KEY,
+                fecha_venta TIMESTAMP,
+                fecha_pago TIMESTAMP,
+                fecha_vencimiento TIMESTAMP,
+                producto VARCHAR,
+                kilos FLOAT,
+                precio_kilo FLOAT DEFAULT 0,
+                subtotal FLOAT,
+                cliente_id INTEGER,
+                cliente_nombre VARCHAR DEFAULT 'Cliente general',
+                pagado VARCHAR DEFAULT 'pagado',
+                notas VARCHAR DEFAULT ''
+            )
+        """))
+        
+        # Migrar datos de la tabla vieja
+        db.execute(text("""
+            INSERT INTO ventas (fecha_venta, producto, kilos, precio_kilo, subtotal, cliente_nombre, pagado, notas)
+            SELECT 
+                COALESCE(fecha, NOW()),
+                producto,
+                kilos,
+                COALESCE(precio_kilo, 0),
+                subtotal,
+                COALESCE(cliente, 'Cliente general'),
+                COALESCE(pagado, 'pagado'),
+                COALESCE(notas, '')
+            FROM ventas_backup
+        """))
+
+        # Crear tablas faltantes
+        db.execute(text("""
+            CREATE TABLE IF NOT EXISTS historial (
+                id SERIAL PRIMARY KEY,
+                fecha TIMESTAMP,
+                producto VARCHAR,
+                tipo VARCHAR,
+                cantidad FLOAT,
+                motivo VARCHAR DEFAULT ''
+            )
+        """))
+        db.execute(text("""
+            CREATE TABLE IF NOT EXISTS gastos (
+                id SERIAL PRIMARY KEY,
+                fecha TIMESTAMP,
+                descripcion VARCHAR,
+                categoria VARCHAR DEFAULT 'general',
+                monto FLOAT,
+                notas VARCHAR DEFAULT ''
+            )
+        """))
+
+        # Agregar columnas faltantes en clientes
         db.execute(text("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS telefono VARCHAR DEFAULT ''"))
         db.execute(text("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS direccion VARCHAR DEFAULT ''"))
         db.execute(text("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS fecha_registro TIMESTAMP DEFAULT NOW()"))
-        db.execute(text("CREATE TABLE IF NOT EXISTS historial (id SERIAL PRIMARY KEY, fecha TIMESTAMP, producto VARCHAR, tipo VARCHAR, cantidad FLOAT, motivo VARCHAR)"))
-        db.execute(text("CREATE TABLE IF NOT EXISTS gastos (id SERIAL PRIMARY KEY, fecha TIMESTAMP, descripcion VARCHAR, categoria VARCHAR, monto FLOAT, notas VARCHAR)"))
+
         db.commit()
-        return {"mensaje": "Migración completada exitosamente"}
+        return {"mensaje": "Migración completada exitosamente ✅"}
     except Exception as e:
         db.rollback()
         return {"error": str(e)}
