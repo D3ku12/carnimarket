@@ -475,3 +475,75 @@ def ver_historial(db: Session = Depends(get_db)):
             "motivo": m.motivo
         } for m in movimientos
     ]
+@app.get("/admin/dashboard")
+def ver_dashboard(db: Session = Depends(get_db)):
+    from database import Gasto, Historial
+    from sqlalchemy import func
+
+    # Stats generales
+    ventas_hoy = db.query(Venta).filter(
+        Venta.fecha_venta >= datetime.now().replace(hour=0, minute=0, second=0)
+    ).all()
+    total_hoy = sum(v.subtotal for v in ventas_hoy)
+
+    ventas_mes = db.query(Venta).filter(
+        Venta.fecha_venta >= datetime.now().replace(day=1, hour=0, minute=0, second=0)
+    ).all()
+    total_mes = sum(v.subtotal for v in ventas_mes)
+
+    ventas_cobradas = db.query(Venta).filter(Venta.pagado == "pagado").all()
+    total_ingresos = sum(v.subtotal for v in ventas_cobradas)
+
+    gastos = db.query(Gasto).all()
+    total_gastos = sum(g.monto for g in gastos)
+
+    # Productos mas vendidos
+    todos_ventas = db.query(Venta).all()
+    productos_ventas = {}
+    for v in todos_ventas:
+        productos_ventas[v.producto] = productos_ventas.get(v.producto, 0) + v.kilos
+
+    # Ventas ultimos 7 dias
+    from datetime import timedelta
+    ventas_7dias = {}
+    for i in range(6, -1, -1):
+        dia = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        ventas_7dias[dia] = 0
+    for v in todos_ventas:
+        if v.fecha_venta:
+            dia = v.fecha_venta.strftime("%Y-%m-%d")
+            if dia in ventas_7dias:
+                ventas_7dias[dia] += v.subtotal
+
+    # Deudas vencidas
+    hoy = datetime.now().date()
+    deudas_vencidas = db.query(Venta).filter(
+        Venta.pagado == "debe",
+        Venta.fecha_vencimiento <= datetime.now()
+    ).all()
+
+    # Stock bajo
+    productos_bajo = db.query(Producto).all()
+    stock_bajo = [
+        {"nombre": p.nombre, "stock": p.stock, "minimo": p.minimo}
+        for p in productos_bajo if p.stock <= p.minimo
+    ]
+
+    return {
+        "total_hoy": total_hoy,
+        "ventas_hoy": len(ventas_hoy),
+        "total_mes": total_mes,
+        "ventas_mes": len(ventas_mes),
+        "saldo_real": total_ingresos - total_gastos,
+        "total_pendiente": sum(v.subtotal for v in db.query(Venta).filter(Venta.pagado == "debe").all()),
+        "productos_ventas": dict(sorted(productos_ventas.items(), key=lambda x: x[1], reverse=True)[:5]),
+        "ventas_7dias": ventas_7dias,
+        "deudas_vencidas": [
+            {
+                "cliente": v.cliente_nombre,
+                "subtotal": v.subtotal,
+                "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else "—"
+            } for v in deudas_vencidas
+        ],
+        "stock_bajo": stock_bajo
+    }
