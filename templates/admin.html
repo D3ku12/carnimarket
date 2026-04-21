@@ -80,33 +80,26 @@
     .vencido { color: #c0392b; font-weight: bold; }
     .dos-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     @media (max-width: 600px) { .dos-col { grid-template-columns: 1fr; } }
-
-    /* Modal */
     .modal-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.5);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 1000; display: none;
+      display: none; align-items: center; justify-content: center;
+      z-index: 1000;
     }
     .modal-overlay.open { display: flex; }
     .modal {
       background: white; border-radius: 16px;
       padding: 24px; width: 100%; max-width: 480px;
-      max-height: 90vh; overflow-y: auto;
-      margin: 16px;
+      max-height: 90vh; overflow-y: auto; margin: 16px;
     }
     .modal h3 { font-size: 16px; margin-bottom: 16px; color: #1a1a1a; }
     .modal-btns { display: flex; gap: 10px; margin-top: 10px; }
     .modal-btns button { flex: 1; }
-
-    /* Historial badges */
     .entrada { background: #e8f5e9; color: #2e7d32; }
     .salida { background: #fdecea; color: #c0392b; }
   </style>
 </head>
 <body>
-
-<!-- MODALES -->
 
 <!-- Modal editar producto -->
 <div class="modal-overlay" id="modal-producto">
@@ -197,7 +190,8 @@
 <header>
   <h1>🥩 CarniMarket — Admin</h1>
   <div class="nav">
-    <button class="active" onclick="showTab('inventario', this)">📦 Inventario</button>
+    <button class="active" onclick="showTab('dashboard', this)">🏠 Dashboard</button>
+    <button onclick="showTab('inventario', this)">📦 Inventario</button>
     <button onclick="showTab('ventas', this)">💰 Ventas</button>
     <button onclick="showTab('clientes', this)">👤 Clientes</button>
     <button onclick="showTab('deudas', this)">⚠️ Deudas</button>
@@ -209,8 +203,33 @@
 
 <div class="container">
 
+  <!-- TAB DASHBOARD -->
+  <div id="tab-dashboard" class="tab active">
+    <div class="stat-grid" id="stats-dashboard"></div>
+    <div class="dos-col">
+      <div class="card">
+        <h2>🥩 Productos más vendidos</h2>
+        <canvas id="chart-productos" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h2>📅 Ventas últimos 7 días</h2>
+        <canvas id="chart-ventas" height="200"></canvas>
+      </div>
+    </div>
+    <div class="dos-col">
+      <div class="card">
+        <h2>⚠️ Alertas de stock bajo</h2>
+        <div id="alertas-stock"></div>
+      </div>
+      <div class="card">
+        <h2>🔴 Deudas vencidas</h2>
+        <div id="alertas-deudas"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- TAB INVENTARIO -->
-  <div id="tab-inventario" class="tab active">
+  <div id="tab-inventario" class="tab">
     <div class="card">
       <h2>📦 Inventario — Actualizar Stock</h2>
       <div id="msg-stock" class="mensaje"></div>
@@ -404,7 +423,7 @@
   <!-- TAB HISTORIAL -->
   <div id="tab-historial" class="tab">
     <div class="card">
-      <h2>📋 Historial de Movimientos de Inventario</h2>
+      <h2>📋 Historial de Movimientos</h2>
       <div class="filtros">
         <input type="text" id="filtro-historial-producto" placeholder="Buscar producto...">
         <select id="filtro-historial-tipo">
@@ -423,19 +442,20 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+let chartProductos = null;
+let chartVentas = null;
+
 // ── Navegación ──
 function showTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   btn.classList.add('active');
+  if (name === 'dashboard') cargarDashboard();
   if (name === 'inventario') cargarAdmin();
-  if (name === 'ventas') { 
-    cargarVentas(); 
-    cargarProductosSelect(); 
-    cargarClientesSelect(); 
-  }
+  if (name === 'ventas') { cargarVentas(); cargarProductosSelect(); cargarClientesSelect(); }
   if (name === 'clientes') cargarClientes();
   if (name === 'deudas') cargarDeudas();
   if (name === 'gastos') cargarGastos();
@@ -446,6 +466,96 @@ function showTab(name, btn) {
 // ── Modales ──
 function abrirModal(id) { document.getElementById(id).classList.add('open'); }
 function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Dashboard ──
+async function cargarDashboard() {
+  const res = await fetch("/admin/dashboard");
+  const data = await res.json();
+
+  const saldoColor = data.saldo_real >= 0 ? "#2e7d32" : "#c0392b";
+  document.getElementById("stats-dashboard").innerHTML = `
+    <div class="stat">
+      <div class="valor" style="color:#1a5276">$${data.total_hoy.toLocaleString()}</div>
+      <div class="label">💰 Ventas hoy (${data.ventas_hoy})</div>
+    </div>
+    <div class="stat">
+      <div class="valor" style="color:#2e7d32">$${data.total_mes.toLocaleString()}</div>
+      <div class="label">📅 Ventas este mes (${data.ventas_mes})</div>
+    </div>
+    <div class="stat">
+      <div class="valor" style="color:${saldoColor}">$${data.saldo_real.toLocaleString()}</div>
+      <div class="label">🏦 Saldo real</div>
+    </div>
+    <div class="stat">
+      <div class="valor" style="color:#e67e22">$${data.total_pendiente.toLocaleString()}</div>
+      <div class="label">⏳ Por cobrar</div>
+    </div>`;
+
+  if (chartProductos) chartProductos.destroy();
+  const ctxP = document.getElementById("chart-productos").getContext("2d");
+  chartProductos = new Chart(ctxP, {
+    type: "bar",
+    data: {
+      labels: Object.keys(data.productos_ventas),
+      datasets: [{
+        label: "Kilos vendidos",
+        data: Object.values(data.productos_ventas),
+        backgroundColor: ["#c0392b","#e74c3c","#e67e22","#f39c12","#d35400"],
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+
+  if (chartVentas) chartVentas.destroy();
+  const ctxV = document.getElementById("chart-ventas").getContext("2d");
+  chartVentas = new Chart(ctxV, {
+    type: "line",
+    data: {
+      labels: Object.keys(data.ventas_7dias).map(d => d.slice(5)),
+      datasets: [{
+        label: "Ventas ($)",
+        data: Object.values(data.ventas_7dias),
+        borderColor: "#c0392b",
+        backgroundColor: "rgba(192,57,43,0.1)",
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: "#c0392b"
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+
+  const alertasStock = document.getElementById("alertas-stock");
+  if (!data.stock_bajo.length) {
+    alertasStock.innerHTML = "<p style='color:#2e7d32;font-size:13px'>✅ Todo el inventario está bien</p>";
+  } else {
+    alertasStock.innerHTML = data.stock_bajo.map(p => `
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0">
+        <span><strong>${p.nombre}</strong></span>
+        <span style="color:#c0392b;font-size:13px">⚠️ ${p.stock}kg (mín: ${p.minimo}kg)</span>
+      </div>`).join("");
+  }
+
+  const alertasDeudas = document.getElementById("alertas-deudas");
+  if (!data.deudas_vencidas.length) {
+    alertasDeudas.innerHTML = "<p style='color:#2e7d32;font-size:13px'>✅ Sin deudas vencidas</p>";
+  } else {
+    alertasDeudas.innerHTML = data.deudas_vencidas.map(d => `
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0">
+        <span><strong>${d.cliente}</strong><br><small style="color:#999">Venció: ${d.fecha_vencimiento}</small></span>
+        <span style="color:#c0392b;font-weight:bold">$${d.subtotal.toLocaleString()}</span>
+      </div>`).join("");
+  }
+}
 
 // ── Inventario ──
 async function cargarAdmin() {
@@ -492,10 +602,8 @@ async function guardarProducto() {
   const minimo = parseFloat(document.getElementById("edit-prod-minimo").value);
   const precio_kilo = parseFloat(document.getElementById("edit-prod-precio").value);
   const msg = document.getElementById("msg-edit-prod");
-
   const body = { stock, minimo, precio_kilo };
   if (nombre_nuevo !== original) body.nombre_nuevo = nombre_nuevo;
-
   const res = await fetch(`/admin/producto/${original}`, {
     method: "PUT", headers: {"Content-Type": "application/json"},
     body: JSON.stringify(body)
@@ -504,9 +612,7 @@ async function guardarProducto() {
   msg.style.display = "block";
   msg.className = data.error ? "mensaje error" : "mensaje exito";
   msg.textContent = data.error ? "❌ " + data.error : "✅ " + data.mensaje;
-  if (!data.error) {
-    setTimeout(() => { cerrarModal("modal-producto"); cargarAdmin(); }, 800);
-  }
+  if (!data.error) setTimeout(() => { cerrarModal("modal-producto"); cargarAdmin(); }, 800);
 }
 
 async function actualizarStock(nombre) {
@@ -596,7 +702,6 @@ async function registrarVenta() {
   const select = document.getElementById("venta-cliente-select");
   const cliente_id = select.value ? parseInt(select.value) : null;
   const msg = document.getElementById("msg-venta");
-
   if (!producto || !kilos) {
     msg.className = "mensaje error"; msg.style.display = "block";
     msg.textContent = "❌ Selecciona producto y kilos."; return;
@@ -626,7 +731,6 @@ async function cargarVentas() {
   if (fecha) url += `fecha=${fecha}&`;
   if (cliente) url += `cliente=${cliente}&`;
   if (pagado) url += `pagado=${pagado}&`;
-
   const res = await fetch(url);
   const ventas = await res.json();
   const tbody = document.getElementById("tabla-ventas");
@@ -686,7 +790,6 @@ async function guardarVenta() {
   const fecha_venta = document.getElementById("edit-venta-fecha").value;
   const fecha_vencimiento = document.getElementById("edit-venta-vencimiento").value;
   const msg = document.getElementById("msg-edit-venta");
-
   const res = await fetch(`/admin/venta/${id}`, {
     method: "PUT", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({kilos, pagado, cliente_nombre, notas, fecha_venta, fecha_vencimiento})
@@ -695,9 +798,7 @@ async function guardarVenta() {
   msg.style.display = "block";
   msg.className = data.error ? "mensaje error" : "mensaje exito";
   msg.textContent = data.error ? "❌ " + data.error : "✅ " + data.mensaje;
-  if (!data.error) {
-    setTimeout(() => { cerrarModal("modal-venta"); cargarVentas(); }, 800);
-  }
+  if (!data.error) setTimeout(() => { cerrarModal("modal-venta"); cargarVentas(); }, 800);
 }
 
 async function marcarPagado(id) {
@@ -722,7 +823,7 @@ async function cargarClientes() {
   const clientes = await res.json();
   const tbody = document.getElementById("tabla-clientes");
   if (!clientes.length) {
-    tbody.innerHTML = "<tr><td colspan='5' style='color:#999;text-align:center'>No hay clientes registrados</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='5' style='color:#999;text-align:center'>No hay clientes</td></tr>";
     return;
   }
   tbody.innerHTML = clientes.map(c => `
@@ -753,7 +854,6 @@ async function guardarCliente() {
   const telefono = document.getElementById("edit-cli-telefono").value.trim();
   const direccion = document.getElementById("edit-cli-direccion").value.trim();
   const msg = document.getElementById("msg-edit-cli");
-
   const res = await fetch(`/admin/cliente/${id}`, {
     method: "PUT", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({nombre, telefono, direccion})
@@ -762,9 +862,7 @@ async function guardarCliente() {
   msg.style.display = "block";
   msg.className = data.error ? "mensaje error" : "mensaje exito";
   msg.textContent = data.error ? "❌ " + data.error : "✅ " + data.mensaje;
-  if (!data.error) {
-    setTimeout(() => { cerrarModal("modal-cliente"); cargarClientes(); }, 800);
-  }
+  if (!data.error) setTimeout(() => { cerrarModal("modal-cliente"); cargarClientes(); }, 800);
 }
 
 async function agregarCliente() {
@@ -817,7 +915,7 @@ async function cargarDeudas() {
     </div>`;
   const tbody = document.getElementById("tabla-deudas");
   if (!numDeudores) {
-    tbody.innerHTML = "<tr><td colspan='2' style='color:#2e7d32;text-align:center'>✅ Sin deudas pendientes</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='2' style='color:#2e7d32;text-align:center'>✅ Sin deudas</td></tr>";
     return;
   }
   tbody.innerHTML = Object.entries(data.deudas)
@@ -862,7 +960,7 @@ async function cargarGastos() {
     nomina: "👷 Nómina", mantenimiento: "🔧 Mantenimiento", general: "📋 General"
   };
   if (!gastos.length) {
-    tbody.innerHTML = "<tr><td colspan='6' style='color:#999;text-align:center'>No hay gastos registrados</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='6' style='color:#999;text-align:center'>No hay gastos</td></tr>";
     return;
   }
   tbody.innerHTML = gastos.map(g => `
@@ -943,12 +1041,10 @@ async function cargarHistorial() {
   const producto = document.getElementById("filtro-historial-producto")?.value.toLowerCase() || "";
   const tipo = document.getElementById("filtro-historial-tipo")?.value || "";
   const tbody = document.getElementById("tabla-historial");
-
   const filtrados = movimientos.filter(m => {
     return (!producto || m.producto.toLowerCase().includes(producto)) &&
            (!tipo || m.tipo === tipo);
   });
-
   if (!filtrados.length) {
     tbody.innerHTML = "<tr><td colspan='5' style='color:#999;text-align:center'>No hay movimientos</td></tr>";
     return;
@@ -963,7 +1059,8 @@ async function cargarHistorial() {
     </tr>`).join("");
 }
 
-cargarAdmin();
+// Inicializar
+cargarDashboard();
 cargarProductosSelect();
 cargarClientesSelect();
 </script>
