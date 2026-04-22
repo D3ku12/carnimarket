@@ -22,6 +22,7 @@ async function showTab(name, btn) {
     if (name === 'clientes') await cargarClientes();
     if (name === 'gastos') await cargarGastos();
     if (name === 'deudas') await cargarDeudas();
+    if (name === 'usuarios') await cargarUsuarios();
 }
 
 // --- 2. AYUDANTES DE INTERFAZ (MODALES) ---
@@ -485,5 +486,58 @@ async function cargarSelectores() {
         clis.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join("");
 }
 
-// Inicio automático
+// Inicio automáticamente
 window.onload = () => cargarDashboard();
+
+// Cargar usuarios
+async function cargarUsuarios() {
+    const res = await fetch("/admin/usuarios");
+    if (res.status === 403) {
+        document.getElementById("tabla-usuarios").innerHTML = "<tr><td colspan='6'>No tienes permiso para ver usuarios</td></tr>";
+        return;
+    }
+    const data = await res.json();
+    document.getElementById("tabla-usuarios").innerHTML = data.map(u => `
+        <tr>
+            <td>${u.email}</td>
+            <td>${u.nombre}</td>
+            <td><span class="badge ${u.rol}">${u.rol}</span></td>
+            <td>${u.activo ? '<span class="badge ok">Activo</span>' : '<span class="badge">Inactivo</span>'}</td>
+            <td>${u.ultimo_login}</td>
+            <td>
+                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarUsuario(${u.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join("");
+}
+
+async function eliminarUsuario(id) {
+    if (!confirm("¿Eliminar usuario?")) return;
+    const res = await fetch(`/admin/usuario/${id}`, { method: "DELETE" });
+    if (res.ok) cargarUsuarios();
+    else alert("Error al eliminar");
+}
+
+// Formulario crear usuario
+document.getElementById("form-usuario").onsubmit = async (e) => {
+    e.preventDefault();
+    const body = {
+        email: document.getElementById("user-email").value,
+        nombre: document.getElementById("user-nombre").value,
+        password: document.getElementById("user-password").value,
+        rol: document.getElementById("user-rol").value
+    };
+    const res = await fetch("/admin/usuario", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.error) alert(data.error);
+    else {
+        cerrarModal("modal-usuario");
+        cargarUsuarios();
+    }
+};

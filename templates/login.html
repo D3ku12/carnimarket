@@ -66,12 +66,22 @@
       <p>Panel de administración</p>
       <span class="badge">Acceso restringido</span>
     </div>
-    <div id="error" class="error">❌ Usuario o contraseña incorrectos</div>
-    <label>Usuario</label>
-    <input type="text" id="usuario" placeholder="admin">
+    <div id="error" class="error">❌ Email o contraseña incorrectos</div>
+    <label>Email</label>
+    <input type="email" id="usuario" placeholder="stevenhm03@gmail.com">
     <label>Contraseña</label>
     <input type="password" id="password" placeholder="••••••••">
     <button onclick="login()">Entrar</button>
+    <p style="text-align:center; margin-top:15px;">
+        <a href="#" onclick="showRecuperar(); return false;" style="color:#999; font-size:13px;">¿Olvidaste tu contraseña?</a>
+    </p>
+    <div id="recuperar" style="display:none; margin-top:20px; padding-top:20px; border-top:1px solid #eee;">
+        <h3 style="margin-bottom:15px;">Recuperar contraseña</h3>
+        <div id="msg-recuperar" class="error" style="display:none; margin-bottom:15px;"></div>
+        <label>Tu email</label>
+        <input type="email" id="email-recuperar" placeholder="stevenhm03@gmail.com">
+        <button onclick="recuperarContrasena()" style="background:#27ae60;">Enviar enlace de recuperación</button>
+    </div>
   </div>
 
 <script>
@@ -98,6 +108,27 @@
     document.addEventListener("keydown", e => {
       if (e.key === "Enter") login();
     });
+
+    function showRecuperar() {
+        document.getElementById("recuperar").style.display = "block";
+    }
+
+    async function recuperarContrasena() {
+        const email = document.getElementById("email-recuperar").value;
+        const msg = document.getElementById("msg-recuperar");
+        
+        const res = await fetch("/auth/recuperar", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({email})
+        });
+        
+        const data = await res.json();
+        msg.style.display = "block";
+        msg.style.background = "#e8f5e9";
+        msg.style.color = "#2e7d32";
+        msg.textContent = "Si el correo existe, recibirás las instrucciones";
+    }
 </script>
 </body>
 </html>

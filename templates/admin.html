@@ -26,6 +26,7 @@
             <button onclick="showTab('clientes', this)"><i class="fas fa-users"></i></button>
             <button onclick="showTab('gastos', this)"><i class="fas fa-wallet"></i></button>
             <button onclick="showTab('deudas', this)"><i class="fas fa-hand-holding-dollar"></i></button>
+            <button onclick="showTab('usuarios', this)"><i class="fas fa-user-cog"></i></button>
         </nav>
     </header>
 
@@ -192,6 +193,32 @@
             </div>
         </section>
 
+        <section id="tab-usuarios" class="tab">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-user-cog"></i> Gestión de Usuarios</h2>
+                    <button class="btn-primary" onclick="abrirModal('modal-usuario')">
+                        <i class="fas fa-plus"></i> Nuevo Usuario
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Nombre</th>
+                                <th>Rol</th>
+                                <th>Estado</th>
+                                <th>Último Login</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-usuarios"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
         <section id="tab-deudas" class="tab">
             <div class="card">
                 <h2>⚠️ Cobros Pendientes</h2>
@@ -343,6 +370,37 @@
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="cerrarModal('modal-gasto')">Cerrar</button>
                     <button type="submit" class="btn-primary" style="background-color: var(--danger);">Guardar Gasto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-usuario" class="modal-overlay">
+        <div class="modal">
+            <h3><i class="fas fa-user-cog"></i> Nuevo Usuario</h3>
+            <form id="form-usuario">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="user-email" required>
+                </div>
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" id="user-nombre" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="user-password" required>
+                </div>
+                <div class="form-group">
+                    <label>Rol</label>
+                    <select id="user-rol">
+                        <option value="empleado">Empleado</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="cerrarModal('modal-usuario')">Cerrar</button>
+                    <button type="submit" class="btn-primary">Crear Usuario</button>
                 </div>
             </form>
         </div>

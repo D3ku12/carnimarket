@@ -5,9 +5,40 @@ from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel, validator
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from database import init_db, get_db, Producto, Venta, Cliente, Gasto, Historial
+from database import init_db, get_db, Producto, Venta, Cliente, Gasto, Historial, Usuario
 from datetime import datetime, timedelta, timezone
 from auth import verificar_password, crear_token, verificar_token, ADMIN_USER, ADMIN_PASSWORD
+from auth import pwd_context, generar_reset_token, enviar_correo, ADMIN_EMAIL, reset_tokens
+
+# --- HELPERS DE AUTENTICACIÓN ---
+def verificaciones_admin(token: str = Cookie(default=None)):
+    if not token or not verificar_token(token):
+        raise HTTPException(status_code=401, detail="No autorizado")
+    return True
+
+def verificaciones_admins(token: str = Cookie(default=None)):
+    if not token:
+        raise HTTPException(status_code=401, detail="No autorizado")
+    user = verificar_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Token inválido")
+    db = next(get_db())
+    usuario = db.query(Usuario).filter(Usuario.email == user, Usuario.activo == True).first()
+    if not usuario or usuario.rol not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Solo admins")
+    return usuario
+
+def verificaciones_empleados(token: str = Cookie(default=None)):
+    if not token:
+        raise HTTPException(status_code=401, detail="No autorizado")
+    user = verificar_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Token inválido")
+    db = next(get_db())
+    usuario = db.query(Usuario).filter(Usuario.email == user, Usuario.activo == True).first()
+    if not usuario or usuario.rol not in ["admin", "empleado"]:
+        raise HTTPException(status_code=403, detail="Solo personal autorizado")
+    return usuario
 from typing import Optional, List
 from fastapi.staticfiles import StaticFiles
 import io
@@ -52,18 +83,32 @@ def obtener_hora_colombia():
 @app.on_event("startup")
 def startup():
     init_db()
+    # Crear admin por defecto si no existe
+    db_gen = next(get_db())
+    if db_gen.query(Usuario).count() == 0:
+        from auth import pwd_context
+        admin = Usuario(
+            email="stevenhm03@gmail.com",
+            password_hash=pwd_context.hash("C@rniMarket"),
+            nombre="Administrador",
+            rol="admin",
+            activo=True
+        )
+        db_gen.add(admin)
+        db_gen.commit()
+    db_gen.close()
+    
     try:
         iniciar_scheduler()
     except Exception:
-        # No detener el arranque si el scheduler falla
         pass
 
 # --- MODELOS DE ENTRADA (PYDANTIC) ---
 class LoginRequest(BaseModel):
-    usuario: str
+    email: str
     password: str
     
-    @validator('usuario', 'password')
+    @validator('email', 'password')
     def validate_length(cls, v):
         if len(v) < 3:
             raise ValueError('Mínimo 3 caracteres')
@@ -155,10 +200,21 @@ def auth_login(data: LoginRequest, response: Response, request: Request):
     if not check_rate_limit(client_ip):
         return {"error": "Demasiados intentos. Intenta más tarde."}
     
-    if data.usuario != ADMIN_USER or not verificar_password(data.password, ADMIN_PASSWORD):
+    db = next(get_db())
+    usuario = db.query(Usuario).filter(Usuario.email == data.usuario.lower().strip()).first()
+    
+    if not usuario or not usuario.activo:
+        login_attempts[client_ip].append(time.time())
         return {"error": "Credenciales incorrectas"}
     
-    token = crear_token({"sub": data.usuario})
+    if not verificar_password(data.password, usuario.password_hash):
+        login_attempts[client_ip].append(time.time())
+        return {"error": "Credenciales incorrectas"}
+    
+    usuario.ultimo_login = datetime.now()
+    db.commit()
+    
+    token = crear_token({"sub": usuario.email})
     login_attempts[client_ip] = []
     
     response.set_cookie(
@@ -169,12 +225,130 @@ def auth_login(data: LoginRequest, response: Response, request: Request):
         samesite="lax", 
         secure=True
     )
-    return {"token": token}
+    return {"token": token, "rol": usuario.rol, "nombre": usuario.nombre}
 
 @app.post("/auth/logout")
 def logout(response: Response):
     response.delete_cookie("token")
     return {"mensaje": "Sesión cerrada"}
+
+# --- GESTIÓN DE USUARIOS ---
+@app.get("/admin/usuarios")
+def listar_usuarios(db: Session = Depends(get_db), usuario: str = Cookie(default=None)):
+    if not verificar_token(usuario):
+        raise HTTPException(status_code=401, detail="No autorizado")
+    u = db.query(Usuario).filter(Usuario.email == verificar_token(usuario)).first()
+    if not u or u.rol != "admin":
+        raise HTTPException(status_code=403, detail="Solo admins")
+    
+    usuarios = db.query(Usuario).order_by(Usuario.fecha_registro.desc()).all()
+    return [{"id": x.id, "email": x.email, "nombre": x.nombre, "rol": x.rol, "activo": x.activo, "ultimo_login": x.ultimo_login.strftime("%Y-%m-%d %H:%M") if x.ultimo_login else "—"} for x in usuarios]
+
+@app.post("/admin/usuario")
+def crear_usuario(data: dict, db: Session = Depends(get_db), token: str = Cookie(default=None)):
+    if not verificar_token(token):
+        raise HTTPException(status_code=401, detail="No autorizado")
+    u = db.query(Usuario).filter(Usuario.email == verificar_token(token)).first()
+    if not u or u.rol != "admin":
+        raise HTTPException(status_code=403, detail="Solo admins")
+    
+    if db.query(Usuario).filter(Usuario.email == data.get("email", "")).first():
+        return {"error": "Email ya existe"}
+    
+    nuevo = Usuario(
+        email=data.get("email", "").lower().strip(),
+        password_hash=pwd_context.hash(data.get("password", "")),
+        nombre=data.get("nombre", "").strip(),
+        rol=data.get("rol", "empleado")
+    )
+    db.add(nuevo)
+    db.commit()
+    return {"mensaje": "Usuario creado"}
+
+@app.put("/admin/usuario/{id}")
+def editar_usuario(id: int, data: dict, db: Session = Depends(get_db), token: str = Cookie(default=None)):
+    if not verificar_token(token):
+        raise HTTPException(status_code=401, detail="No autorizado")
+    u = db.query(Usuario).filter(Usuario.email == verificar_token(token)).first()
+    if not u or u.rol != "admin":
+        raise HTTPException(status_code=403, detail="Solo admins")
+    
+    usuario = db.query(Usuario).filter(Usuario.id == id).first()
+    if not usuario:
+        return {"error": "Usuario no existe"}
+    
+    if data.get("nombre"):
+        usuario.nombre = data["nombre"]
+    if data.get("rol"):
+        usuario.rol = data["rol"]
+    if data.get("activo") is not None:
+        usuario.activo = data["activo"]
+    if data.get("password"):
+        usuario.password_hash = pwd_context.hash(data["password"])
+    
+    db.commit()
+    return {"mensaje": "Usuario actualizado"}
+
+@app.delete("/admin/usuario/{id}")
+def eliminar_usuario(id: int, db: Session = Depends(get_db), token: str = Cookie(default=None)):
+    if not verificar_token(token):
+        raise HTTPException(status_code=401, detail="No autorizado")
+    u = db.query(Usuario).filter(Usuario.email == verificar_token(token)).first()
+    if not u or u.rol != "admin":
+        raise HTTPException(status_code=403, detail="Solo admins")
+    
+    usuario = db.query(Usuario).filter(Usuario.id == id).first()
+    if not usuario:
+        return {"error": "Usuario no existe"}
+    
+    db.delete(usuario)
+    db.commit()
+    return {"mensaje": "Usuario eliminado"}
+
+@app.post("/auth/recuperar")
+def solicitar_recuperacion(data: dict, db: Session = Depends(get_db)):
+    email = data.get("email", "").lower().strip()
+    
+    usuario = db.query(Usuario).filter(Usuario.email == email).first()
+    if usuario:
+        import secrets
+        token = secrets.token_urlsafe(32)
+        from datetime import datetime, timedelta
+        reset_tokens[token] = {"email": email, "expira": datetime.utcnow() + timedelta(hours=1)}
+        
+        asunto = "Recuperación de contraseña - CarniMarket"
+        html = f"""
+        <html>
+        <body style="font-family Arial; padding: 20px;">
+            <h2 style="color:#c0392b;">🥩 CarniMarket</h2>
+            <p>Has solicitado recuperar tu contraseña.</p>
+            <p>Este enlace expira en 1 hora.</p>
+            <p>Tu email de recuperación: {email}</p>
+        </body>
+        </html>
+        """
+        enviar_correo(email, asunto, html)
+    
+    return {"mensaje": "Si el correo existe, recibirás las instrucciones"}
+
+@app.post("/auth/reset-password")
+def cambiar_contrasena(data: dict, response: Response):
+    token = data.get("token", "")
+    nueva_password = data.get("password", "")
+    
+    if token not in reset_tokens:
+        return {"error": "Token inválido o expirado"}
+    
+    if len(nueva_password) < 6:
+        return {"error": "La contraseña debe tener al menos 6 caracteres"}
+    
+    global ADMIN_PASSWORD
+    ADMIN_PASSWORD = pwd_context.hash(nueva_password)
+    del reset_tokens[token]
+    
+    nuevo_token = crear_token({"sub": ADMIN_USER})
+    response.set_cookie(key="token", value=nuevo_token, httponly=True, max_age=28800, samesite="lax", secure=True)
+    return {"mensaje": "Contraseña actualizada", "token": nuevo_token}
 
 # --- GESTIÓN DE PRODUCTOS (INVENTARIO) ---
 

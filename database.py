@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, String, Float, Integer, DateTime
+from sqlalchemy import create_engine, Column, String, Float, Integer, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
@@ -12,6 +12,18 @@ if DATABASE_URL.startswith("postgres://"):
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
+
+# Tabla de usuarios del sistema
+class Usuario(Base):
+    __tablename__ = "usuarios"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True)
+    password_hash = Column(String)
+    nombre = Column(String)
+    rol = Column(String, default="empleado")  # admin, empleado
+    activo = Column(Boolean, default=True)
+    fecha_registro = Column(DateTime, default=datetime.now)
+    ultimo_login = Column(DateTime, nullable=True)
 
 # Tabla de clientes
 class Cliente(Base):
