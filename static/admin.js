@@ -497,6 +497,8 @@ async function cargarUsuarios() {
         return;
     }
     const data = await res.json();
+    const rolActual = data.find(u => u.email === document.getElementById("user-email")?.value)?.rol || "empleado";
+    
     document.getElementById("tabla-usuarios").innerHTML = data.map(u => `
         <tr>
             <td>${u.email}</td>

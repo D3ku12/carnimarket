@@ -225,6 +225,9 @@ tr:hover { background-color: #f9f9f9; }
 
 .badge.pagado { background: #e8f5e9; color: #2e7d32; }
 .badge.debe { background: #fdf2f2; color: #c0392b; }
+.badge.admin { background: #c0392b; color: #fff; }
+.badge.dueno { background: #6a1b9a; color: #fff; }
+.badge.empleado { background: #1565c0; color: #fff; }
 
 /* --- VENTANAS MODALES (LA SOLUCIÓN AL ERROR) --- */
 .modal-overlay {

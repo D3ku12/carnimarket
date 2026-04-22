@@ -24,8 +24,20 @@ def verificaciones_admins(token: str = Cookie(default=None)):
         raise HTTPException(status_code=401, detail="Token inválido")
     db = next(get_db())
     usuario = db.query(Usuario).filter(Usuario.email == user, Usuario.activo == True).first()
-    if not usuario or usuario.rol not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Solo admins")
+    if not usuario or usuario.rol not in ["admin", "dueno"]:
+        raise HTTPException(status_code=403, detail="Solo personal autorizado")
+    return usuario
+
+def verificaciones_admin_o_dueno(token: str = Cookie(default=None)):
+    if not token:
+        raise HTTPException(status_code=401, detail="No autorizado")
+    user = verificar_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Token inválido")
+    db = next(get_db())
+    usuario = db.query(Usuario).filter(Usuario.email == user, Usuario.activo == True).first()
+    if not usuario or usuario.rol not in ["admin", "dueno"]:
+        raise HTTPException(status_code=403, detail="Solo personal autorizado")
     return usuario
 
 def verificaciones_empleados(token: str = Cookie(default=None)):
@@ -247,7 +259,7 @@ def listar_usuarios(db: Session = Depends(get_db), usuario: str = Cookie(default
     if not verificar_token(usuario):
         raise HTTPException(status_code=401, detail="No autorizado")
     u = db.query(Usuario).filter(Usuario.email == verificar_token(usuario)).first()
-    if not u or u.rol != "admin":
+    if not u or u.rol not in ["admin"]:
         raise HTTPException(status_code=403, detail="Solo admins")
     
     usuarios = db.query(Usuario).order_by(Usuario.fecha_registro.desc()).all()
@@ -258,7 +270,7 @@ def crear_usuario(data: dict, db: Session = Depends(get_db), token: str = Cookie
     if not verificar_token(token):
         raise HTTPException(status_code=401, detail="No autorizado")
     u = db.query(Usuario).filter(Usuario.email == verificar_token(token)).first()
-    if not u or u.rol != "admin":
+    if not u or u.rol not in ["admin"]:
         raise HTTPException(status_code=403, detail="Solo admins")
     
     if db.query(Usuario).filter(Usuario.email == data.get("email", "")).first():
@@ -279,7 +291,7 @@ def editar_usuario(id: int, data: dict, db: Session = Depends(get_db), token: st
     if not verificar_token(token):
         raise HTTPException(status_code=401, detail="No autorizado")
     u = db.query(Usuario).filter(Usuario.email == verificar_token(token)).first()
-    if not u or u.rol != "admin":
+    if not u or u.rol not in ["admin"]:
         raise HTTPException(status_code=403, detail="Solo admins")
     
     usuario = db.query(Usuario).filter(Usuario.id == id).first()
@@ -303,7 +315,7 @@ def eliminar_usuario(id: int, db: Session = Depends(get_db), token: str = Cookie
     if not verificar_token(token):
         raise HTTPException(status_code=401, detail="No autorizado")
     u = db.query(Usuario).filter(Usuario.email == verificar_token(token)).first()
-    if not u or u.rol != "admin":
+    if not u or u.rol not in ["admin"]:
         raise HTTPException(status_code=403, detail="Solo admins")
     
     usuario = db.query(Usuario).filter(Usuario.id == id).first()
