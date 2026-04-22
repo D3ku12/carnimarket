@@ -546,15 +546,28 @@ async function cargarUsuarios() {
         document.getElementById("tabla-usuarios").innerHTML = "<tr><td colspan='6'>No tienes permiso para ver usuarios</td></tr>";
         return;
     }
+    if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+    }
+    if (!res.ok) {
+        document.getElementById("tabla-usuarios").innerHTML = "<tr><td colspan='6'>Error cargando usuarios</td></tr>";
+        return;
+    }
+    
     const data = await res.json();
+    if (!Array.isArray(data)) {
+        document.getElementById("tabla-usuarios").innerHTML = "<tr><td colspan='6'>Error: " + (data.detail || 'Datos invalidos') + "</td></tr>";
+        return;
+    }
     
     document.getElementById("tabla-usuarios").innerHTML = data.map(u => `
         <tr>
-            <td>${u.email}</td>
-            <td>${u.nombre}</td>
-            <td><span class="badge ${u.rol}">${u.rol}</span></td>
+            <td>${u.email || ''}</td>
+            <td>${u.nombre || ''}</td>
+            <td><span class="badge ${u.rol || 'empleado'}">${u.rol || 'empleado'}</span></td>
             <td>${u.activo ? '<span class="badge ok">Activo</span>' : '<span class="badge">Inactivo</span>'}</td>
-            <td>${u.ultimo_login}</td>
+            <td>${u.ultimo_login || ''}</td>
             <td>
                 <button class="btn-primary" style="background:var(--danger)" onclick="eliminarUsuario(${u.id})">
                     <i class="fas fa-trash"></i>
