@@ -1,351 +1,50 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CarniMarket — Admin</title>
-  <link rel="stylesheet" href="/static/admin.css">
+    <meta charset="UTF-8">
+    <title>CarniMarket - Admin</title>
+    <link rel="stylesheet" href="/static/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <header>
+        <h1>🥩 CarniMarket Admin</h1>
+        <div class="nav">
+            <button onclick="showTab('dashboard', this)">Dashboard</button>
+            <button onclick="showTab('ventas', this)">Ventas</button>
+            <button onclick="showTab('deudas', this)">Deudas</button>
+            </div>
+    </header>
 
-<div class="modal-overlay" id="modal-producto">
-  <div class="modal">
-    <h3>✏️ Editar Producto</h3>
-    <input type="hidden" id="edit-prod-original">
-    <label>Nombre</label>
-    <input type="text" id="edit-prod-nombre">
-    <div class="row">
-      <div>
-        <label>Stock (kg)</label>
-        <input type="number" id="edit-prod-stock" step="0.1">
-      </div>
-      <div>
-        <label>Stock mínimo (kg)</label>
-        <input type="number" id="edit-prod-minimo" step="0.1">
-      </div>
-    </div>
-    <label>Precio por kilo ($)</label>
-    <input type="number" id="edit-prod-precio">
-    <div id="msg-edit-prod" class="mensaje"></div>
-    <div class="modal-btns">
-      <button class="btn-blue" onclick="guardarProducto()">💾 Guardar</button>
-      <button class="btn-dark" onclick="cerrarModal('modal-producto')">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-cliente">
-  <div class="modal">
-    <h3>✏️ Editar Cliente</h3>
-    <input type="hidden" id="edit-cli-id">
-    <label>Nombre</label>
-    <input type="text" id="edit-cli-nombre">
-    <label>Teléfono</label>
-    <input type="text" id="edit-cli-telefono">
-    <label>Dirección</label>
-    <input type="text" id="edit-cli-direccion">
-    <div id="msg-edit-cli" class="mensaje"></div>
-    <div class="modal-btns">
-      <button class="btn-blue" onclick="guardarCliente()">💾 Guardar</button>
-      <button class="btn-dark" onclick="cerrarModal('modal-cliente')">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-venta">
-  <div class="modal">
-    <h3>✏️ Editar Venta</h3>
-    <input type="hidden" id="edit-venta-id">
-    <div class="row">
-      <div>
-        <label>Kilos</label>
-        <input type="number" id="edit-venta-kilos" step="0.1">
-      </div>
-      <div>
-        <label>Estado de pago</label>
-        <select id="edit-venta-pagado">
-          <option value="pagado">✅ Pagado</option>
-          <option value="debe">⚠️ Debe</option>
-        </select>
-      </div>
-    </div>
-    <label>Cliente</label>
-    <input type="text" id="edit-venta-cliente">
-    <div class="row">
-      <div>
-        <label>Fecha de venta</label>
-        <input type="date" id="edit-venta-fecha">
-      </div>
-      <div>
-        <label>Fecha límite de pago</label>
-        <input type="date" id="edit-venta-vencimiento">
-      </div>
-    </div>
-    <label>Notas</label>
-    <textarea id="edit-venta-notas"></textarea>
-    <div id="msg-edit-venta" class="mensaje"></div>
-    <div class="modal-btns">
-      <button class="btn-blue" onclick="guardarVenta()">💾 Guardar</button>
-      <button class="btn-dark" onclick="cerrarModal('modal-venta')">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<header>
-  <h1>🥩 CarniMarket — Admin</h1>
-  <div class="nav">
-    <button class="active" onclick="showTab('dashboard', this)">🏠 Dashboard</button>
-    <button onclick="showTab('inventario', this)">📦 Inventario</button>
-    <button onclick="showTab('ventas', this)">💰 Ventas</button>
-    <button onclick="showTab('clientes', this)">👤 Clientes</button>
-    <button onclick="showTab('deudas', this)">⚠️ Deudas</button>
-    <button onclick="showTab('gastos', this)">💸 Gastos</button>
-    <button onclick="showTab('caja', this)">🏦 Caja</button>
-    <button onclick="showTab('historial', this)">📋 Historial</button>
-  </div>
-</header>
-
-<div class="container">
-
-  <div id="tab-dashboard" class="tab active">
-    <div class="stat-grid" id="stats-dashboard"></div>
-    <div class="dos-col">
-      <div class="card">
-        <h2>🥩 Productos más vendidos</h2>
-        <canvas id="chart-productos" height="200"></canvas>
-      </div>
-      <div class="card">
-        <h2>📅 Ventas últimos 7 días</h2>
-        <canvas id="chart-ventas" height="200"></canvas>
-      </div>
-    </div>
-    <div class="dos-col">
-      <div class="card">
-        <h2>⚠️ Alertas de stock bajo</h2>
-        <div id="alertas-stock"></div>
-      </div>
-      <div class="card">
-        <h2>🔴 Deudas vencidas</h2>
-        <div id="alertas-deudas"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="tab-inventario" class="tab">
-    <div class="card">
-      <h2>📦 Inventario — Actualizar Stock</h2>
-      <div id="msg-stock" class="mensaje"></div>
-      <table>
-        <thead><tr><th>Producto</th><th>Stock</th><th class="hide-mobile">Mínimo</th><th>Estado</th><th>Stock rápido</th><th>Acciones</th></tr></thead>
-        <tbody id="tabla-admin"></tbody>
-      </table>
-    </div>
-    <div class="card">
-      <h2>➕ Agregar Producto</h2>
-      <div id="msg-nuevo" class="mensaje"></div>
-      <input type="text" id="nuevo-nombre" placeholder="Nombre del corte (ej: Chuleta)">
-      <div class="row">
-        <input type="number" id="nuevo-stock" placeholder="Stock inicial (kg)" step="0.1">
-        <input type="number" id="nuevo-minimo" placeholder="Stock mínimo (kg)" step="0.1">
-      </div>
-      <input type="number" id="nuevo-precio" placeholder="Precio por kilo ($)">
-      <button class="btn-green" onclick="agregarProducto()">➕ Agregar Producto</button>
-    </div>
-  </div>
-
-  <div id="tab-ventas" class="tab">
-    <div class="card">
-      <h2>💰 Registrar Venta</h2>
-      <div id="msg-venta" class="mensaje"></div>
-      <div class="row">
-        <div>
-          <label>Producto</label>
-          <select id="venta-producto"></select>
+    <div class="container">
+        <div id="tab-ventas" class="tab">
+            <div class="card">
+                <h2>Ventas Realizadas</h2>
+                <a href="/admin/exportar/ventas" style="background: #27ae60; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-bottom: 20px; font-weight: bold;">
+                    📊 Descargar Reporte Excel
+                </a>
+                
+                <table>
+                    <thead>
+                        <tr><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody id="tabla-ventas"></tbody>
+                </table>
+            </div>
         </div>
-        <div>
-          <label>Kilos</label>
-          <input type="number" id="venta-kilos" placeholder="Ej: 2.5" step="0.1" min="0.1">
-        </div>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <div>
-          <label>Cliente registrado</label>
-          <select id="venta-cliente-select" onchange="seleccionarCliente()">
-            <option value="">Selecciona cliente...</option>
-          </select>
-        </div>
-        <div>
-          <label>Nombre del cliente</label>
-          <input type="text" id="venta-cliente-nombre" placeholder="O escribe uno nuevo">
-        </div>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <div>
-          <label>Fecha de venta</label>
-          <input type="date" id="venta-fecha">
-        </div>
-        <div>
-          <label>Estado de pago</label>
-          <select id="venta-pagado">
-            <option value="pagado">✅ Pagado</option>
-            <option value="debe">⚠️ Debe</option>
-          </select>
-        </div>
-        <div>
-          <label>Fecha límite de pago</label>
-          <input type="date" id="venta-fecha-vencimiento">
-        </div>
-      </div>
-      <div style="margin-top:10px">
-        <label>Notas (opcional)</label>
-        <input type="text" id="venta-notas" placeholder="Ej: pagará el viernes...">
-      </div>
-      <button class="btn-red" onclick="registrarVenta()">💰 Registrar Venta</button>
-    </div>
-    
-    <div class="card">
-      <h2>📋 Historial de Ventas</h2>
-      
-      <a href="/admin/exportar/ventas" style="background-color: #27ae60; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; margin-bottom: 15px; display: inline-block; font-weight: bold;">
-          📊 Descargar Excel de Ventas
-      </a>
-      <div class="filtros">
-        <input type="date" id="filtro-fecha">
-        <input type="text" id="filtro-cliente" placeholder="Buscar cliente...">
-        <select id="filtro-pagado">
-          <option value="">Todos</option>
-          <option value="pagado">✅ Pagados</option>
-          <option value="debe">⚠️ Deben</option>
-        </select>
-        <button class="btn-dark" style="width:auto;margin:0;padding:8px 14px" onclick="cargarVentas()">🔍 Filtrar</button>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Fecha</th><th>Cliente</th><th>Producto</th>
-            <th>Kilos</th><th>Total</th><th>Estado</th>
-            <th class="hide-mobile">Fecha pago</th>
-            <th class="hide-mobile">Vence</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tabla-ventas"><tr><td colspan="9">Cargando...</td></tr></tbody>
-      </table>
-    </div>
-  </div>
 
-  <div id="tab-clientes" class="tab">
-    <div class="card">
-      <h2>➕ Agregar Cliente</h2>
-      <div id="msg-cliente" class="mensaje"></div>
-      <input type="text" id="cliente-nombre" placeholder="Nombre completo">
-      <div class="row">
-        <input type="text" id="cliente-telefono" placeholder="Teléfono">
-        <input type="text" id="cliente-direccion" placeholder="Dirección">
-      </div>
-      <button class="btn-green" onclick="agregarCliente()">➕ Agregar Cliente</button>
-    </div>
-    <div class="card">
-      <h2>👤 Lista de Clientes</h2>
-      <table>
-        <thead><tr><th>Nombre</th><th>Teléfono</th><th class="hide-mobile">Dirección</th><th class="hide-mobile">Registro</th><th>Acciones</th></tr></thead>
-        <tbody id="tabla-clientes"><tr><td colspan="5">Cargando...</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="tab-deudas" class="tab">
-    <div class="stat-grid" id="stats-deudas"></div>
-    <div class="card">
-      <h2>⚠️ Clientes que Deben</h2>
-      <table>
-        <thead><tr><th>Cliente</th><th>Total pendiente</th><th>Cobrar</th></tr></thead>
-        <tbody id="tabla-deudas"><tr><td colspan="3">Cargando...</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="tab-gastos" class="tab">
-    <div class="card">
-      <h2>💸 Registrar Gasto</h2>
-      <div id="msg-gasto" class="mensaje"></div>
-      <input type="text" id="gasto-descripcion" placeholder="Descripción (ej: Compra de carne, luz...)">
-      <div class="row">
-        <div>
-          <label>Categoría</label>
-          <select id="gasto-categoria">
-            <option value="compra_carne">🥩 Compra de carne</option>
-            <option value="servicios">💡 Servicios</option>
-            <option value="transporte">🚗 Transporte</option>
-            <option value="empaque">📦 Empaque</option>
-            <option value="nomina">👷 Nómina</option>
-            <option value="mantenimiento">🔧 Mantenimiento</option>
-            <option value="general">📋 General</option>
-          </select>
+        <div id="tab-deudas" class="tab">
+            <div class="card">
+                <h2>Clientes Pendientes</h2>
+                <table>
+                    <thead>
+                        <tr><th>Cliente</th><th>Deuda</th><th>Acción</th></tr>
+                    </thead>
+                    <tbody id="tabla-deudas"></tbody>
+                </table>
+            </div>
         </div>
-        <div>
-          <label>Monto ($)</label>
-          <input type="number" id="gasto-monto" placeholder="Ej: 50000">
-        </div>
-        <div>
-          <label>Fecha</label>
-          <input type="date" id="gasto-fecha">
-        </div>
-      </div>
-      <div style="margin-top:10px">
-        <label>Notas (opcional)</label>
-        <input type="text" id="gasto-notas" placeholder="Ej: proveedor X, factura #123...">
-      </div>
-      <button class="btn-red" onclick="registrarGasto()">💸 Registrar Gasto</button>
     </div>
-    <div class="card">
-      <h2>📋 Historial de Gastos</h2>
-      <table>
-        <thead><tr><th>Fecha</th><th>Descripción</th><th class="hide-mobile">Categoría</th><th>Monto</th><th class="hide-mobile">Notas</th><th>Eliminar</th></tr></thead>
-        <tbody id="tabla-gastos"><tr><td colspan="6">Cargando...</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="tab-caja" class="tab">
-    <div class="stat-grid" id="stats-caja"></div>
-    <div class="dos-col">
-      <div class="card">
-        <h2>📊 Gastos por categoría</h2>
-        <table>
-          <thead><tr><th>Categoría</th><th>Total</th></tr></thead>
-          <tbody id="tabla-categorias"></tbody>
-        </table>
-      </div>
-      <div class="card">
-        <h2>📋 Resumen financiero</h2>
-        <div id="resumen-caja"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="tab-historial" class="tab">
-    <div class="card">
-      <h2>📋 Historial de Movimientos</h2>
-      <div class="filtros">
-        <input type="text" id="filtro-historial-producto" placeholder="Buscar producto...">
-        <select id="filtro-historial-tipo">
-          <option value="">Todos</option>
-          <option value="entrada">📥 Entradas</option>
-          <option value="salida">📤 Salidas</option>
-        </select>
-        <button class="btn-dark" style="width:auto;margin:0;padding:8px 14px" onclick="cargarHistorial()">🔍 Filtrar</button>
-      </div>
-      <table>
-        <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th class="hide-mobile">Motivo</th></tr></thead>
-        <tbody id="tabla-historial"><tr><td colspan="5">Cargando...</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="/static/admin.js"></script>
+    <script src="/static/admin.js"></script>
 </body>
 </html>
