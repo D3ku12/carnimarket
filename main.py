@@ -78,6 +78,12 @@ class GastoRequest(BaseModel):
     categoria: str
     monto: float
 
+# --- MODELO DE REGISTRO DE CAMBIOS ---
+class RegistroCambio(BaseModel):
+    tipo: str
+    descripcion: str
+    fecha: datetime
+
 # --- RUTAS DE NAVEGACIÓN HTML ---
 
 @app.get("/", response_class=HTMLResponse)
@@ -372,8 +378,24 @@ def get_dashboard_data(db: Session = Depends(get_db)):
     }
 
 @app.get("/admin/deudas")
-def get_reporte_deudas(db: Session = Depends(get_db)):
-    pendientes = db.query(Venta).filter(Venta.pagado == "debe").all()
+def get_reporte_deudas(db: Session = Depends(get_db), fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None):
+    query = db.query(Venta).filter(Venta.pagado == "debe")
+
+    if fecha_inicio:
+        try:
+            fecha_inicio_dt = datetime.strptime(fecha_inicio, "%Y-%m-%d")
+            query = query.filter(Venta.fecha_venta >= fecha_inicio_dt)
+        except ValueError:
+            return {"error": "Formato de fecha_inicio inválido. Use YYYY-MM-DD."}
+
+    if fecha_fin:
+        try:
+            fecha_fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d")
+            query = query.filter(Venta.fecha_venta <= fecha_fin_dt)
+        except ValueError:
+            return {"error": "Formato de fecha_fin inválido. Use YYYY-MM-DD."}
+
+    pendientes = query.all()
     resumen = {}
     for v in pendientes:
         if v.cliente_nombre not in resumen:
@@ -385,13 +407,12 @@ def get_reporte_deudas(db: Session = Depends(get_db)):
                 "fecha_vencimiento": None
             }
         resumen[v.cliente_nombre]["total"] += v.subtotal
-        # Guardar la fecha de vencimiento más antigua (la que vence primero)
         if v.fecha_vencimiento:
             if resumen[v.cliente_nombre]["fecha_vencimiento"] is None:
                 resumen[v.cliente_nombre]["fecha_vencimiento"] = v.fecha_vencimiento
             elif v.fecha_vencimiento < resumen[v.cliente_nombre]["fecha_vencimiento"]:
                 resumen[v.cliente_nombre]["fecha_vencimiento"] = v.fecha_vencimiento
-    
+
     res = []
     for n, d in resumen.items():
         fecha_venc_str = d["fecha_vencimiento"].strftime("%Y-%m-%d") if d["fecha_vencimiento"] else "Sin vencimiento"
@@ -400,7 +421,7 @@ def get_reporte_deudas(db: Session = Depends(get_db)):
             "total": d["total"],
             "direccion": d["direccion"],
             "fecha_vencimiento": fecha_venc_str,
-            "whatsapp_link": f"https://wa.me/57{d['tel']}?text="+urllib.parse.quote(f"Hola {n}, saldo pendiente: ${d['total']:,.0f}") if d['tel'] else ""
+            "whatsapp_link": f"https://wa.me/57{d['tel']}?text="+urllib.parse.quote(f"Hola {n}, recuerda que tienes un saldo pendiente con Carnimarket de : ${d['total']:,.0f}") if d['tel'] else ""
         })
     return {"deudas": res, "total_pendiente": sum(x["total"] for x in res)}
 
