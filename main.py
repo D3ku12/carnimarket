@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import init_db, seed_db, get_db, Producto, Venta, Cliente
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from auth import verificar_password, crear_token, verificar_token, ADMIN_USER, ADMIN_PASSWORD
 from typing import Optional
 from fastapi.staticfiles import StaticFiles
@@ -14,6 +14,12 @@ from openpyxl import Workbook
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# --- FUNCIÓN PARA HORA EXACTA DE COLOMBIA ---
+def obtener_hora_colombia():
+    # Obtiene la hora actual en UTC y le resta 5 horas (Zona horaria de Colombia)
+    # Se remueve la zona horaria (tzinfo=None) para que la base de datos lo guarde correctamente
+    return datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=5)
 
 @app.on_event("startup")
 def startup():
@@ -86,7 +92,7 @@ def vender(venta: VentaRequest, db: Session = Depends(get_db)):
     producto.stock -= venta.kilos
     subtotal = venta.kilos * producto.precio_kilo
 
-    fecha = datetime.now()
+    fecha = obtener_hora_colombia()
     if venta.fecha_venta:
         try:
             fecha = datetime.strptime(venta.fecha_venta, "%Y-%m-%d")
@@ -121,7 +127,7 @@ def vender(venta: VentaRequest, db: Session = Depends(get_db)):
         tipo="salida",
         cantidad=venta.kilos,
         motivo=f"Venta a {venta.cliente_nombre}",
-        fecha=datetime.now()
+        fecha=obtener_hora_colombia()
     )
     db.add(historial)
     db.commit()
@@ -156,7 +162,7 @@ def actualizar_stock(data: StockUpdate, db: Session = Depends(get_db)):
         tipo=tipo,
         cantidad=abs(diferencia),
         motivo="Actualización manual de stock",
-        fecha=datetime.now()
+        fecha=obtener_hora_colombia()
     )
     db.add(historial)
     db.commit()
@@ -264,7 +270,7 @@ def actualizar_pago(venta_id: int, data: PagoUpdate, db: Session = Depends(get_d
         return {"error": "Venta no encontrada"}
     venta.pagado = data.pagado
     if data.pagado == "pagado":
-        venta.fecha_pago = datetime.now()
+        venta.fecha_pago = obtener_hora_colombia()
     else:
         venta.fecha_pago = None
     db.commit()
@@ -289,7 +295,7 @@ def editar_venta(venta_id: int, data: VentaEdit, db: Session = Depends(get_db)):
     if data.pagado is not None:
         venta.pagado = data.pagado
         if data.pagado == "pagado" and not venta.fecha_pago:
-            venta.fecha_pago = datetime.now()
+            venta.fecha_pago = obtener_hora_colombia()
         elif data.pagado == "debe":
             venta.fecha_pago = None
     if data.cliente_nombre is not None:
@@ -370,7 +376,7 @@ class GastoRequest(BaseModel):
 @app.post("/admin/gasto")
 def agregar_gasto(data: GastoRequest, db: Session = Depends(get_db)):
     from database import Gasto
-    fecha = datetime.now()
+    fecha = obtener_hora_colombia()
     if data.fecha:
         try:
             fecha = datetime.strptime(data.fecha, "%Y-%m-%d")
@@ -447,7 +453,7 @@ def registrar_historial(data: HistorialRequest, db: Session = Depends(get_db)):
         tipo=data.tipo,
         cantidad=data.cantidad,
         motivo=data.motivo,
-        fecha=datetime.now()
+        fecha=obtener_hora_colombia()
     )
     db.add(nuevo)
     db.commit()
@@ -472,7 +478,7 @@ def ver_historial(db: Session = Depends(get_db)):
 def ver_dashboard(db: Session = Depends(get_db)):
     from database import Gasto, Historial
     
-    hoy = datetime.now().date()
+    hoy = obtener_hora_colombia().date()
     hoy_inicio = datetime(hoy.year, hoy.month, hoy.day, 0, 0, 0)
     hoy_fin = datetime(hoy.year, hoy.month, hoy.day, 23, 59, 59)
 
@@ -482,7 +488,7 @@ def ver_dashboard(db: Session = Depends(get_db)):
     ).all()
     total_hoy = sum(v.subtotal for v in ventas_hoy)
 
-    mes_inicio = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    mes_inicio = obtener_hora_colombia().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     ventas_mes = db.query(Venta).filter(Venta.fecha_venta >= mes_inicio).all()
     total_mes = sum(v.subtotal for v in ventas_mes)
 
@@ -501,7 +507,7 @@ def ver_dashboard(db: Session = Depends(get_db)):
 
     ventas_7dias = {}
     for i in range(6, -1, -1):
-        dia = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        dia = (obtener_hora_colombia() - timedelta(days=i)).strftime("%Y-%m-%d")
         ventas_7dias[dia] = 0
     for v in todos_ventas:
         if v.fecha_venta:
@@ -511,7 +517,7 @@ def ver_dashboard(db: Session = Depends(get_db)):
 
     deudas_vencidas = db.query(Venta).filter(
         Venta.pagado == "debe",
-        Venta.fecha_vencimiento <= datetime.now()
+        Venta.fecha_vencimiento <= obtener_hora_colombia()
     ).all()
 
     productos_bajo = db.query(Producto).filter(Producto.stock <= Producto.minimo).all()
