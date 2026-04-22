@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, Cookie, Response, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -10,9 +10,8 @@ from typing import Optional
 from fastapi.staticfiles import StaticFiles
 import csv
 import io
-from fastapi.responses import StreamingResponse
 import urllib.parse
-# CORRECCIÓN 1: Declarar app antes de usarla
+
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -309,44 +308,7 @@ def editar_venta(venta_id: int, data: VentaEdit, db: Session = Depends(get_db)):
             venta.fecha_vencimiento = None
     db.commit()
     return {"mensaje": "Venta actualizada correctamente"}
-@app.get("/admin/deudas")
-def ver_deudas(db: Session = Depends(get_db)):
-    ventas = db.query(Venta).filter(Venta.pagado == "debe").all()
-    deudas = {}
-    
-    for v in ventas:
-        nombre = v.cliente_nombre or "Cliente general"
-        if nombre not in deudas:
-            # Buscamos el teléfono del cliente
-            cliente = db.query(Cliente).filter(Cliente.nombre == nombre).first()
-            telefono = cliente.telefono if cliente else ""
-            deudas[nombre] = {"total": 0, "telefono": telefono}
-            
-        deudas[nombre]["total"] += v.subtotal
 
-    total_pendiente = sum(d["total"] for d in deudas.values())
-    
-    resultado = []
-    for nombre, datos in deudas.items():
-        monto = datos["total"]
-        telefono = datos["telefono"].replace(" ", "").replace("+", "") if datos["telefono"] else ""
-        
-        whatsapp_link = ""
-        if telefono:
-            # Mensaje predeterminado de cobro
-            mensaje = f"Hola {nombre}, te escribimos de CarniMarket. Te recordamos amablemente que tienes un saldo pendiente de ${monto:,.0f}. ¡Gracias por tu preferencia!"
-            mensaje_url = urllib.parse.quote(mensaje)
-            # Asumiendo indicativo de Colombia (57). Si tus clientes ya ponen el 57 en el registro, quita el '57' de abajo.
-            whatsapp_link = f"https://wa.me/57{telefono}?text={mensaje_url}"
-            
-        resultado.append({
-            "cliente": nombre,
-            "total": monto,
-            "telefono": telefono,
-            "whatsapp_link": whatsapp_link
-        })
-
-    return {"deudas": resultado, "total_pendiente": total_pendiente}
 @app.get("/admin/clientes")
 def ver_clientes(db: Session = Depends(get_db)):
     clientes = db.query(Cliente).order_by(Cliente.nombre).all()
@@ -506,12 +468,10 @@ def ver_historial(db: Session = Depends(get_db)):
         } for m in movimientos
     ]
 
-# CORRECCIÓN 2: Se reparó toda la indentación de este bloque
 @app.get("/admin/dashboard")
 def ver_dashboard(db: Session = Depends(get_db)):
     from database import Gasto, Historial
     
-    # Stats de hoy - usando fecha sin hora para evitar problemas de timezone
     hoy = datetime.now().date()
     hoy_inicio = datetime(hoy.year, hoy.month, hoy.day, 0, 0, 0)
     hoy_fin = datetime(hoy.year, hoy.month, hoy.day, 23, 59, 59)
@@ -522,28 +482,23 @@ def ver_dashboard(db: Session = Depends(get_db)):
     ).all()
     total_hoy = sum(v.subtotal for v in ventas_hoy)
 
-    # Stats del mes
     mes_inicio = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     ventas_mes = db.query(Venta).filter(Venta.fecha_venta >= mes_inicio).all()
     total_mes = sum(v.subtotal for v in ventas_mes)
 
-    # Saldo real
     ventas_cobradas = db.query(Venta).filter(Venta.pagado == "pagado").all()
     total_ingresos = sum(v.subtotal for v in ventas_cobradas)
     gastos = db.query(Gasto).all()
     total_gastos = sum(g.monto for g in gastos)
 
-    # Pendiente
     ventas_pendientes = db.query(Venta).filter(Venta.pagado == "debe").all()
     total_pendiente = sum(v.subtotal for v in ventas_pendientes)
 
-    # Productos mas vendidos
     todos_ventas = db.query(Venta).all()
     productos_ventas = {}
     for v in todos_ventas:
         productos_ventas[v.producto] = productos_ventas.get(v.producto, 0) + v.kilos
 
-    # Ventas ultimos 7 dias
     ventas_7dias = {}
     for i in range(6, -1, -1):
         dia = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
@@ -554,13 +509,11 @@ def ver_dashboard(db: Session = Depends(get_db)):
             if dia in ventas_7dias:
                 ventas_7dias[dia] += v.subtotal
 
-    # Deudas vencidas
     deudas_vencidas = db.query(Venta).filter(
         Venta.pagado == "debe",
         Venta.fecha_vencimiento <= datetime.now()
     ).all()
 
-    # Stock bajo
     productos_bajo = db.query(Producto).filter(Producto.stock <= Producto.minimo).all()
     stock_bajo = [
         {"nombre": p.nombre, "stock": p.stock, "minimo": p.minimo}
@@ -585,19 +538,17 @@ def ver_dashboard(db: Session = Depends(get_db)):
         ],
         "stock_bajo": stock_bajo
     }
+
+# NUEVO ENDPOINT PARA EXPORTAR VENTAS A EXCEL (CSV)
 @app.get("/admin/exportar/ventas")
 def exportar_ventas(db: Session = Depends(get_db)):
-    # Obtenemos todas las ventas ordenadas por fecha
     ventas = db.query(Venta).order_by(Venta.fecha_venta.desc()).all()
     
-    # Creamos un archivo en memoria
     output = io.StringIO()
     writer = csv.writer(output, delimiter=",", quoting=csv.QUOTE_MINIMAL)
     
-    # Escribimos los encabezados de las columnas para Excel
     writer.writerow(["ID", "Fecha", "Producto", "Kilos", "Precio/Kg", "Subtotal", "Cliente", "Estado"])
     
-    # Escribimos los datos de cada venta
     for v in ventas:
         fecha_str = v.fecha_venta.strftime("%Y-%m-%d %H:%M") if v.fecha_venta else "N/A"
         writer.writerow([
@@ -613,9 +564,45 @@ def exportar_ventas(db: Session = Depends(get_db)):
     
     output.seek(0)
     
-    # Retornamos el archivo para que el navegador lo descargue
     return StreamingResponse(
         iter([output.getvalue()]), 
         media_type="text/csv", 
         headers={"Content-Disposition": "attachment; filename=reporte_ventas.csv"}
     )
+
+# NUEVO ENDPOINT DE DEUDAS CON RECORDATORIOS DE WHATSAPP
+@app.get("/admin/deudas")
+def ver_deudas(db: Session = Depends(get_db)):
+    ventas = db.query(Venta).filter(Venta.pagado == "debe").all()
+    deudas = {}
+    
+    for v in ventas:
+        nombre = v.cliente_nombre or "Cliente general"
+        if nombre not in deudas:
+            cliente = db.query(Cliente).filter(Cliente.nombre == nombre).first()
+            telefono = cliente.telefono if cliente else ""
+            deudas[nombre] = {"total": 0, "telefono": telefono}
+            
+        deudas[nombre]["total"] += v.subtotal
+
+    total_pendiente = sum(d["total"] for d in deudas.values())
+    
+    resultado = []
+    for nombre, datos in deudas.items():
+        monto = datos["total"]
+        telefono = datos["telefono"].replace(" ", "").replace("+", "") if datos["telefono"] else ""
+        
+        whatsapp_link = ""
+        if telefono:
+            mensaje = f"Hola {nombre}, te escribimos de CarniMarket. Te recordamos amablemente que tienes un saldo pendiente de ${monto:,.0f}. ¡Gracias por tu preferencia!"
+            mensaje_url = urllib.parse.quote(mensaje)
+            whatsapp_link = f"https://wa.me/57{telefono}?text={mensaje_url}"
+            
+        resultado.append({
+            "cliente": nombre,
+            "total": monto,
+            "telefono": telefono,
+            "whatsapp_link": whatsapp_link
+        })
+
+    return {"deudas": resultado, "total_pendiente": total_pendiente}
