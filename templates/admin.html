@@ -345,8 +345,46 @@
 
 </div>
 
-<script src="/static/admin.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// PEGA AQUÍ TODO EL CÓDIGO DE JAVASCRIPT
+let chartProductos = null;
+let chartVentas = null;
 
-<script src="/static/admin.js?v=1.1"></script>
+function showTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'dashboard') cargarDashboard();
+  if (name === 'inventario') cargarAdmin();
+  if (name === 'ventas') { cargarVentas(); cargarProductosSelect(); cargarClientesSelect(); }
+  if (name === 'clientes') cargarClientes();
+  if (name === 'deudas') cargarDeudas();
+  if (name === 'gastos') cargarGastos();
+  if (name === 'caja') cargarCaja();
+  if (name === 'historial') cargarHistorial();
+}
+
+// ... (Pega el resto de funciones: abrirModal, cargarDashboard, cargarDeudas, etc.)
+// Asegúrate de incluir la función cargarDeudas con el botón de WhatsApp que arreglamos.
+
+async function cargarDeudas() {
+  const res = await fetch("/admin/deudas");
+  const data = await res.json();
+  const tbody = document.getElementById("tabla-deudas");
+  tbody.innerHTML = data.deudas.map(d => {
+    let btnWA = d.whatsapp_link 
+      ? `<a href="${d.whatsapp_link}" target="_blank" class="btn-small" style="background-color: #25D366; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; display: inline-block;">💬 Cobrar</a>` 
+      : `<span style="font-size: 12px; color: #999;">Sin teléfono</span>`;
+    return `<tr><td><strong>${d.cliente}</strong></td><td style="color:#c0392b;font-weight:bold">$${d.total.toLocaleString()}</td><td>${btnWA}</td></tr>`;
+  }).join("");
+}
+
+// Inicialización
+cargarDashboard();
+cargarProductosSelect();
+cargarClientesSelect();
+</script>
 </body>
 </html>

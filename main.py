@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, Cookie, Response, Request
+from fastapi import FastAPI, Depends, Cookie, Response, Requestz
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -549,34 +549,21 @@ def ver_dashboard(db: Session = Depends(get_db)):
 @app.get("/admin/exportar/ventas")
 def exportar_ventas(db: Session = Depends(get_db)):
     ventas = db.query(Venta).order_by(Venta.fecha_venta.desc()).all()
-    
     wb = Workbook()
     ws = wb.active
     ws.title = "Reporte de Ventas"
     ws.append(["Fecha", "Cliente", "Producto", "Kilos", "Total", "Estado", "Notas"])
-    
     for v in ventas:
         fecha_str = v.fecha_venta.strftime("%Y-%m-%d %H:%M") if v.fecha_venta else "—"
-        ws.append([
-            fecha_str,
-            v.cliente_nombre, 
-            v.producto, 
-            v.kilos, 
-            v.subtotal, 
-            v.pagado, 
-            v.notas
-        ])
-    
+        ws.append([fecha_str, v.cliente_nombre, v.producto, v.kilos, v.subtotal, v.pagado, v.notas])
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
-    
     return StreamingResponse(
         output, 
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
         headers={"Content-Disposition": "attachment; filename=reporte_ventas.xlsx"}
     )
-
 # DEUDAS WHATSAPP
 @app.get("/admin/deudas")
 def ver_deudas(db: Session = Depends(get_db)):
