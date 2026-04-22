@@ -7,7 +7,8 @@ from database import init_db, seed_db, get_db, Producto, Venta, Cliente
 from datetime import datetime
 from auth import verificar_password, crear_token, verificar_token, ADMIN_USER, ADMIN_PASSWORD
 from typing import Optional
-
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory="static"), name="static")
 app = FastAPI()
 
 @app.on_event("startup")
@@ -480,10 +481,17 @@ def ver_dashboard(db: Session = Depends(get_db)):
     from database import Gasto, Historial
     from datetime import timedelta
 
-    # Stats de hoy
-    hoy_inicio = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    ventas_hoy = db.query(Venta).filter(Venta.fecha_venta >= hoy_inicio).all()
-    total_hoy = sum(v.subtotal for v in ventas_hoy)
+    # Stats de hoy - usando fecha sin hora para evitar problemas de timezone
+    from datetime import timedelta
+    hoy = datetime.now().date()
+    hoy_inicio = datetime(hoy.year, hoy.month, hoy.day, 0, 0, 0)
+    hoy_fin = datetime(hoy.year, hoy.month, hoy.day, 23, 59, 59)
+
+ventas_hoy = db.query(Venta).filter(
+    Venta.fecha_venta >= hoy_inicio,
+    Venta.fecha_venta <= hoy_fin
+).all()
+total_hoy = sum(v.subtotal for v in ventas_hoy)
 
     # Stats del mes
     mes_inicio = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
