@@ -478,24 +478,27 @@ def ver_historial(db: Session = Depends(get_db)):
 @app.get("/admin/dashboard")
 def ver_dashboard(db: Session = Depends(get_db)):
     from database import Gasto, Historial
-    from sqlalchemy import func
+    from datetime import timedelta
 
-    # Stats generales
-    ventas_hoy = db.query(Venta).filter(
-        Venta.fecha_venta >= datetime.now().replace(hour=0, minute=0, second=0)
-    ).all()
+    # Stats de hoy
+    hoy_inicio = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    ventas_hoy = db.query(Venta).filter(Venta.fecha_venta >= hoy_inicio).all()
     total_hoy = sum(v.subtotal for v in ventas_hoy)
 
-    ventas_mes = db.query(Venta).filter(
-        Venta.fecha_venta >= datetime.now().replace(day=1, hour=0, minute=0, second=0)
-    ).all()
+    # Stats del mes
+    mes_inicio = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    ventas_mes = db.query(Venta).filter(Venta.fecha_venta >= mes_inicio).all()
     total_mes = sum(v.subtotal for v in ventas_mes)
 
+    # Saldo real
     ventas_cobradas = db.query(Venta).filter(Venta.pagado == "pagado").all()
     total_ingresos = sum(v.subtotal for v in ventas_cobradas)
-
     gastos = db.query(Gasto).all()
     total_gastos = sum(g.monto for g in gastos)
+
+    # Pendiente
+    ventas_pendientes = db.query(Venta).filter(Venta.pagado == "debe").all()
+    total_pendiente = sum(v.subtotal for v in ventas_pendientes)
 
     # Productos mas vendidos
     todos_ventas = db.query(Venta).all()
@@ -504,7 +507,6 @@ def ver_dashboard(db: Session = Depends(get_db)):
         productos_ventas[v.producto] = productos_ventas.get(v.producto, 0) + v.kilos
 
     # Ventas ultimos 7 dias
-    from datetime import timedelta
     ventas_7dias = {}
     for i in range(6, -1, -1):
         dia = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
@@ -516,17 +518,16 @@ def ver_dashboard(db: Session = Depends(get_db)):
                 ventas_7dias[dia] += v.subtotal
 
     # Deudas vencidas
-    hoy = datetime.now().date()
     deudas_vencidas = db.query(Venta).filter(
         Venta.pagado == "debe",
         Venta.fecha_vencimiento <= datetime.now()
     ).all()
 
     # Stock bajo
-    productos_bajo = db.query(Producto).all()
+    productos_bajo = db.query(Producto).filter(Producto.stock <= Producto.minimo).all()
     stock_bajo = [
         {"nombre": p.nombre, "stock": p.stock, "minimo": p.minimo}
-        for p in productos_bajo if p.stock <= p.minimo
+        for p in productos_bajo
     ]
 
     return {
@@ -535,7 +536,7 @@ def ver_dashboard(db: Session = Depends(get_db)):
         "total_mes": total_mes,
         "ventas_mes": len(ventas_mes),
         "saldo_real": total_ingresos - total_gastos,
-        "total_pendiente": sum(v.subtotal for v in db.query(Venta).filter(Venta.pagado == "debe").all()),
+        "total_pendiente": total_pendiente,
         "productos_ventas": dict(sorted(productos_ventas.items(), key=lambda x: x[1], reverse=True)[:5]),
         "ventas_7dias": ventas_7dias,
         "deudas_vencidas": [
