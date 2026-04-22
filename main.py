@@ -80,23 +80,32 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 def obtener_hora_colombia():
     return datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=5)
 
-@app.on_event("startup")
-def startup():
-    init_db()
-    # Crear admin por defecto si no existe
-    db_gen = next(get_db())
-    if db_gen.query(Usuario).count() == 0:
-        from auth import pwd_context
-        admin = Usuario(
+@app.get("/test-db")
+def test_db(db: Session = Depends(get_db)):
+    from auth import pwd_context
+    count = db.query(Usuario).count()
+    usuario = db.query(Usuario).filter(Usuario.email == "stevenhm03@gmail.com").first()
+    
+    if usuario:
+        # Verificar si la contraseña funciona
+        test_pass = verificar_password("C@rniMarket", usuario.password_hash)
+        return {"usuarios": count, "admin_existe": True, "password_valida": test_pass, "rol": usuario.rol, "activo": usuario.activo}
+    else:
+        # Crear admin
+        nuevo = Usuario(
             email="stevenhm03@gmail.com",
             password_hash=pwd_context.hash("C@rniMarket"),
             nombre="Administrador",
             rol="admin",
             activo=True
         )
-        db_gen.add(admin)
-        db_gen.commit()
-    db_gen.close()
+        db.add(nuevo)
+        db.commit()
+        return {"usuarios": count + 1, "admin_creado": True}
+
+@app.on_event("startup")
+def startup():
+    init_db()
     
     try:
         iniciar_scheduler()
@@ -201,7 +210,7 @@ def auth_login(data: LoginRequest, response: Response, request: Request):
         return {"error": "Demasiados intentos. Intenta más tarde."}
     
     db = next(get_db())
-    usuario = db.query(Usuario).filter(Usuario.email == data.usuario.lower().strip()).first()
+    usuario = db.query(Usuario).filter(Usuario.email == data.email.lower().strip()).first()
     
     if not usuario or not usuario.activo:
         login_attempts[client_ip].append(time.time())
