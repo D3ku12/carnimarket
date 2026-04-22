@@ -8,6 +8,9 @@ let chartProductos = null;
 // --- 1. NAVEGACIÓN Y CARGA DE DATOS ---
 
 async function showTab(name, btn) {
+    if (name === "usuarios" && window.currentRol !== "admin") {
+        return;
+    }
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + name).classList.add('active');
@@ -20,7 +23,7 @@ async function showTab(name, btn) {
     if (name === 'clientes') await cargarClientes();
     if (name === 'gastos') await cargarGastos();
     if (name === 'deudas') await cargarDeudas();
-    if (name === 'usuarios') await cargarUsuarios();
+    if (name === 'usuarios' && window.currentRol === "admin") await cargarUsuarios();
 }
 
 // --- 2. AYUDANTES DE INTERFAZ (MODALES) ---
@@ -547,6 +550,8 @@ window.onload = async () => {
             if (btnUsuarios) btnUsuarios.style.display = "none";
             const tabUsuarios = document.getElementById("tab-usuarios");
             if (tabUsuarios) tabUsuarios.style.display = "none";
+            const modalUsuario = document.getElementById("modal-usuario");
+            if (modalUsuario) modalUsuario.style.display = "none";
         }
         
         await cargarDashboard();
