@@ -253,6 +253,16 @@ def logout(response: Response):
     response.delete_cookie("token")
     return {"mensaje": "Sesión cerrada"}
 
+@app.get("/auth/verificar")
+def verificar_auth(token: str = Cookie(default=None)):
+    if not token or not verificar_token(token):
+        raise HTTPException(status_code=401, detail="No autorizado")
+    db = next(get_db())
+    usuario = db.query(Usuario).filter(Usuario.email == verificar_token(token), Usuario.activo == True).first()
+    if not usuario:
+        raise HTTPException(status_code=401, detail="No autorizado")
+    return {"rol": usuario.rol, "nombre": usuario.nombre}
+
 # --- GESTIÓN DE USUARIOS ---
 @app.get("/admin/usuarios")
 def listar_usuarios(db: Session = Depends(get_db), usuario: str = Cookie(default=None)):

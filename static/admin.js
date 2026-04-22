@@ -8,13 +8,11 @@ let chartProductos = null;
 // --- 1. NAVEGACIÓN Y CARGA DE DATOS ---
 
 async function showTab(name, btn) {
-    // UI: Activar pestañas
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + name).classList.add('active');
     btn.classList.add('active');
 
-    // Cargar datos según la sección
     if (name === 'dashboard') await cargarDashboard();
     if (name === 'inventario') await cargarInventario();
     if (name === 'ventas') { await cargarVentas(); await cargarSelectores(); }
@@ -487,7 +485,14 @@ async function cargarSelectores() {
 }
 
 // Inicio automáticamente
-window.onload = () => cargarDashboard();
+window.onload = async () => {
+    const res = await fetch("/auth/verificar");
+    if (!res.ok) {
+        window.location.href = "/login";
+        return;
+    }
+    await cargarDashboard();
+};
 
 // Cargar usuarios
 async function cargarUsuarios() {
