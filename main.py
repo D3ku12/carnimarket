@@ -256,9 +256,21 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
     return {"mensaje": "Venta exitosa", "producto": v.producto, "kilos": v.kilos, "subtotal": total, "stock_restante": p.stock}
 
 @app.get("/admin/ventas")
-def listar_ventas(db: Session = Depends(get_db)):
-    ventas = db.query(Venta).order_by(Venta.fecha_venta.desc()).limit(150).all()
-    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "pagado": v.pagado, "notas": v.notas} for v in ventas]
+def listar_ventas(
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    db: Session = Depends(get_db)):
+    query = db.query(Venta)
+    
+    if fecha_inicio:
+        fi = datetime.strptime(fecha_inicio, "%Y-%m-%d").replace(hour=0, minute=0, second=0)
+        query = query.filter(Venta.fecha_venta >= fi)
+    if fecha_fin:
+        ff = datetime.strptime(fecha_fin, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+        query = query.filter(Venta.fecha_venta <= ff)
+    
+    ventas = query.order_by(Venta.fecha_venta.desc()).limit(150).all()
+    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "pagado": v.pagado, "notas": v.notas, "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""} for v in ventas]
 
 @app.put("/admin/venta/{id}")
 def corregir_venta(id: int, data: dict, db: Session = Depends(get_db)):

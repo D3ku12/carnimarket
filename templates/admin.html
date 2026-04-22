@@ -80,6 +80,17 @@
                         <button class="btn-primary" onclick="abrirModal('modal-venta')"><i class="fas fa-plus"></i> Venta</button>
                     </div>
                 </div>
+                <div class="filtros-fechas">
+                    <div class="filtro-grupo">
+                        <label>Desde</label>
+                        <input type="date" id="ventas-fecha-inicio" onchange="filtrarVentas()">
+                    </div>
+                    <div class="filtro-grupo">
+                        <label>Hasta</label>
+                        <input type="date" id="ventas-fecha-fin" onchange="filtrarVentas()">
+                    </div>
+                    <button class="btn-secondary" onclick="limpiarFiltrosVentas()">Limpiar</button>
+                </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -89,6 +100,7 @@
                                 <th>Detalle</th>
                                 <th>Total</th>
                                 <th>Estado</th>
+                                <th>Vencimiento</th>
                                 <th>Acción</th>
                             </tr>
                         </thead>

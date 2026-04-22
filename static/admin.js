@@ -215,7 +215,20 @@ function limpiarFiltrosCaja() {
 }
 
 async function cargarVentas() {
-    const res = await fetch("/admin/ventas");
+    filtrarVentas();
+}
+
+async function filtrarVentas() {
+    const fecha_inicio = document.getElementById("ventas-fecha-inicio")?.value || "";
+    const fecha_fin = document.getElementById("ventas-fecha-fin")?.value || "";
+    
+    let url = "/admin/ventas";
+    const params = new URLSearchParams();
+    if (fecha_inicio) params.append("fecha_inicio", fecha_inicio);
+    if (fecha_fin) params.append("fecha_fin", fecha_fin);
+    if (params.toString()) url += "?" + params.toString();
+    
+    const res = await fetch(url);
     const data = await res.json();
     document.getElementById("tabla-ventas").innerHTML = data.map(v => `
         <tr>
@@ -224,12 +237,19 @@ async function cargarVentas() {
             <td>${v.producto} (${v.kilos}kg)</td>
             <td>$${v.subtotal.toLocaleString()}</td>
             <td><span class="badge ${v.pagado}">${v.pagado}</span></td>
+            <td>${v.fecha_vencimiento || "—"}</td>
             <td>
                 <button class="btn-primary" onclick="togglePago(${v.id})"><i class="fas fa-sync"></i></button>
                 <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${v.id})"><i class="fas fa-trash"></i></button>
             </td>
         </tr>
     `).join("");
+}
+
+function limpiarFiltrosVentas() {
+    document.getElementById("ventas-fecha-inicio").value = "";
+    document.getElementById("ventas-fecha-fin").value = "";
+    filtrarVentas();
 }
 
 async function cargarDeudas() {
