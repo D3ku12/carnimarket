@@ -161,7 +161,7 @@
       msg.textContent = "❌ " + data.error;
     } else {
       msg.className = "mensaje exito";
-      msg.textContent = `✅ Venta registrada: ${data.producto} ${data.kilos}kg = $${data.subtotal.toLocaleString()}`;
+      msg.textContent = `✅ Venta registrada: ${data.producto} ${data.kilos}kg = $${data.subtotal.toLocaleString()} | Stock remaining: ${data.stock_restante}kg`;
       document.getElementById("kilos").value = "";
       cargarInventario();
     }

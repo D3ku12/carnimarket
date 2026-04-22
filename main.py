@@ -253,7 +253,7 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
     db.add(nueva_venta)
     db.add(Historial(producto=v.producto, tipo="salida", cantidad=v.kilos, motivo=f"Venta a {v.cliente_nombre}", fecha=ahora))
     db.commit()
-    return {"mensaje": "Venta exitosa", "total": total}
+    return {"mensaje": "Venta exitosa", "producto": v.producto, "kilos": v.kilos, "subtotal": total, "stock_restante": p.stock}
 
 @app.get("/admin/ventas")
 def listar_ventas(db: Session = Depends(get_db)):
