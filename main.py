@@ -31,6 +31,11 @@ def obtener_hora_colombia():
 @app.on_event("startup")
 def startup():
     init_db()
+    try:
+        iniciar_scheduler()
+    except Exception:
+        # No detener el arranque si el scheduler falla
+        pass
 
 # --- MODELOS DE ENTRADA (PYDANTIC) ---
 class LoginRequest(BaseModel):
