@@ -457,10 +457,13 @@ async function eliminarCliente(id) {
 }
 
 // ── Deudas ──
+// ¡AQUÍ ESTÁ EL CAMBIO PARA LOS BOTONES DE WHATSAPP!
 async function cargarDeudas() {
   const res = await fetch("/admin/deudas");
-  const data = await res.json();
-  const numDeudores = Object.keys(data.deudas).length;
+  const data = await res.json(); // Ahora data.deudas es un arreglo/lista
+  
+  const numDeudores = data.deudas.length;
+  
   document.getElementById("stats-deudas").innerHTML = `
     <div class="stat">
       <div class="valor">$${data.total_pendiente.toLocaleString()}</div>
@@ -470,14 +473,31 @@ async function cargarDeudas() {
       <div class="valor">${numDeudores}</div>
       <div class="label">Clientes que deben</div>
     </div>`;
+    
   const tbody = document.getElementById("tabla-deudas");
+  
   if (!numDeudores) {
-    tbody.innerHTML = "<tr><td colspan='2' style='color:#2e7d32;text-align:center'>✅ Sin deudas</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='3' style='color:#2e7d32;text-align:center'>✅ Sin deudas</td></tr>";
     return;
   }
-  tbody.innerHTML = Object.entries(data.deudas)
-    .sort((a,b) => b[1]-a[1])
-    .map(([c,t]) => `<tr><td><strong>${c}</strong></td><td style="color:#c0392b;font-weight:bold">$${t.toLocaleString()}</td></tr>`)
+  
+  tbody.innerHTML = data.deudas
+    .sort((a,b) => b.total - a.total)
+    .map(d => {
+      let btnWhatsApp = "";
+      if (d.whatsapp_link) {
+        btnWhatsApp = `<a href="${d.whatsapp_link}" target="_blank" class="btn-small" style="background-color: #25D366; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; display: inline-block;">💬 Cobrar</a>`;
+      } else {
+        btnWhatsApp = `<span style="font-size: 12px; color: #999;">Sin teléfono</span>`;
+      }
+      
+      return `
+      <tr>
+        <td><strong>${d.cliente}</strong></td>
+        <td style="color:#c0392b;font-weight:bold">$${d.total.toLocaleString()}</td>
+        <td>${btnWhatsApp}</td>
+      </tr>`;
+    })
     .join("");
 }
 
