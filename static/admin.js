@@ -307,11 +307,11 @@ async function cargarDeudas() {
             <td>${d.direccion || 'N/A'}</td>
             <td><span class="badge">${d.fecha_vencimiento}</span></td>
             <td>
-                ${d.whatsapp_link ? `<a href="${d.whatsapp_link}" target="_blank" class="btn-wa">COBRAR</a>` : 'N/A'}
+                ${d.whatsapp_link ? `<a href="${d.whatsapp_link}" target="_blank" class="btn-wa">COBRAR</a>` : ''}
             </td>
             <td>
                 ${d.fecha_vencimiento && d.fecha_vencimiento !== 'Sin vencimiento' ? 
-                    `<a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cobro%20a%20${encodeURIComponent(d.cliente)}&dates=${formatFechaGCal(d.fecha_vencimiento)}/${formatFechaGCal(d.fecha_vencimiento)}&details=Recordatorio%20de%20cobro%20por%20$${d.total.toLocaleString()}" target="_blank" class="btn-primary" style="background:var(--info)"><i class="fas fa-bell"></i></a>`
+                    `<a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cobro%20a%20${encodeURIComponent(d.cliente)}&dates=${formatFechaGCal(d.fecha_vencimiento)}/${formatFechaGCal(d.fecha_vencimiento)}&details=Recordatorio%20de%20cobro%20por%20$${d.total.toLocaleString()}" target="_blank" class="btn-cal"><i class="fas fa-bell"></i></a>`
                     : ''}
             </td>
         </tr>

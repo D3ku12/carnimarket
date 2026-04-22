@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CarniMarket | Admin Panel Premium</title>
+    <meta name="theme-color" content="#18181b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>CarniMarket</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥩</text></svg>">
-    
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥩</text></svg>">
     <link rel="stylesheet" href="/static/admin.css">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -18,14 +20,14 @@
             <h1><i class="fas fa-drumstick-bite"></i> CarniMarket</h1>
         </div>
         <nav class="nav">
-            <button class="active" onclick="showTab('dashboard', this)"><i class="fas fa-house"></i></button>
-            <button onclick="showTab('inventario', this)"><i class="fas fa-boxes"></i></button>
-            <button onclick="showTab('ventas', this)"><i class="fas fa-cash-register"></i></button>
-            <button onclick="showTab('caja', this)"><i class="fas fa-piggy-bank"></i></button>
+            <button class="active" onclick="showTab('dashboard', this)"><i class="fas fa-chart-line"></i></button>
+            <button onclick="showTab('inventario', this)"><i class="fas fa-box"></i></button>
+            <button onclick="showTab('ventas', this)"><i class="fas fa-receipt"></i></button>
+            <button onclick="showTab('caja', this)"><i class="fas fa-cash-register"></i></button>
             <button onclick="showTab('clientes', this)"><i class="fas fa-users"></i></button>
             <button onclick="showTab('gastos', this)"><i class="fas fa-wallet"></i></button>
-            <button onclick="showTab('deudas', this)"><i class="fas fa-hand-holding-dollar"></i></button>
-            <button onclick="showTab('usuarios', this)"><i class="fas fa-user-cog"></i></button>
+            <button onclick="showTab('deudas', this)"><i class="fas fa-exclamation-triangle"></i></button>
+            <button onclick="showTab('usuarios', this)"><i class="fas fa-user-gear"></i></button>
         </nav>
     </header>
 
@@ -220,7 +222,9 @@
 
         <section id="tab-deudas" class="tab">
             <div class="card">
-                <h2>⚠️ Cobros Pendientes</h2>
+                <div class="card-header">
+                    <h2><i class="fas fa-exclamation-triangle"></i> Cobros Pendientes</h2>
+                </div>
                 <div class="table-responsive">
                     <table>
                         <thead>

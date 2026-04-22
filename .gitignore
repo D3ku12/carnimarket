@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.db
+*.sqlite
+
+# Entorno virtual
+venv/
+.venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Archivos sensibles
+credentials.json
+*.log
+
+# Compilados
+*.egg-info/
+dist/
+build/
+
+# Database Railway
+.env
+.env.local
+
+# Python bytecode
+*.pyc
+*.pyo
