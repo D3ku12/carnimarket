@@ -207,21 +207,6 @@ async function filtrarCaja() {
         document.getElementById("stats-caja").innerHTML = `<div style="color:red; padding:20px;">Error cargando datos: ${e.message}</div>`;
     }
 }
-        </div>
-        <div class="stat">
-            <span class="valor">$${data.total_ventas.toLocaleString()}</span>
-            <span class="label">Total Ventas</span>
-        </div>
-        <div class="stat" style="border-left-color: var(--danger)">
-            <span class="valor">$${data.gastos.toLocaleString()}</span>
-            <span class="label">Gastos Totales</span>
-        </div>
-        <div class="stat" style="border-left-color: var(--info)">
-            <span class="valor">$${data.saldo_real.toLocaleString()}</span>
-            <span class="label">Saldo Real en Caja</span>
-        </div>
-    `;
-}
 
 function limpiarFiltrosCaja() {
     document.getElementById("caja-fecha-inicio").value = "";
