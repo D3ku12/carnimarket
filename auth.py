@@ -32,13 +32,12 @@ def crear_token(data: dict):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def verificar_token(token: str):
-    if not token:
+    if not token or not token.strip():
         return None
     try:
+        token = token.strip()
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload.get("sub")
-    except JWTError:
-        return None
     except Exception:
         return None
 

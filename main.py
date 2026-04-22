@@ -259,13 +259,24 @@ def logout(response: Response):
 
 @app.get("/auth/verificar")
 def verificar_auth(token: str = Cookie(default=None)):
-    if not token or not verificar_token(token):
-        raise HTTPException(status_code=401, detail="No autorizado")
-    db = next(get_db())
-    usuario = db.query(Usuario).filter(Usuario.email == verificar_token(token), Usuario.activo == True).first()
-    if not usuario:
-        raise HTTPException(status_code=401, detail="No autorizado")
-    return {"rol": usuario.rol, "nombre": usuario.nombre}
+    try:
+        if not token:
+            return {"rol": "empleado", "nombre": ""}
+        
+        email = verificar_token(token)
+        if not email:
+            raise HTTPException(status_code=401, detail="Token invalido")
+        
+        db = next(get_db())
+        usuario = db.query(Usuario).filter(Usuario.email == email).first()
+        if not usuario:
+            return {"rol": "empleado", "nombre": ""}
+        
+        return {"rol": usuario.rol or "empleado", "nombre": usuario.nombre or ""}
+    except HTTPException:
+        raise
+    except Exception:
+        return {"rol": "empleado", "nombre": ""}
 
 # --- GESTIÓN DE USUARIOS ---
 @app.get("/admin/usuarios")

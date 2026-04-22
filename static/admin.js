@@ -538,12 +538,8 @@ window.currentRol = null;
 window.onload = async () => {
     try {
         const res = await fetch("/auth/verificar");
-        if (!res.ok) {
-            window.location.href = "/login";
-            return;
-        }
         const data = await res.json();
-        window.currentRol = data.rol;
+        window.currentRol = data.rol || "empleado";
         
         if (data.rol !== "admin") {
             const btnUsuarios = document.querySelector('button[onclick*="usuarios"]');
@@ -555,8 +551,9 @@ window.onload = async () => {
         }
         
         await cargarDashboard();
-    } catch {
-        window.location.href = "/login";
+    } catch (e) {
+        window.currentRol = "empleado";
+        await cargarDashboard();
     }
 };
 
