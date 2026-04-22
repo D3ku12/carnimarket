@@ -48,6 +48,8 @@ class VentaRequest(BaseModel):
     kilos: float
     cliente_nombre: str = "Cliente general"
     pagado: str = "pagado"
+    fecha_venta: Optional[str] = None
+    fecha_vencimiento: Optional[str] = None
     notas: str = ""
 
 class ClienteRequest(BaseModel):
@@ -204,7 +206,33 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
     p.stock -= v.kilos
     total = v.kilos * p.precio_kilo
     ahora = obtener_hora_colombia()
-    nueva_venta = Venta(producto=v.producto, kilos=v.kilos, precio_kilo=p.precio_kilo, subtotal=total, fecha_venta=ahora, cliente_nombre=v.cliente_nombre, pagado=v.pagado, notas=v.notas)
+    
+    # Procesar fechas
+    fecha_venta = ahora
+    if v.fecha_venta:
+        try:
+            fecha_venta = datetime.strptime(v.fecha_venta, "%Y-%m-%d").replace(hour=ahora.hour, minute=ahora.minute, second=ahora.second)
+        except:
+            fecha_venta = ahora
+    
+    fecha_vencimiento = None
+    if v.fecha_vencimiento:
+        try:
+            fecha_vencimiento = datetime.strptime(v.fecha_vencimiento, "%Y-%m-%d")
+        except:
+            fecha_vencimiento = None
+    
+    nueva_venta = Venta(
+        producto=v.producto,
+        kilos=v.kilos,
+        precio_kilo=p.precio_kilo,
+        subtotal=total,
+        fecha_venta=fecha_venta,
+        fecha_vencimiento=fecha_vencimiento,
+        cliente_nombre=v.cliente_nombre,
+        pagado=v.pagado,
+        notas=v.notas
+    )
     db.add(nueva_venta)
     db.add(Historial(producto=v.producto, tipo="salida", cantidad=v.kilos, motivo=f"Venta a {v.cliente_nombre}", fecha=ahora))
     db.commit()
@@ -280,6 +308,30 @@ def estado_caja(db: Session = Depends(get_db)):
     egresos = db.query(func.sum(Gasto.monto)).scalar() or 0
     return {"saldo_real": ingresos - egresos, "ingresos": ingresos, "egresos": egresos}
 
+@app.get("/admin/caja-detalle")
+def caja_detalle(db: Session = Depends(get_db)):
+    ahora = obtener_hora_colombia()
+    
+    # Ventas pagadas
+    ventas_pagadas = db.query(func.sum(Venta.subtotal)).filter(Venta.pagado == "pagado").scalar() or 0
+    # Ventas que deben
+    ventas_deben = db.query(func.sum(Venta.subtotal)).filter(Venta.pagado == "debe").scalar() or 0
+    # Gastos
+    gastos = db.query(func.sum(Gasto.monto)).scalar() or 0
+    # Saldo real (ingresos - gastos, sin contar lo que deben)
+    saldo_real = ventas_pagadas - gastos
+    
+    # Total ventas registradas
+    total_ventas = ventas_pagadas + ventas_deben
+    
+    return {
+        "ventas_pagadas": ventas_pagadas,
+        "ventas_deben": ventas_deben,
+        "total_ventas": total_ventas,
+        "gastos": gastos,
+        "saldo_real": saldo_real
+    }
+
 @app.get("/admin/dashboard")
 def get_dashboard_data(db: Session = Depends(get_db)):
     ahora = obtener_hora_colombia()
@@ -315,9 +367,30 @@ def get_reporte_deudas(db: Session = Depends(get_db)):
     for v in pendientes:
         if v.cliente_nombre not in resumen:
             cli = db.query(Cliente).filter(Cliente.nombre == v.cliente_nombre).first()
-            resumen[v.cliente_nombre] = {"total": 0, "tel": cli.telefono if cli else ""}
+            resumen[v.cliente_nombre] = {
+                "total": 0,
+                "tel": cli.telefono if cli else "",
+                "direccion": cli.direccion if cli else "",
+                "fecha_vencimiento": None
+            }
         resumen[v.cliente_nombre]["total"] += v.subtotal
-    res = [{"cliente": n, "total": d["total"], "whatsapp_link": f"https://wa.me/57{d['tel']}?text="+urllib.parse.quote(f"Hola {n}, saldo pendiente: ${d['total']:,.0f}") if d['tel'] else ""} for n, d in resumen.items()]
+        # Guardar la fecha de vencimiento más antigua (la que vence primero)
+        if v.fecha_vencimiento:
+            if resumen[v.cliente_nombre]["fecha_vencimiento"] is None:
+                resumen[v.cliente_nombre]["fecha_vencimiento"] = v.fecha_vencimiento
+            elif v.fecha_vencimiento < resumen[v.cliente_nombre]["fecha_vencimiento"]:
+                resumen[v.cliente_nombre]["fecha_vencimiento"] = v.fecha_vencimiento
+    
+    res = []
+    for n, d in resumen.items():
+        fecha_venc_str = d["fecha_vencimiento"].strftime("%Y-%m-%d") if d["fecha_vencimiento"] else "Sin vencimiento"
+        res.append({
+            "cliente": n,
+            "total": d["total"],
+            "direccion": d["direccion"],
+            "fecha_vencimiento": fecha_venc_str,
+            "whatsapp_link": f"https://wa.me/57{d['tel']}?text="+urllib.parse.quote(f"Hola {n}, saldo pendiente: ${d['total']:,.0f}") if d['tel'] else ""
+        })
     return {"deudas": res, "total_pendiente": sum(x["total"] for x in res)}
 
 @app.get("/admin/historial")

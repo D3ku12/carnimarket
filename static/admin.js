@@ -18,6 +18,7 @@ async function showTab(name, btn) {
     if (name === 'dashboard') await cargarDashboard();
     if (name === 'inventario') await cargarInventario();
     if (name === 'ventas') { await cargarVentas(); await cargarSelectores(); }
+    if (name === 'caja') await cargarCaja();
     if (name === 'clientes') await cargarClientes();
     if (name === 'gastos') await cargarGastos();
     if (name === 'deudas') await cargarDeudas();
@@ -151,6 +152,33 @@ async function cargarGastos() {
     `).join("");
 }
 
+async function cargarCaja() {
+    const res = await fetch("/admin/caja-detalle");
+    const data = await res.json();
+    document.getElementById("stats-caja").innerHTML = `
+        <div class="stat" style="border-left-color: var(--success)">
+            <span class="valor">$${data.ventas_pagadas.toLocaleString()}</span>
+            <span class="label">Ventas Pagadas</span>
+        </div>
+        <div class="stat" style="border-left-color: var(--warning)">
+            <span class="valor">$${data.ventas_deben.toLocaleString()}</span>
+            <span class="label">Ventas que Deben</span>
+        </div>
+        <div class="stat">
+            <span class="valor">$${data.total_ventas.toLocaleString()}</span>
+            <span class="label">Total Ventas</span>
+        </div>
+        <div class="stat" style="border-left-color: var(--danger)">
+            <span class="valor">$${data.gastos.toLocaleString()}</span>
+            <span class="label">Gastos Totales</span>
+        </div>
+        <div class="stat" style="border-left-color: var(--info)">
+            <span class="valor">$${data.saldo_real.toLocaleString()}</span>
+            <span class="label">Saldo Real en Caja</span>
+        </div>
+    `;
+}
+
 async function cargarVentas() {
     const res = await fetch("/admin/ventas");
     const data = await res.json();
@@ -176,6 +204,8 @@ async function cargarDeudas() {
         <tr>
             <td><strong>${d.cliente}</strong></td>
             <td style="color:red">$${d.total.toLocaleString()}</td>
+            <td>${d.direccion || 'N/A'}</td>
+            <td><span class="badge">${d.fecha_vencimiento}</span></td>
             <td>
                 ${d.whatsapp_link ? `<a href="${d.whatsapp_link}" target="_blank" class="btn-wa">COBRAR</a>` : 'N/A'}
             </td>
@@ -295,7 +325,9 @@ document.getElementById("form-venta").onsubmit = async (e) => {
         producto: document.getElementById("venta-producto").value,
         kilos: parseFloat(document.getElementById("venta-kilos").value),
         cliente_nombre: document.getElementById("venta-cliente").value || "Cliente General",
-        pagado: document.getElementById("venta-pagado").value
+        pagado: document.getElementById("venta-pagado").value,
+        fecha_venta: document.getElementById("venta-fecha").value || null,
+        fecha_vencimiento: document.getElementById("venta-vencimiento").value || null
     };
 
     const res = await fetch("/vender", {
