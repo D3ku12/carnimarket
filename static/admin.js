@@ -529,14 +529,30 @@ async function cargarSelectores() {
         clis.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join("");
 }
 
-// Inicio automáticamente
+// Verificar rol al cargar
+window.currentRol = null;
+
 window.onload = async () => {
-    const res = await fetch("/auth/verificar");
-    if (!res.ok) {
+    try {
+        const res = await fetch("/auth/verificar");
+        if (!res.ok) {
+            window.location.href = "/login";
+            return;
+        }
+        const data = await res.json();
+        window.currentRol = data.rol;
+        
+        if (data.rol !== "admin") {
+            const btnUsuarios = document.querySelector('button[onclick*="usuarios"]');
+            if (btnUsuarios) btnUsuarios.style.display = "none";
+            const tabUsuarios = document.getElementById("tab-usuarios");
+            if (tabUsuarios) tabUsuarios.style.display = "none";
+        }
+        
+        await cargarDashboard();
+    } catch {
         window.location.href = "/login";
-        return;
     }
-    await cargarDashboard();
 };
 
 // Cargar usuarios
