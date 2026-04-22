@@ -494,51 +494,51 @@ ventas_hoy = db.query(Venta).filter(
 total_hoy = sum(v.subtotal for v in ventas_hoy)
 
     # Stats del mes
-    mes_inicio = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    ventas_mes = db.query(Venta).filter(Venta.fecha_venta >= mes_inicio).all()
-    total_mes = sum(v.subtotal for v in ventas_mes)
+ mes_inicio = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+ventas_mes = db.query(Venta).filter(Venta.fecha_venta >= mes_inicio).all()
+total_mes = sum(v.subtotal for v in ventas_mes)
 
     # Saldo real
-    ventas_cobradas = db.query(Venta).filter(Venta.pagado == "pagado").all()
-    total_ingresos = sum(v.subtotal for v in ventas_cobradas)
-    gastos = db.query(Gasto).all()
-    total_gastos = sum(g.monto for g in gastos)
+ventas_cobradas = db.query(Venta).filter(Venta.pagado == "pagado").all()
+total_ingresos = sum(v.subtotal for v in ventas_cobradas)
+gastos = db.query(Gasto).all()
+total_gastos = sum(g.monto for g in gastos)
 
     # Pendiente
-    ventas_pendientes = db.query(Venta).filter(Venta.pagado == "debe").all()
-    total_pendiente = sum(v.subtotal for v in ventas_pendientes)
+ventas_pendientes = db.query(Venta).filter(Venta.pagado == "debe").all()
+total_pendiente = sum(v.subtotal for v in ventas_pendientes)
 
     # Productos mas vendidos
-    todos_ventas = db.query(Venta).all()
-    productos_ventas = {}
-    for v in todos_ventas:
+todos_ventas = db.query(Venta).all()
+productos_ventas = {}
+for v in todos_ventas:
         productos_ventas[v.producto] = productos_ventas.get(v.producto, 0) + v.kilos
 
     # Ventas ultimos 7 dias
-    ventas_7dias = {}
-    for i in range(6, -1, -1):
+ventas_7dias = {}
+for i in range(6, -1, -1):
         dia = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
         ventas_7dias[dia] = 0
-    for v in todos_ventas:
+for v in todos_ventas:
         if v.fecha_venta:
             dia = v.fecha_venta.strftime("%Y-%m-%d")
             if dia in ventas_7dias:
                 ventas_7dias[dia] += v.subtotal
 
     # Deudas vencidas
-    deudas_vencidas = db.query(Venta).filter(
+deudas_vencidas = db.query(Venta).filter(
         Venta.pagado == "debe",
         Venta.fecha_vencimiento <= datetime.now()
     ).all()
 
     # Stock bajo
-    productos_bajo = db.query(Producto).filter(Producto.stock <= Producto.minimo).all()
-    stock_bajo = [
+ productos_bajo = db.query(Producto).filter(Producto.stock <= Producto.minimo).all()
+stock_bajo = [
         {"nombre": p.nombre, "stock": p.stock, "minimo": p.minimo}
         for p in productos_bajo
     ]
 
-    return {
+return {
         "total_hoy": total_hoy,
         "ventas_hoy": len(ventas_hoy),
         "total_mes": total_mes,
