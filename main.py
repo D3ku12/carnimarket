@@ -238,6 +238,18 @@ def toggle_pago_venta(id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensaje": "Estado de pago actualizado", "pagado": v.pagado}
 
+@app.delete("/admin/venta/{id}")
+def eliminar_venta(id: int, db: Session = Depends(get_db)):
+    v = db.query(Venta).filter(Venta.id == id).first()
+    if not v: return {"error": "No existe"}
+    # Restaurar stock del producto
+    p = db.query(Producto).filter(Producto.nombre == v.producto).first()
+    if p:
+        p.stock += v.kilos
+    db.delete(v)
+    db.commit()
+    return {"mensaje": "Venta eliminada"}
+
 # --- GESTIÓN DE GASTOS ---
 
 @app.post("/admin/gasto")

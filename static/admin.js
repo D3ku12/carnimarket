@@ -102,7 +102,16 @@ async function cargarInventario() {
             <td>${info.stock}kg</td>
             <td>$${info.precio_kilo.toLocaleString()}</td>
             <td>
-                <button class="btn-primary" onclick="prepararEdicionProd('${nombre.replaceAll("'", "\\'")}', ${JSON.stringify(info).replaceAll('"', '&quot;')})">>
+                <button class="btn-primary" onclick="prepararEdicionProd('${nombre.replaceAll("'", "\\'")}', ${JSON.stringify(info).replaceAll('"', '&quot;')})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarProducto(${info.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join("");
+}>
                     <i class="fas fa-edit"></i>
                 </button>
             </td>
@@ -155,6 +164,7 @@ async function cargarVentas() {
             <td><span class="badge ${v.pagado}">${v.pagado}</span></td>
             <td>
                 <button class="btn-primary" onclick="togglePago(${v.id})"><i class="fas fa-sync"></i></button>
+                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${v.id})"><i class="fas fa-trash"></i></button>
             </td>
         </tr>
     `).join("");
@@ -317,8 +327,35 @@ async function togglePago(id) {
 
 async function eliminarCliente(id) {
     if(confirm("¿Eliminar cliente?")) {
-        await fetch(`/admin/cliente/${id}`, { method: "DELETE" });
-        cargarClientes();
+        const res = await fetch(`/admin/cliente/${id}`, { method: "DELETE" });
+        if(res.ok) {
+            cargarClientes();
+        } else {
+            alert("Error al eliminar cliente");
+        }
+    }
+}
+
+async function eliminarProducto(id) {
+    if(confirm("¿Eliminar producto? Se perderá todo el historial asociado.")) {
+        const res = await fetch(`/admin/producto/${id}`, { method: "DELETE" });
+        if(res.ok) {
+            cargarInventario();
+        } else {
+            alert("Error al eliminar producto");
+        }
+    }
+}
+
+async function eliminarVenta(id) {
+    if(confirm("¿Eliminar venta? Se restaurará el stock del producto.")) {
+        const res = await fetch(`/admin/venta/${id}`, { method: "DELETE" });
+        if(res.ok) {
+            cargarVentas();
+            cargarDashboard();
+        } else {
+            alert("Error al eliminar venta");
+        }
     }
 }
 
