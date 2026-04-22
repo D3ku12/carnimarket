@@ -157,8 +157,9 @@ async function cargarCaja() {
 }
 
 async function filtrarCaja() {
-    const fecha_inicio = document.getElementById("caja-fecha-inicio").value;
-    const fecha_fin = document.getElementById("caja-fecha-fin").value;
+    console.log("Cargando caja...");
+    const fecha_inicio = document.getElementById("caja-fecha-inicio")?.value || "";
+    const fecha_fin = document.getElementById("caja-fecha-fin")?.value || "";
     
     let url = "/admin/caja-detalle";
     const params = new URLSearchParams();
@@ -166,16 +167,46 @@ async function filtrarCaja() {
     if (fecha_fin) params.append("fecha_fin", fecha_fin);
     if (params.toString()) url += "?" + params.toString();
     
-    const res = await fetch(url);
-    const data = await res.json();
-    document.getElementById("stats-caja").innerHTML = `
+    console.log("URL:", url);
+    
+    try {
+        const res = await fetch(url);
+        console.log("Status:", res.status);
+        if (!res.ok) throw new Error("Error HTTP: " + res.status);
+        const data = await res.json();
+        console.log("Data:", data);
+        
+        if (!data || typeof data.ventas_pagadas === 'undefined') {
+            throw new Error("Datos inválidos del servidor");
+        }
+        
+        document.getElementById("stats-caja").innerHTML = `
         <div class="stat" style="border-left-color: var(--success)">
-            <span class="valor">$${data.ventas_pagadas.toLocaleString()}</span>
+            <span class="valor">$${(data.ventas_pagadas || 0).toLocaleString()}</span>
             <span class="label">Ventas Pagadas</span>
         </div>
         <div class="stat" style="border-left-color: var(--warning)">
-            <span class="valor">$${data.ventas_deben.toLocaleString()}</span>
+            <span class="valor">$${(data.ventas_deben || 0).toLocaleString()}</span>
             <span class="label">Ventas que Deben</span>
+        </div>
+        <div class="stat">
+            <span class="valor">$${(data.total_ventas || 0).toLocaleString()}</span>
+            <span class="label">Total Ventas</span>
+        </div>
+        <div class="stat" style="border-left-color: var(--danger)">
+            <span class="valor">$${(data.gastos || 0).toLocaleString()}</span>
+            <span class="label">Gastos Totales</span>
+        </div>
+        <div class="stat" style="border-left-color: var(--info)">
+            <span class="valor">$${(data.saldo_real || 0).toLocaleString()}</span>
+            <span class="label">Saldo Real en Caja</span>
+        </div>
+    `;
+    } catch (e) {
+        console.error("Error caja:", e);
+        document.getElementById("stats-caja").innerHTML = `<div style="color:red; padding:20px;">Error cargando datos: ${e.message}</div>`;
+    }
+}
         </div>
         <div class="stat">
             <span class="valor">$${data.total_ventas.toLocaleString()}</span>
