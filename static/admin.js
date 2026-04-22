@@ -111,12 +111,6 @@ async function cargarInventario() {
             </td>
         </tr>
     `).join("");
-}>
-                    <i class="fas fa-edit"></i>
-                </button>
-            </td>
-        </tr>
-    `).join("");
 }
 
 async function cargarClientes() {
