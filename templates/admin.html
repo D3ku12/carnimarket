@@ -5,11 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CarniMarket — Admin</title>
   <link rel="stylesheet" href="/static/admin.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<!-- Modal editar producto -->
 <div class="modal-overlay" id="modal-producto">
   <div class="modal">
     <h3>✏️ Editar Producto</h3>
@@ -36,7 +34,6 @@
   </div>
 </div>
 
-<!-- Modal editar cliente -->
 <div class="modal-overlay" id="modal-cliente">
   <div class="modal">
     <h3>✏️ Editar Cliente</h3>
@@ -55,7 +52,6 @@
   </div>
 </div>
 
-<!-- Modal editar venta -->
 <div class="modal-overlay" id="modal-venta">
   <div class="modal">
     <h3>✏️ Editar Venta</h3>
@@ -111,7 +107,6 @@
 
 <div class="container">
 
-  <!-- TAB DASHBOARD -->
   <div id="tab-dashboard" class="tab active">
     <div class="stat-grid" id="stats-dashboard"></div>
     <div class="dos-col">
@@ -136,7 +131,6 @@
     </div>
   </div>
 
-  <!-- TAB INVENTARIO -->
   <div id="tab-inventario" class="tab">
     <div class="card">
       <h2>📦 Inventario — Actualizar Stock</h2>
@@ -159,7 +153,6 @@
     </div>
   </div>
 
-  <!-- TAB VENTAS -->
   <div id="tab-ventas" class="tab">
     <div class="card">
       <h2>💰 Registrar Venta</h2>
@@ -209,8 +202,13 @@
       </div>
       <button class="btn-red" onclick="registrarVenta()">💰 Registrar Venta</button>
     </div>
+    
     <div class="card">
       <h2>📋 Historial de Ventas</h2>
+      
+      <a href="/admin/exportar/ventas" style="background-color: #27ae60; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; margin-bottom: 15px; display: inline-block; font-weight: bold;">
+          📊 Descargar Excel de Ventas
+      </a>
       <div class="filtros">
         <input type="date" id="filtro-fecha">
         <input type="text" id="filtro-cliente" placeholder="Buscar cliente...">
@@ -236,7 +234,6 @@
     </div>
   </div>
 
-  <!-- TAB CLIENTES -->
   <div id="tab-clientes" class="tab">
     <div class="card">
       <h2>➕ Agregar Cliente</h2>
@@ -257,19 +254,17 @@
     </div>
   </div>
 
-  <!-- TAB DEUDAS -->
   <div id="tab-deudas" class="tab">
     <div class="stat-grid" id="stats-deudas"></div>
     <div class="card">
       <h2>⚠️ Clientes que Deben</h2>
       <table>
-        <thead><tr><th>Cliente</th><th>Total pendiente</th></tr></thead>
-        <tbody id="tabla-deudas"><tr><td colspan="2">Cargando...</td></tr></tbody>
+        <thead><tr><th>Cliente</th><th>Total pendiente</th><th>Cobrar</th></tr></thead>
+        <tbody id="tabla-deudas"><tr><td colspan="3">Cargando...</td></tr></tbody>
       </table>
     </div>
   </div>
 
-  <!-- TAB GASTOS -->
   <div id="tab-gastos" class="tab">
     <div class="card">
       <h2>💸 Registrar Gasto</h2>
@@ -312,7 +307,6 @@
     </div>
   </div>
 
-  <!-- TAB CAJA -->
   <div id="tab-caja" class="tab">
     <div class="stat-grid" id="stats-caja"></div>
     <div class="dos-col">
@@ -330,7 +324,6 @@
     </div>
   </div>
 
-  <!-- TAB HISTORIAL -->
   <div id="tab-historial" class="tab">
     <div class="card">
       <h2>📋 Historial de Movimientos</h2>
