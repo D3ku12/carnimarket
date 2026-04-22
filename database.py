@@ -20,7 +20,7 @@ class Usuario(Base):
     email = Column(String, unique=True, index=True)
     password_hash = Column(String)
     nombre = Column(String)
-    rol = Column(String, default="empleado")  # admin, empleado
+    rol = Column(String, default="empleado")
     activo = Column(Boolean, default=True)
     fecha_registro = Column(DateTime, default=datetime.now)
     ultimo_login = Column(DateTime, nullable=True)

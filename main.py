@@ -360,7 +360,7 @@ def solicitar_recuperacion(data: dict, db: Session = Depends(get_db)):
         """
         enviar_correo(email, asunto, html)
     
-    return {"mensaje": "Si el correo existe, recibirás las instrucciones"}
+return {"mensaje": "Si el correo existe, recibirás las instrucciones"}
 
 @app.post("/auth/reset-password")
 def cambiar_contrasena(data: dict, response: Response):
