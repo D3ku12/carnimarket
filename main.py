@@ -1,6 +1,8 @@
+import time
+from collections import defaultdict
 from fastapi import FastAPI, Depends, Cookie, Response, Request, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import init_db, get_db, Producto, Venta, Cliente, Gasto, Historial
@@ -10,11 +12,30 @@ from typing import Optional, List
 from fastapi.staticfiles import StaticFiles
 import io
 import urllib.parse
+import re
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from dotenv import load_dotenv
-from scheduler import iniciar_scheduler, detener_scheduler
+from scheduler import iniciar_scheduler
 from whatsapp_service import whatsapp_service
+
+# Rate limiting simple
+login_attempts = defaultdict(list)
+MAX_ATTEMPTS = 5
+LOCKOUT_TIME = 300  # 5 minutos
+
+def check_rate_limit(ip: str) -> bool:
+    ahora = time.time()
+    login_attempts[ip] = [t for t in login_attempts[ip] if ahora - t < LOCKOUT_TIME]
+    if len(login_attempts[ip]) >= MAX_ATTEMPTS:
+        return False
+    login_attempts[ip].append(ahora)
+    return True
+
+def sanitize_input(value: str) -> str:
+    if not value:
+        return value
+    return re.sub(r'[<>"\']', '', value)
 
 # Cargar variables de entorno
 load_dotenv()
@@ -41,6 +62,14 @@ def startup():
 class LoginRequest(BaseModel):
     usuario: str
     password: str
+    
+    @validator('usuario', 'password')
+    def validate_length(cls, v):
+        if len(v) < 3:
+            raise ValueError('Mínimo 3 caracteres')
+        if len(v) > 50:
+            raise ValueError('Máximo 50 caracteres')
+        return v
 
 class ProductoRequest(BaseModel):
     nombre: str
@@ -62,11 +91,25 @@ class VentaRequest(BaseModel):
     fecha_venta: Optional[str] = None
     fecha_vencimiento: Optional[str] = None
     notas: str = ""
+    
+    @validator('producto', 'cliente_nombre', 'notas')
+    def sanitize_strings(cls, v):
+        return sanitize_input(v)
+    
+    @validator('kilos')
+    def validate_kilos(cls, v):
+        if v <= 0 or v > 1000:
+            raise ValueError('Cantidad inválida')
+        return v
 
 class ClienteRequest(BaseModel):
     nombre: str
     telefono: str = ""
     direccion: str = ""
+    
+    @validator('nombre', 'telefono', 'direccion')
+    def sanitize_strings(cls, v):
+        return sanitize_input(v)
 
 class ClienteUpdate(BaseModel):
     nombre: Optional[str] = None
@@ -106,17 +149,25 @@ def admin(token: str = Cookie(default=None)):
 # --- AUTENTICACIÓN ---
 
 @app.post("/auth/login")
-def auth_login(data: LoginRequest, response: Response):
+def auth_login(data: LoginRequest, response: Response, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    
+    if not check_rate_limit(client_ip):
+        return {"error": "Demasiados intentos. Intenta más tarde."}
+    
     if data.usuario != ADMIN_USER or not verificar_password(data.password, ADMIN_PASSWORD):
         return {"error": "Credenciales incorrectas"}
+    
     token = crear_token({"sub": data.usuario})
+    login_attempts[client_ip] = []
+    
     response.set_cookie(
         key="token", 
         value=token, 
         httponly=True, 
         max_age=28800, 
         samesite="lax", 
-        secure=False
+        secure=True
     )
     return {"token": token}
 
