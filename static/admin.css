@@ -324,6 +324,36 @@ tr:hover { background-color: #f9f9f9; }
     font-size: 0.8rem;
 }
 
+/* --- FILTROS DE FECHA --- */
+.filtros-fechas {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.filtro-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.filtro-grupo label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #7f8c8d;
+}
+
+.filtro-grupo input {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: var(--white);
+}
+
 /* --- RESPONSIVO --- */
 @media (max-width: 768px) {
     header { flex-direction: column; gap: 1rem; }

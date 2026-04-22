@@ -326,19 +326,36 @@ def estado_caja(db: Session = Depends(get_db)):
     return {"saldo_real": ingresos - egresos, "ingresos": ingresos, "egresos": egresos}
 
 @app.get("/admin/caja-detalle")
-def caja_detalle(db: Session = Depends(get_db)):
-    ahora = obtener_hora_colombia()
+def caja_detalle(
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    now = obtener_hora_colombia()
     
-    # Ventas pagadas
-    ventas_pagadas = db.query(func.sum(Venta.subtotal)).filter(Venta.pagado == "pagado").scalar() or 0
-    # Ventas que deben
-    ventas_deben = db.query(func.sum(Venta.subtotal)).filter(Venta.pagado == "debe").scalar() or 0
-    # Gastos
-    gastos = db.query(func.sum(Gasto.monto)).scalar() or 0
-    # Saldo real (ingresos - gastos, sin contar lo que deben)
+    query_ventas = db.query(Venta)
+    query_gastos = db.query(Gasto)
+    
+    if fecha_inicio:
+        try:
+            fi = datetime.strptime(fecha_inicio, "%Y-%m-%d").replace(hour=0, minute=0, second=0)
+            query_ventas = query_ventas.filter(Venta.fecha_venta >= fi)
+            query_gastos = query_gastos.filter(Gasto.fecha >= fi)
+        except ValueError:
+            pass
+    
+    if fecha_fin:
+        try:
+            ff = datetime.strptime(fecha_fin, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            query_ventas = query_ventas.filter(Venta.fecha_venta <= ff)
+            query_gastos = query_gastos.filter(Gasto.fecha <= ff)
+        except ValueError:
+            pass
+    
+    ventas_pagadas = query_ventas.filter(Venta.pagado == "pagado").scalar() or 0
+    ventas_deben = query_ventas.filter(Venta.pagado == "debe").scalar() or 0
+    gastos = query_gastos.scalar() or 0
     saldo_real = ventas_pagadas - gastos
-    
-    # Total ventas registradas
     total_ventas = ventas_pagadas + ventas_deben
     
     return {

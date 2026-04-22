@@ -153,7 +153,20 @@ async function cargarGastos() {
 }
 
 async function cargarCaja() {
-    const res = await fetch("/admin/caja-detalle");
+    filtrarCaja();
+}
+
+async function filtrarCaja() {
+    const fecha_inicio = document.getElementById("caja-fecha-inicio").value;
+    const fecha_fin = document.getElementById("caja-fecha-fin").value;
+    
+    let url = "/admin/caja-detalle";
+    const params = new URLSearchParams();
+    if (fecha_inicio) params.append("fecha_inicio", fecha_inicio);
+    if (fecha_fin) params.append("fecha_fin", fecha_fin);
+    if (params.toString()) url += "?" + params.toString();
+    
+    const res = await fetch(url);
     const data = await res.json();
     document.getElementById("stats-caja").innerHTML = `
         <div class="stat" style="border-left-color: var(--success)">
@@ -177,6 +190,12 @@ async function cargarCaja() {
             <span class="label">Saldo Real en Caja</span>
         </div>
     `;
+}
+
+function limpiarFiltrosCaja() {
+    document.getElementById("caja-fecha-inicio").value = "";
+    document.getElementById("caja-fecha-fin").value = "";
+    filtrarCaja();
 }
 
 async function cargarVentas() {
@@ -405,7 +424,9 @@ async function eliminarGasto(id) {
 async function cargarSelectores() {
     const resP = await fetch("/inventario");
     const prods = await resP.json();
-    document.getElementById("venta-producto").innerHTML = Object.keys(prods).map(p => `<option value="${p}">${p}</option>`).join("");
+    document.getElementById("venta-producto").innerHTML = Object.keys(prods).map(p => 
+        `<option value="${p}">${p} — Stock: ${prods[p].stock}kg</option>`
+    ).join("");
     
     const resC = await fetch("/admin/clientes");
     const clis = await resC.json();

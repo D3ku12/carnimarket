@@ -101,6 +101,17 @@
         <section id="tab-caja" class="tab">
             <div class="card">
                 <h2>💰 Estado de Caja</h2>
+                <div class="filtros-fechas">
+                    <div class="filtro-grupo">
+                        <label>Desde</label>
+                        <input type="date" id="caja-fecha-inicio" onchange="filtrarCaja()">
+                    </div>
+                    <div class="filtro-grupo">
+                        <label>Hasta</label>
+                        <input type="date" id="caja-fecha-fin" onchange="filtrarCaja()">
+                    </div>
+                    <button class="btn-secondary" onclick="limpiarFiltrosCaja()">Limpiar</button>
+                </div>
                 <div id="stats-caja" class="stat-grid">
                 </div>
             </div>
