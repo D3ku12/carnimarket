@@ -329,42 +329,37 @@ def estado_caja(db: Session = Depends(get_db)):
 def caja_detalle(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
-    db: Session = Depends(get_db)
-):
-    now = obtener_hora_colombia()
-    
-    query_ventas = db.query(Venta)
-    query_gastos = db.query(Gasto)
-    
-    if fecha_inicio:
-        try:
+    db: Session = Depends(get_db)):
+    try:
+        query_vp = db.query(Venta).filter(Venta.pagado == "pagado")
+        query_vd = db.query(Venta).filter(Venta.pagado == "debe")
+        query_g = db.query(Gasto)
+        
+        if fecha_inicio:
             fi = datetime.strptime(fecha_inicio, "%Y-%m-%d").replace(hour=0, minute=0, second=0)
-            query_ventas = query_ventas.filter(Venta.fecha_venta >= fi)
-            query_gastos = query_gastos.filter(Gasto.fecha >= fi)
-        except ValueError:
-            pass
-    
-    if fecha_fin:
-        try:
+            query_vp = query_vp.filter(Venta.fecha_venta >= fi)
+            query_vd = query_vd.filter(Venta.fecha_venta >= fi)
+            query_g = query_g.filter(Gasto.fecha >= fi)
+        
+        if fecha_fin:
             ff = datetime.strptime(fecha_fin, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
-            query_ventas = query_ventas.filter(Venta.fecha_venta <= ff)
-            query_gastos = query_gastos.filter(Gasto.fecha <= ff)
-        except ValueError:
-            pass
-    
-    ventas_pagadas = query_ventas.filter(Venta.pagado == "pagado").scalar() or 0
-    ventas_deben = query_ventas.filter(Venta.pagado == "debe").scalar() or 0
-    gastos = query_gastos.scalar() or 0
-    saldo_real = ventas_pagadas - gastos
-    total_ventas = ventas_pagadas + ventas_deben
-    
-    return {
-        "ventas_pagadas": ventas_pagadas,
-        "ventas_deben": ventas_deben,
-        "total_ventas": total_ventas,
-        "gastos": gastos,
-        "saldo_real": saldo_real
-    }
+            query_vp = query_vp.filter(Venta.fecha_venta <= ff)
+            query_vd = query_vd.filter(Venta.fecha_venta <= ff)
+            query_g = query_g.filter(Gasto.fecha <= ff)
+        
+        vp = sum(v.subtotal for v in query_vp.all())
+        vd = sum(v.subtotal for v in query_vd.all())
+        g = sum(g_.monto for g_ in query_g.all())
+        
+        return {
+            "ventas_pagadas": vp,
+            "ventas_deben": vd,
+            "total_ventas": vp + vd,
+            "gastos": g,
+            "saldo_real": vp - g
+        }
+    except Exception as e:
+        return {"error": str(e), "ventas_pagadas": 0, "ventas_deben": 0, "total_ventas": 0, "gastos": 0, "saldo_real": 0}
 
 @app.get("/admin/dashboard")
 def get_dashboard_data(db: Session = Depends(get_db)):
