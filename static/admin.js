@@ -142,6 +142,11 @@ async function cargarGastos() {
             <td>${g.descripcion}</td>
             <td><span class="badge">${g.categoria}</span></td>
             <td style="color:var(--danger)">-$${g.monto.toLocaleString()}</td>
+            <td>
+                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarGasto(${g.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
         </tr>
     `).join("");
 }
@@ -349,6 +354,18 @@ async function eliminarVenta(id) {
             cargarDashboard();
         } else {
             alert("Error al eliminar venta");
+        }
+    }
+}
+
+async function eliminarGasto(id) {
+    if(confirm("¿Eliminar gasto?")) {
+        const res = await fetch(`/admin/gasto/${id}`, { method: "DELETE" });
+        if(res.ok) {
+            cargarGastos();
+            cargarDashboard();
+        } else {
+            alert("Error al eliminar gasto");
         }
     }
 }

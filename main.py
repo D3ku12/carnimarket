@@ -264,6 +264,14 @@ def listar_gastos(db: Session = Depends(get_db)):
     gs = db.query(Gasto).order_by(Gasto.fecha.desc()).all()
     return [{"id": g.id, "fecha": g.fecha.strftime("%Y-%m-%d"), "descripcion": g.descripcion, "monto": g.monto, "categoria": g.categoria} for g in gs]
 
+@app.delete("/admin/gasto/{id}")
+def eliminar_gasto(id: int, db: Session = Depends(get_db)):
+    g = db.query(Gasto).filter(Gasto.id == id).first()
+    if not g: return {"error": "No existe"}
+    db.delete(g)
+    db.commit()
+    return {"mensaje": "Gasto eliminado"}
+
 # --- REPORTES Y CAJA ---
 
 @app.get("/admin/caja")
@@ -275,15 +283,27 @@ def estado_caja(db: Session = Depends(get_db)):
 @app.get("/admin/dashboard")
 def get_dashboard_data(db: Session = Depends(get_db)):
     ahora = obtener_hora_colombia()
-    inicio_dia = ahora.replace(hour=0, minute=0, second=0)
-    v_hoy = db.query(Venta).filter(Venta.fecha_venta >= inicio_dia).all()
+    inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
+    fin_dia = ahora.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    # Ventas de hoy
+    v_hoy = db.query(Venta).filter(Venta.fecha_venta >= inicio_dia, Venta.fecha_venta <= fin_dia).all()
+    
+    # Conteo total de productos vendidos
     conteo = {}
     for v in db.query(Venta).all():
         conteo[v.producto] = conteo.get(v.producto, 0) + v.kilos
+    
+    # Alertas de stock bajo
     alertas = db.query(Producto).filter(Producto.stock <= Producto.minimo).all()
+    
+    # Ventas del mes
+    inicio_mes = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    v_mes = db.query(Venta).filter(Venta.fecha_venta >= inicio_mes).all()
+    
     return {
         "total_hoy": sum(v.subtotal for v in v_hoy),
-        "total_mes": sum(v.subtotal for v in db.query(Venta).filter(Venta.fecha_venta >= ahora.replace(day=1)).all()),
+        "total_mes": sum(v.subtotal for v in v_mes),
         "productos_ventas": dict(sorted(conteo.items(), key=lambda x: x[1], reverse=True)[:7]),
         "stock_bajo": [{"nombre": p.nombre, "stock": p.stock} for p in alertas]
     }
