@@ -82,8 +82,8 @@ app = FastAPI(
 )
 
 app.add_middleware(
-    CORSM,
-    allow_origins=["https://tudominio.com"],  # Cambiar por tu dominio
+    CORSMiddleware,
+    allow_origins=["https://carnimarket-production.up.railway.app"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
