@@ -30,6 +30,16 @@
     <main class="container">
         
         <section id="tab-dashboard" class="tab active">
+            <div class="filtros-fechas">
+                <div class="filtro-grupo">
+                    <label>Período</label>
+                    <select id="dashboard-periodo" onchange="filtrarDashboard()">
+                        <option value="hoy">Hoy</option>
+                        <option value="7dias" selected>Últimos 7 días</option>
+                        <option value="30dias">Último mes</option>
+                    </select>
+                </div>
+            </div>
             <div id="stats-dashboard" class="stat-grid">
                 </div>
             
@@ -76,7 +86,7 @@
                 <div class="card-header">
                     <h2>💰 Registro de Ventas</h2>
                     <div class="acciones">
-                        <a href="/admin/exportar/ventas" class="btn-green"><i class="fas fa-file-excel"></i></a>
+                        <a id="btn-exportar-ventas" href="/admin/exportar/ventas" class="btn-green" target="_blank"><i class="fas fa-file-excel"></i></a>
                         <button class="btn-primary" onclick="abrirModal('modal-venta')"><i class="fas fa-plus"></i> Venta</button>
                     </div>
                 </div>
@@ -123,6 +133,7 @@
                         <input type="date" id="caja-fecha-fin" onchange="filtrarCaja()">
                     </div>
                     <button class="btn-secondary" onclick="limpiarFiltrosCaja()">Limpiar</button>
+                    <a id="btn-exportar-caja" href="/admin/exportar/caja" class="btn-green" target="_blank"><i class="fas fa-file-excel"></i></a>
                 </div>
                 <div id="stats-caja" class="stat-grid">
                 </div>

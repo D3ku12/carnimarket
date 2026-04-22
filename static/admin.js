@@ -47,17 +47,22 @@ function cerrarModal(id) {
 
 // --- 3. FUNCIONES DE CARGA (FETCH) ---
 
-async function cargarDashboard() {
-    const res = await fetch("/admin/dashboard");
+async function filtrarDashboard() {
+    const periodo = document.getElementById("dashboard-periodo")?.value || "7dias";
+    const res = await fetch(`/admin/dashboard?periodo=${periodo}`);
     const resCaja = await fetch("/admin/caja");
     const data = await res.json();
     const caja = await resCaja.json();
 
-    // Stats de Caja y Dashboard
+    const labels = {"hoy": "Hoy", "7dias": "Últimos 7 días", "30dias": "Último mes"};
     document.getElementById("stats-dashboard").innerHTML = `
         <div class="stat" style="border-left-color: var(--success)">
             <span class="valor">$${caja.saldo_real.toLocaleString()}</span>
-            <span class="label">Saldo en Caja (Efectivo)</span>
+            <span class="label">Saldo en Caja</span>
+        </div>
+        <div class="stat">
+            <span class="valor">$${(data.total_periodo || data.total_hoy).toLocaleString()}</span>
+            <span class="label">Ventas (${labels[periodo] || periodo})</span>
         </div>
         <div class="stat">
             <span class="valor">$${data.total_hoy.toLocaleString()}</span>
@@ -69,7 +74,6 @@ async function cargarDashboard() {
         </div>
     `;
 
-    // Gráfica
     const ctx = document.getElementById('chart-productos').getContext('2d');
     if (chartProductos) chartProductos.destroy();
     chartProductos = new Chart(ctx, {
@@ -86,13 +90,16 @@ async function cargarDashboard() {
         options: { responsive: true, maintainAspectRatio: false }
     });
 
-    // Alertas
     document.getElementById("alertas-stock").innerHTML = data.stock_bajo.map(p => `
         <div class="alerta-item">
             <span>${p.nombre}</span>
             <span class="tag-rojo">${p.stock}kg</span>
         </div>
     `).join("") || "<p>✅ Inventario al día</p>";
+}
+
+async function cargarDashboard() {
+    filtrarDashboard();
 }
 
 async function cargarInventario() {
@@ -169,6 +176,8 @@ async function filtrarCaja() {
     if (fecha_fin) params.append("fecha_fin", fecha_fin);
     if (params.toString()) url += "?" + params.toString();
     
+    document.getElementById("btn-exportar-caja").href = "/admin/exportar/caja" + (params.toString() ? "?" + params.toString() : "");
+    
     console.log("URL:", url);
     
     try {
@@ -229,6 +238,8 @@ async function filtrarVentas() {
     if (fecha_inicio) params.append("fecha_inicio", fecha_inicio);
     if (fecha_fin) params.append("fecha_fin", fecha_fin);
     if (params.toString()) url += "?" + params.toString();
+    
+    document.getElementById("btn-exportar-ventas").href = "/admin/exportar/ventas" + (params.toString() ? "?" + params.toString() : "");
     
     const res = await fetch(url);
     const data = await res.json();

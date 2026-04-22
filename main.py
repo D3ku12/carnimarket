@@ -374,31 +374,38 @@ def caja_detalle(
         return {"error": str(e), "ventas_pagadas": 0, "ventas_deben": 0, "total_ventas": 0, "gastos": 0, "saldo_real": 0}
 
 @app.get("/admin/dashboard")
-def get_dashboard_data(db: Session = Depends(get_db)):
+def get_dashboard_data(periodo: str = "7dias", db: Session = Depends(get_db)):
     ahora = obtener_hora_colombia()
     inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
     fin_dia = ahora.replace(hour=23, minute=59, second=59, microsecond=999999)
     
-    # Ventas de hoy
-    v_hoy = db.query(Venta).filter(Venta.fecha_venta >= inicio_dia, Venta.fecha_venta <= fin_dia).all()
+    if periodo == "hoy":
+        fecha_inicio = inicio_dia
+    elif periodo == "7dias":
+        fecha_inicio = inicio_dia - timedelta(days=6)
+    elif periodo == "30dias":
+        fecha_inicio = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        fecha_inicio = inicio_dia - timedelta(days=6)
     
-    # Conteo total de productos vendidos
+    v_periodo = db.query(Venta).filter(Venta.fecha_venta >= fecha_inicio, Venta.fecha_venta <= fin_dia).all()
+    
     conteo = {}
-    for v in db.query(Venta).all():
+    for v in v_periodo:
         conteo[v.producto] = conteo.get(v.producto, 0) + v.kilos
     
-    # Alertas de stock bajo
     alertas = db.query(Producto).filter(Producto.stock <= Producto.minimo).all()
     
-    # Ventas del mes
     inicio_mes = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     v_mes = db.query(Venta).filter(Venta.fecha_venta >= inicio_mes).all()
     
     return {
-        "total_hoy": sum(v.subtotal for v in v_hoy),
+        "total_hoy": sum(v.subtotal for v in db.query(Venta).filter(Venta.fecha_venta >= inicio_dia, Venta.fecha_venta <= fin_dia).all()),
+        "total_periodo": sum(v.subtotal for v in v_periodo),
         "total_mes": sum(v.subtotal for v in v_mes),
         "productos_ventas": dict(sorted(conteo.items(), key=lambda x: x[1], reverse=True)[:7]),
-        "stock_bajo": [{"nombre": p.nombre, "stock": p.stock} for p in alertas]
+        "stock_bajo": [{"nombre": p.nombre, "stock": p.stock} for p in alertas],
+        "periodo": periodo
     }
 
 @app.get("/admin/deudas")
@@ -454,13 +461,66 @@ def ver_historial_movimientos(db: Session = Depends(get_db)):
     logs = db.query(Historial).order_by(Historial.fecha.desc()).limit(100).all()
     return [{"fecha": l.fecha.strftime("%Y-%m-%d %H:%M"), "producto": l.producto, "tipo": l.tipo, "cantidad": l.cantidad, "motivo": l.motivo} for l in logs]
 
+@app.get("/admin/exportar/caja")
+def generar_excel_caja(
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    db: Session = Depends(get_db)):
+    query_v = db.query(Venta)
+    query_g = db.query(Gasto)
+    
+    if fecha_inicio:
+        fi = datetime.strptime(fecha_inicio, "%Y-%m-%d").replace(hour=0, minute=0, second=0)
+        query_v = query_v.filter(Venta.fecha_venta >= fi)
+        query_g = query_g.filter(Gasto.fecha >= fi)
+    if fecha_fin:
+        ff = datetime.strptime(fecha_fin, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+        query_v = query_v.filter(Venta.fecha_venta <= ff)
+        query_g = query_g.filter(Gasto.fecha <= ff)
+    
+    filename = "Caja"
+    if fecha_inicio or fecha_fin:
+        filename += f"_{fecha_inicio or 'inicio'}_{fecha_fin or 'fin'}"
+    filename += ".xlsx"
+    
+    wb = Workbook()
+    ws_v = wb.create_sheet("Ventas")
+    ws_v.append(["ID", "Fecha", "Cliente", "Producto", "Kilos", "Precio/Kg", "Total", "Estado"])
+    for v in query_v.order_by(Venta.fecha_venta.desc()).all():
+        ws_v.append([v.id, v.fecha_venta.strftime("%Y-%m-%d %H:%M"), v.cliente_nombre, v.producto, v.kilos, v.precio_kilo, v.subtotal, v.pagado])
+    
+    ws_g = wb.create_sheet("Gastos")
+    ws_g.append(["ID", "Fecha", "Descripción", "Categoría", "Monto"])
+    for g in query_g.order_by(Gasto.fecha.desc()).all():
+        ws_g.append([g.id, g.fecha.strftime("%Y-%m-%d %H:%M"), g.descripcion, g.categoria, g.monto])
+    
+    stream = io.BytesIO(); wb.save(stream); stream.seek(0)
+    return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f"attachment; filename={filename}"})
+
 @app.get("/admin/exportar/ventas")
-def generar_excel_ventas(db: Session = Depends(get_db)):
-    ventas = db.query(Venta).order_by(Venta.fecha_venta.desc()).all()
+def generar_excel_ventas(
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    db: Session = Depends(get_db)):
+    query = db.query(Venta)
+    
+    if fecha_inicio:
+        fi = datetime.strptime(fecha_inicio, "%Y-%m-%d").replace(hour=0, minute=0, second=0)
+        query = query.filter(Venta.fecha_venta >= fi)
+    if fecha_fin:
+        ff = datetime.strptime(fecha_fin, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+        query = query.filter(Venta.fecha_venta <= ff)
+    
+    ventas = query.order_by(Venta.fecha_venta.desc()).all()
+    filename = "Ventas"
+    if fecha_inicio or fecha_fin:
+        filename += f"_{fecha_inicio or 'inicio'}_{fecha_fin or 'fin'}"
+    filename += ".xlsx"
+    
     wb = Workbook(); ws = wb.active; ws.title = "Reporte"
-    headers = ["ID", "Fecha", "Cliente", "Producto", "Kilos", "Precio/Kg", "Total", "Estado"]
+    headers = ["ID", "Fecha", "Cliente", "Producto", "Kilos", "Precio/Kg", "Total", "Estado", "Vencimiento"]
     ws.append(headers)
     for v in ventas:
-        ws.append([v.id, v.fecha_venta.strftime("%Y-%m-%d %H:%M"), v.cliente_nombre, v.producto, v.kilos, v.precio_kilo, v.subtotal, v.pagado])
+        ws.append([v.id, v.fecha_venta.strftime("%Y-%m-%d %H:%M"), v.cliente_nombre, v.producto, v.kilos, v.precio_kilo, v.subtotal, v.pagado, v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""])
     stream = io.BytesIO(); wb.save(stream); stream.seek(0)
-    return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=Ventas.xlsx"})
+    return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f"attachment; filename={filename}"})
