@@ -2,6 +2,7 @@ import time
 from collections import defaultdict
 from fastapi import FastAPI, Depends, Cookie, Response, Request, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -9,48 +10,6 @@ from database import init_db, get_db, Producto, Venta, Cliente, Gasto, Historial
 from datetime import datetime, timedelta, timezone
 from auth import verificar_password, crear_token, verificar_token, ADMIN_USER, ADMIN_PASSWORD
 from auth import pwd_context, generar_reset_token, enviar_correo, ADMIN_EMAIL, reset_tokens
-
-# --- HELPERS DE AUTENTICACIÓN ---
-def verificaciones_admin(token: str = Cookie(default=None)):
-    if not token or not verificar_token(token):
-        raise HTTPException(status_code=401, detail="No autorizado")
-    return True
-
-def verificaciones_admins(token: str = Cookie(default=None)):
-    if not token:
-        raise HTTPException(status_code=401, detail="No autorizado")
-    user = verificar_token(token)
-    if not user:
-        raise HTTPException(status_code=401, detail="Token inválido")
-    db = next(get_db())
-    usuario = db.query(Usuario).filter(Usuario.email == user, Usuario.activo == True).first()
-    if not usuario or usuario.rol not in ["admin", "dueno"]:
-        raise HTTPException(status_code=403, detail="Solo personal autorizado")
-    return usuario
-
-def verificaciones_admin_o_dueno(token: str = Cookie(default=None)):
-    if not token:
-        raise HTTPException(status_code=401, detail="No autorizado")
-    user = verificar_token(token)
-    if not user:
-        raise HTTPException(status_code=401, detail="Token inválido")
-    db = next(get_db())
-    usuario = db.query(Usuario).filter(Usuario.email == user, Usuario.activo == True).first()
-    if not usuario or usuario.rol not in ["admin", "dueno"]:
-        raise HTTPException(status_code=403, detail="Solo personal autorizado")
-    return usuario
-
-def verificaciones_empleados(token: str = Cookie(default=None)):
-    if not token:
-        raise HTTPException(status_code=401, detail="No autorizado")
-    user = verificar_token(token)
-    if not user:
-        raise HTTPException(status_code=401, detail="Token inválido")
-    db = next(get_db())
-    usuario = db.query(Usuario).filter(Usuario.email == user, Usuario.activo == True).first()
-    if not usuario or usuario.rol not in ["admin", "empleado"]:
-        raise HTTPException(status_code=403, detail="Solo personal autorizado")
-    return usuario
 from typing import Optional, List
 from fastapi.staticfiles import StaticFiles
 import io
@@ -61,11 +20,44 @@ from openpyxl.styles import Font, Alignment, PatternFill
 from dotenv import load_dotenv
 from scheduler import iniciar_scheduler
 from whatsapp_service import whatsapp_service
+import os
+import html
 
-# Rate limiting simple
+load_dotenv()
+
+def sanitize_html(text: str) -> str:
+    return html.escape(text).strip()
+
+def sanitize_filename(text: str) -> str:
+    text = re.sub(r'[^a-zA-Z0-9_\-\.]', '', text)
+    return text[:100]
+
+# --- HELPERS DE AUTENTICACIÓN ---
+def get_current_user(token: str = Cookie(default=None)):
+    if not token:
+        return None
+    email = verificar_token(token)
+    if not email:
+        return None
+    db = next(get_db())
+    return db.query(Usuario).filter(Usuario.email == email, Usuario.activo == True).first()
+
+def require_auth(token: str = Cookie(default=None)):
+    user = get_current_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="No autorizado")
+    return user
+
+def require_rol(token: str = Cookie(default=None), roles: List[str] = ["admin"]):
+    user = get_current_user(token)
+    if not user or user.rol not in roles:
+        raise HTTPException(status_code=403, detail="No autorizado")
+    return user
+
+# --- RATE LIMITING ---
 login_attempts = defaultdict(list)
 MAX_ATTEMPTS = 5
-LOCKOUT_TIME = 300  # 5 minutos
+LOCKOUT_TIME = 300
 
 def check_rate_limit(ip: str) -> bool:
     ahora = time.time()
@@ -83,7 +75,19 @@ def sanitize_input(value: str) -> str:
 # Cargar variables de entorno
 load_dotenv()
 
-app = FastAPI(title="CarniMarket API - Versión Profesional")
+app = FastAPI(
+    title="CarniMarket API",
+    docs_url=None,
+    redoc_url=None
+)
+
+app.add_middleware(
+    CORSM,
+    allow_origins=["https://tudominio.com"],  # Cambiar por tu dominio
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+)
 
 # Configuración de archivos estáticos para CSS, JS e Imágenes
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -94,16 +98,16 @@ def obtener_hora_colombia():
 
 @app.get("/test-db")
 def test_db(db: Session = Depends(get_db)):
+    if os.getenv("DEBUG") != "true":
+        raise HTTPException(status_code=404)
     from auth import pwd_context
     count = db.query(Usuario).count()
     usuario = db.query(Usuario).filter(Usuario.email == "stevenhm03@gmail.com").first()
     
     if usuario:
-        # Verificar si la contraseña funciona
         test_pass = verificar_password("C@rniMarket", usuario.password_hash)
         return {"usuarios": count, "admin_existe": True, "password_valida": test_pass, "rol": usuario.rol, "activo": usuario.activo}
     else:
-        # Crear admin
         nuevo = Usuario(
             email="stevenhm03@gmail.com",
             password_hash=pwd_context.hash("C@rniMarket"),
@@ -347,20 +351,20 @@ def solicitar_recuperacion(data: dict, db: Session = Depends(get_db)):
         from datetime import datetime, timedelta
         reset_tokens[token] = {"email": email, "expira": datetime.utcnow() + timedelta(hours=1)}
         
-        asunto = "Recuperación de contraseña - CarniMarket"
+        asunto = "Recuperacion de contrasena - CarniMarket"
         html = f"""
         <html>
-        <body style="font-family Arial; padding: 20px;">
-            <h2 style="color:#c0392b;">🥩 CarniMarket</h2>
-            <p>Has solicitado recuperar tu contraseña.</p>
+        <body style="font-family: Arial; padding: 20px;">
+            <h2 style="color: #c0392b;">CarniMarket</h2>
+            <p>Has solicitado recuperar tu contrasena.</p>
             <p>Este enlace expira en 1 hora.</p>
-            <p>Tu email de recuperación: {email}</p>
+            <p>Tu email de recuperacion: {email}</p>
         </body>
         </html>
         """
         enviar_correo(email, asunto, html)
     
-return {"mensaje": "Si el correo existe, recibirás las instrucciones"}
+    return {"mensaje": "Si el correo existe, recibiras las instrucciones"}
 
 @app.post("/auth/reset-password")
 def cambiar_contrasena(data: dict, response: Response):
