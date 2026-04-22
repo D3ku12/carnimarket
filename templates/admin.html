@@ -3,89 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CarniMarket | Admin Panel</title>
+    <title>CarniMarket | Panel de Administración Profesional</title>
     <link rel="stylesheet" href="/static/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+
     <header>
-        <h1>🥩 CarniMarket <span style="font-weight: 300; opacity: 0.7;">| Admin</span></h1>
+        <div class="logo">
+            <h1>🥩 CarniMarket <span style="font-weight: 300; opacity: 0.8;">Admin</span></h1>
+        </div>
         <nav class="nav">
-            <button class="active" onclick="showTab('dashboard', this)">DASHBOARD</button>
-            <button onclick="showTab('inventario', this)">INVENTARIO</button>
-            <button onclick="showTab('ventas', this)">VENTAS</button>
-            <button onclick="showTab('deudas', this)">DEUDAS</button>
-            <button onclick="showTab('historial', this)">HISTORIAL</button>
+            <button class="active" onclick="showTab('dashboard', this)">
+                <i class="fas fa-chart-line"></i> DASHBOARD
+            </button>
+            <button onclick="showTab('inventario', this)">
+                <i class="fas fa-boxes"></i> INVENTARIO
+            </button>
+            <button onclick="showTab('ventas', this)">
+                <i class="fas fa-shopping-cart"></i> VENTAS
+            </button>
+            <button onclick="showTab('clientes', this)">
+                <i class="fas fa-users"></i> CLIENTES
+            </button>
+            <button onclick="showTab('deudas', this)">
+                <i class="fas fa-hand-holding-dollar"></i> DEUDAS
+            </button>
+            <button onclick="showTab('historial', this)">
+                <i class="fas fa-history"></i> HISTORIAL
+            </button>
         </nav>
     </header>
 
     <main class="container">
+        
         <section id="tab-dashboard" class="tab active">
-            <div id="stats-dashboard" class="stat-grid"></div>
+            <div id="stats-dashboard" class="stat-grid">
+                </div>
+            
             <div class="dos-col">
                 <div class="card">
-                    <h2>📊 Rendimiento de Ventas</h2>
-                    <canvas id="chart-productos" style="max-height: 350px;"></canvas>
+                    <h2><i class="fas fa-chart-bar" style="color: var(--primary);"></i> Rendimiento de Productos (Kilos)</h2>
+                    <div class="chart-container" style="position: relative; height:300px;">
+                        <canvas id="chart-productos"></canvas>
+                    </div>
                 </div>
                 <div class="card">
-                    <h2>⚠️ Stock Crítico</h2>
-                    <div id="alertas-stock"></div>
+                    <h2><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> Alertas de Stock Bajo</h2>
+                    <div id="alertas-stock" class="listado-alertas">
+                        </div>
                 </div>
             </div>
         </section>
 
         <section id="tab-inventario" class="tab">
             <div class="card">
-                <h2>📦 Control de Existencias</h2>
-                <table>
-                    <thead>
-                        <tr><th>Producto</th><th>Stock Actual</th><th>Precio/Kg</th><th>Estado</th><th>Acción</th></tr>
-                    </thead>
-                    <tbody id="tabla-admin"></tbody>
-                </table>
+                <div class="card-header">
+                    <h2>📦 Control de Inventario</h2>
+                    <button class="btn-green" onclick="abrirModal('modal-producto')">
+                        <i class="fas fa-plus"></i> Nuevo Producto
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Stock Actual</th>
+                                <th>Stock Mínimo</th>
+                                <th>Precio / Kg</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-admin">
+                            </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
         <section id="tab-ventas" class="tab">
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>💰 Historial de Ventas</h2>
-                    <a href="/admin/exportar/ventas" class="btn-green">📥 Descargar Excel (.xlsx)</a>
+                <div class="card-header">
+                    <h2>💰 Registro de Ventas</h2>
+                    <div class="acciones-header">
+                        <a href="/admin/exportar/ventas" class="btn-green" style="background-color: #27ae60;">
+                            <i class="fas fa-file-excel"></i> Exportar Excel
+                        </a>
+                        <button class="btn-green" onclick="abrirModal('modal-venta')" style="background-color: var(--primary);">
+                            <i class="fas fa-cart-plus"></i> Registrar Venta
+                        </button>
+                    </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr><th>Fecha/Hora</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Estado</th></tr>
-                    </thead>
-                    <tbody id="tabla-ventas"></tbody>
-                </table>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha y Hora</th>
+                                <th>Cliente</th>
+                                <th>Producto</th>
+                                <th>Kilos</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-ventas">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-clientes" class="tab">
+            <div class="card">
+                <div class="card-header">
+                    <h2>👤 Directorio de Clientes</h2>
+                    <button class="btn-green" onclick="abrirModal('modal-cliente')">
+                        <i class="fas fa-user-plus"></i> Agregar Cliente
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Teléfono</th>
+                                <th>Dirección</th>
+                                <th>Fecha Registro</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-clientes">
+                            </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
         <section id="tab-deudas" class="tab">
             <div class="card">
-                <h2>⚠️ Gestión de Cobros</h2>
-                <table>
-                    <thead>
-                        <tr><th>Cliente</th><th>Saldo Pendiente</th><th>Acción de Cobro</th></tr>
-                    </thead>
-                    <tbody id="tabla-deudas"></tbody>
-                </table>
+                <h2>⚠️ Gestión de Cobros Pendientes</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Total Deuda</th>
+                                <th>WhatsApp</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-deudas">
+                            </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
         <section id="tab-historial" class="tab">
             <div class="card">
-                <h2>📋 Movimientos de Sistema</h2>
-                <table>
-                    <thead>
-                        <tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Motivo</th></tr>
-                    </thead>
-                    <tbody id="tabla-historial"></tbody>
-                </table>
+                <h2>📋 Historial de Movimientos</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Producto</th>
+                                <th>Movimiento</th>
+                                <th>Cantidad</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-historial">
+                            </tbody>
+                    </table>
+                </div>
             </div>
         </section>
+
     </main>
 
-    <script src="/static/admin.js?v=4.0"></script>
+    <div id="modal-producto" class="modal-overlay">
+        <div class="modal">
+            <h3>📦 Gestionar Producto</h3>
+            <form id="form-producto">
+                <div class="form-group">
+                    <label>Nombre del Producto</label>
+                    <input type="text" id="prod-nombre" required>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Stock Inicial (kg)</label>
+                        <input type="number" id="prod-stock" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mínimo Alerta (kg)</label>
+                        <input type="number" id="prod-minimo" step="0.1" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Precio por Kilo ($)</label>
+                    <input type="number" id="prod-precio" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="cerrarModal('modal-producto')">Cerrar</button>
+                    <button type="submit" class="btn-primary">Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-venta" class="modal-overlay">
+        <div class="modal">
+            <h3>🛒 Nueva Venta</h3>
+            <form id="form-venta">
+                <div class="form-group">
+                    <label>Producto</label>
+                    <select id="venta-producto" required>
+                        </select>
+                </div>
+                <div class="form-group">
+                    <label>Cantidad (Kilos)</label>
+                    <input type="number" id="venta-kilos" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Nombre del Cliente</label>
+                    <input type="text" id="venta-cliente" placeholder="Cliente General" list="lista-clientes">
+                    <datalist id="lista-clientes"></datalist>
+                </div>
+                <div class="form-group">
+                    <label>Estado de Pago</label>
+                    <select id="venta-pagado">
+                        <option value="pagado">Pagado ✅</option>
+                        <option value="debe">Debe ❌</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="cerrarModal('modal-venta')">Cerrar</button>
+                    <button type="submit" class="btn-primary">Registrar Venta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/admin.js?v=7.0"></script>
+
 </body>
 </html>
