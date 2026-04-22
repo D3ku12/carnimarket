@@ -178,9 +178,9 @@ def crear_cliente(c: ClienteRequest, db: Session = Depends(get_db)):
 def editar_cliente_completo(id: int, data: ClienteUpdate, db: Session = Depends(get_db)):
     c = db.query(Cliente).filter(Cliente.id == id).first()
     if not c: return {"error": "No encontrado"}
-    if data.nombre: c.nombre = data.nombre
-    if data.telefono: c.telefono = data.telefono
-    if data.direccion: c.direccion = data.direccion
+    if data.nombre is not None: c.nombre = data.nombre
+    if data.telefono is not None: c.telefono = data.telefono
+    if data.direccion is not None: c.direccion = data.direccion
     db.commit()
     return {"mensaje": "Cliente actualizado"}
 
@@ -229,6 +229,14 @@ def corregir_venta(id: int, data: dict, db: Session = Depends(get_db)):
         v.subtotal = v.kilos * v.precio_kilo
     db.commit()
     return {"mensaje": "Venta corregida"}
+
+@app.put("/admin/venta/{id}/pago")
+def toggle_pago_venta(id: int, db: Session = Depends(get_db)):
+    v = db.query(Venta).filter(Venta.id == id).first()
+    if not v: return {"error": "No existe"}
+    v.pagado = "pagado" if v.pagado == "debe" else "debe"
+    db.commit()
+    return {"mensaje": "Estado de pago actualizado", "pagado": v.pagado}
 
 # --- GESTIÓN DE GASTOS ---
 

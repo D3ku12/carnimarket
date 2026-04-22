@@ -102,7 +102,7 @@ async function cargarInventario() {
             <td>${info.stock}kg</td>
             <td>$${info.precio_kilo.toLocaleString()}</td>
             <td>
-                <button class="btn-primary" onclick="prepararEdicionProd('${nombre}', ${JSON.stringify(info)})">
+                <button class="btn-primary" onclick="prepararEdicionProd('${nombre.replaceAll("'", "\\'")}', ${JSON.stringify(info).replaceAll('"', '&quot;')})">>
                     <i class="fas fa-edit"></i>
                 </button>
             </td>
@@ -119,7 +119,7 @@ async function cargarClientes() {
             <td>${c.telefono}</td>
             <td>${c.direccion}</td>
             <td>
-                <button class="btn-primary" onclick="prepararEdicionCli(${JSON.stringify(c)})">
+                <button class="btn-primary" onclick="prepararEdicionCli(${JSON.stringify(c).replaceAll('"', '&quot;')})">
                     <i class="fas fa-user-edit"></i>
                 </button>
                 <button class="btn-primary" style="background:var(--danger)" onclick="eliminarCliente(${c.id})">
@@ -211,14 +211,19 @@ document.getElementById("form-producto").onsubmit = async (e) => {
     const url = id ? `/admin/producto/${id}` : "/admin/producto";
     const method = id ? "PUT" : "POST";
 
-    await fetch(url, {
+    const res = await fetch(url, {
         method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
     });
     
-    cerrarModal('modal-producto');
-    cargarInventario();
+    const data = await res.json();
+    if(data.error) {
+        alert("Error: " + data.error);
+    } else {
+        cerrarModal('modal-producto');
+        cargarInventario();
+    }
 };
 
 // Manejador para Clientes
@@ -234,14 +239,19 @@ document.getElementById("form-cliente").onsubmit = async (e) => {
     const url = id ? `/admin/cliente/${id}` : "/admin/cliente";
     const method = id ? "PUT" : "POST";
 
-    await fetch(url, {
+    const res = await fetch(url, {
         method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
     });
     
-    cerrarModal('modal-cliente');
-    cargarClientes();
+    const data = await res.json();
+    if(data.error) {
+        alert("Error: " + data.error);
+    } else {
+        cerrarModal('modal-cliente');
+        cargarClientes();
+    }
 };
 
 // Manejador para Gastos
@@ -253,15 +263,20 @@ document.getElementById("form-gasto").onsubmit = async (e) => {
         monto: parseFloat(document.getElementById("gasto-monto").value)
     };
 
-    await fetch("/admin/gasto", {
+    const res = await fetch("/admin/gasto", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
     });
     
-    cerrarModal('modal-gasto');
-    cargarGastos();
-    cargarDashboard();
+    const data = await res.json();
+    if(data.error) {
+        alert("Error: " + data.error);
+    } else {
+        cerrarModal('modal-gasto');
+        cargarGastos();
+        cargarDashboard();
+    }
 };
 
 // Manejador para Ventas
@@ -292,8 +307,12 @@ document.getElementById("form-venta").onsubmit = async (e) => {
 // --- 6. UTILIDADES ADICIONALES ---
 
 async function togglePago(id) {
-    await fetch(`/admin/venta/${id}/pago`, { method: "PUT" });
-    cargarVentas();
+    const res = await fetch(`/admin/venta/${id}/pago`, { method: "PUT" });
+    if(res.ok) {
+        cargarVentas();
+    } else {
+        alert("Error al cambiar estado de pago");
+    }
 }
 
 async function eliminarCliente(id) {
