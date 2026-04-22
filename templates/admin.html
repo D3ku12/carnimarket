@@ -3,138 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo - CarniMarket</title>
+    <title>CarniMarket | Admin Panel</title>
     <link rel="stylesheet" href="/static/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <header>
+        <h1>🥩 CarniMarket <span style="font-weight: 300; opacity: 0.7;">| Admin</span></h1>
+        <nav class="nav">
+            <button class="active" onclick="showTab('dashboard', this)">DASHBOARD</button>
+            <button onclick="showTab('inventario', this)">INVENTARIO</button>
+            <button onclick="showTab('ventas', this)">VENTAS</button>
+            <button onclick="showTab('deudas', this)">DEUDAS</button>
+            <button onclick="showTab('historial', this)">HISTORIAL</button>
+        </nav>
+    </header>
 
-<header>
-    <h1>🥩 CarniMarket — Admin</h1>
-    <div class="nav">
-        <button class="active" onclick="showTab('dashboard', this)">🏠 Dashboard</button>
-        <button onclick="showTab('inventario', this)">📦 Inventario</button>
-        <button onclick="showTab('ventas', this)">💰 Ventas</button>
-        <button onclick="showTab('clientes', this)">👤 Clientes</button>
-        <button onclick="showTab('deudas', this)">⚠️ Deudas</button>
-        <button onclick="showTab('gastos', this)">💸 Gastos</button>
-        <button onclick="showTab('caja', this)">🏦 Caja</button>
-        <button onclick="showTab('historial', this)">📋 Historial</button>
-    </div>
-</header>
-
-<div class="container">
-    <div id="tab-dashboard" class="tab active">
-        <div id="stats-dashboard" class="stat-grid"></div>
-        <div class="dos-col">
-            <div class="card">
-                <h2>📈 Ventas por Producto (Kilos)</h2>
-                <canvas id="chart-productos"></canvas>
+    <main class="container">
+        <section id="tab-dashboard" class="tab active">
+            <div id="stats-dashboard" class="stat-grid"></div>
+            <div class="dos-col">
+                <div class="card">
+                    <h2>📊 Rendimiento de Ventas</h2>
+                    <canvas id="chart-productos" style="max-height: 350px;"></canvas>
+                </div>
+                <div class="card">
+                    <h2>⚠️ Stock Crítico</h2>
+                    <div id="alertas-stock"></div>
+                </div>
             </div>
+        </section>
+
+        <section id="tab-inventario" class="tab">
             <div class="card">
-                <h2>📅 Histórico 7 Días ($)</h2>
-                <canvas id="chart-ventas"></canvas>
+                <h2>📦 Control de Existencias</h2>
+                <table>
+                    <thead>
+                        <tr><th>Producto</th><th>Stock Actual</th><th>Precio/Kg</th><th>Estado</th><th>Acción</th></tr>
+                    </thead>
+                    <tbody id="tabla-admin"></tbody>
+                </table>
             </div>
-        </div>
-        <div class="card">
-            <h2>⚠️ Alertas de Stock Bajo</h2>
-            <div id="alertas-stock"></div>
-        </div>
-    </div>
+        </section>
 
-    <div id="tab-inventario" class="tab">
-        <div class="card">
-            <h2>📦 Gestión de Stock</h2>
-            <table>
-                <thead><tr><th>Producto</th><th>Stock</th><th>Mínimo</th><th>Precio/Kg</th><th>Actualizar</th><th>Eliminar</th></tr></thead>
-                <tbody id="tabla-admin"></tbody>
-            </table>
-        </div>
-        <div class="card">
-            <h2>➕ Nuevo Producto</h2>
-            <input type="text" id="p-nombre" placeholder="Nombre">
-            <input type="number" id="p-stock" placeholder="Stock Inicial">
-            <input type="number" id="p-minimo" placeholder="Mínimo Alerta">
-            <input type="number" id="p-precio" placeholder="Precio/Kg">
-            <button class="btn-green" onclick="crearProducto()">Crear Producto</button>
-        </div>
-    </div>
+        <section id="tab-ventas" class="tab">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>💰 Historial de Ventas</h2>
+                    <a href="/admin/exportar/ventas" class="btn-green">📥 Descargar Excel (.xlsx)</a>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th>Fecha/Hora</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody id="tabla-ventas"></tbody>
+                </table>
+            </div>
+        </section>
 
-    <div id="tab-ventas" class="tab">
-        <div class="card">
-            <h2>💰 Registrar Venta</h2>
-            <select id="v-producto"></select>
-            <input type="number" id="v-kilos" placeholder="Kilos">
-            <input type="text" id="v-cliente" placeholder="Nombre Cliente">
-            <select id="v-pagado">
-                <option value="pagado">Pagado</option>
-                <option value="debe">Debe</option>
-            </select>
-            <button class="btn-red" onclick="registrarVenta()">Vender</button>
-        </div>
-        <div class="card">
-            <a href="/admin/exportar/ventas" class="btn-green" style="text-decoration:none; display:inline-block; margin-bottom:10px">📊 Descargar Excel</a>
-            <table>
-                <thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Kilos</th><th>Total</th><th>Estado</th><th>Acción</th></tr></thead>
-                <tbody id="tabla-ventas"></tbody>
-            </table>
-        </div>
-    </div>
+        <section id="tab-deudas" class="tab">
+            <div class="card">
+                <h2>⚠️ Gestión de Cobros</h2>
+                <table>
+                    <thead>
+                        <tr><th>Cliente</th><th>Saldo Pendiente</th><th>Acción de Cobro</th></tr>
+                    </thead>
+                    <tbody id="tabla-deudas"></tbody>
+                </table>
+            </div>
+        </section>
 
-    <div id="tab-clientes" class="tab">
-        <div class="card">
-            <h2>👤 Clientes Registrados</h2>
-            <table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>Eliminar</th></tr></thead><tbody id="tabla-clientes"></tbody></table>
-        </div>
-        <div class="card">
-            <h2>➕ Nuevo Cliente</h2>
-            <input type="text" id="c-nombre" placeholder="Nombre">
-            <input type="text" id="c-tel" placeholder="WhatsApp (Ej: 300...)">
-            <input type="text" id="c-dir" placeholder="Dirección">
-            <button class="btn-green" onclick="crearCliente()">Guardar Cliente</button>
-        </div>
-    </div>
+        <section id="tab-historial" class="tab">
+            <div class="card">
+                <h2>📋 Movimientos de Sistema</h2>
+                <table>
+                    <thead>
+                        <tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Motivo</th></tr>
+                    </thead>
+                    <tbody id="tabla-historial"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
 
-    <div id="tab-deudas" class="tab">
-        <div class="card">
-            <h2>⚠️ Deudas Pendientes</h2>
-            <table><thead><tr><th>Cliente</th><th>Total</th><th>WhatsApp</th></tr></thead><tbody id="tabla-deudas"></tbody></table>
-        </div>
-    </div>
-
-    <div id="tab-gastos" class="tab">
-        <div class="card">
-            <h2>💸 Registrar Gasto</h2>
-            <input type="text" id="g-desc" placeholder="Descripción">
-            <select id="g-cat">
-                <option value="Servicios">Servicios</option>
-                <option value="Carne">Compra Carne</option>
-                <option value="Transporte">Transporte</option>
-                <option value="Varios">Varios</option>
-            </select>
-            <input type="number" id="g-monto" placeholder="Monto $">
-            <button class="btn-red" onclick="registrarGasto()">Guardar Gasto</button>
-        </div>
-        <div class="card">
-            <table><thead><tr><th>Fecha</th><th>Descripción</th><th>Monto</th></tr></thead><tbody id="tabla-gastos"></tbody></table>
-        </div>
-    </div>
-
-    <div id="tab-caja" class="tab">
-        <div class="stat-grid" id="stats-caja"></div>
-        <div class="card">
-            <h2>📊 Gastos por Categoría</h2>
-            <div id="caja-categorias"></div>
-        </div>
-    </div>
-
-    <div id="tab-historial" class="tab">
-        <div class="card">
-            <table><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Motivo</th></tr></thead><tbody id="tabla-historial"></tbody></table>
-        </div>
-    </div>
-</div>
-
-<script src="/static/admin.js?v=5.0"></script>
+    <script src="/static/admin.js?v=4.0"></script>
 </body>
 </html>
