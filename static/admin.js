@@ -278,7 +278,7 @@ async function cargarDeudas() {
             </td>
             <td>
                 ${d.fecha_vencimiento && d.fecha_vencimiento !== 'Sin vencimiento' ? 
-                    `<a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cobro%20a%20${encodeURIComponent(d.cliente)}&dates=${formatFechaGCal(d.fecha_vencimiento)}/${formatFechaGCal(d.fecha_vencimiento)}&details=Recordatorio%20de%20cobro%20por%20$${d.total.toLocaleString()}" target="_blank" class="btn-primary" style="background:var(--info)"><i class="fas fa-calendar"></i></a>`
+                    `<a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cobro%20a%20${encodeURIComponent(d.cliente)}&dates=${formatFechaGCal(d.fecha_vencimiento)}/${formatFechaGCal(d.fecha_vencimiento)}&details=Recordatorio%20de%20cobro%20por%20$${d.total.toLocaleString()}" target="_blank" class="btn-primary" style="background:var(--info)"><i class="fas fa-bell"></i></a>`
                     : ''}
             </td>
         </tr>
