@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from auth import verificar_password, crear_token, verificar_token, ADMIN_USER, ADMIN_PASSWORD
 from typing import Optional
 from fastapi.staticfiles import StaticFiles
+from openpyxl import Workbook
 import csv
 import io
 import urllib.parse
@@ -109,19 +110,38 @@ def vender(venta: VentaRequest, db: Session = Depends(get_db)):
 @app.get("/admin/exportar/ventas")
 def exportar_ventas(db: Session = Depends(get_db)):
     ventas = db.query(Venta).order_by(Venta.fecha_venta.desc()).all()
-    output = io.StringIO()
-    writer = csv.writer(output, delimiter=",")
-    writer.writerow(["Fecha", "Cliente", "Producto", "Kilos", "Total", "Estado", "Notas"])
+    
+    # Creamos un libro de Excel en blanco
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte de Ventas"
+    
+    # Escribimos los encabezados en la primera fila
+    ws.append(["Fecha", "Cliente", "Producto", "Kilos", "Total", "Estado", "Notas"])
+    
+    # Escribimos los datos de cada venta
     for v in ventas:
-        writer.writerow([
-            v.fecha_venta.strftime("%Y-%m-%d") if v.fecha_venta else "—",
-            v.cliente_nombre, v.producto, v.kilos, v.subtotal, v.pagado, v.notas
+        fecha_str = v.fecha_venta.strftime("%Y-%m-%d %H:%M") if v.fecha_venta else "—"
+        ws.append([
+            fecha_str,
+            v.cliente_nombre, 
+            v.producto, 
+            v.kilos, 
+            v.subtotal, 
+            v.pagado, 
+            v.notas
         ])
+    
+    # Guardamos el archivo Excel en la memoria (BytesIO porque es un archivo binario)
+    output = io.BytesIO()
+    wb.save(output)
     output.seek(0)
+    
+    # Retornamos el archivo con el tipo de dato oficial de Microsoft Excel (.xlsx)
     return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=reporte_ventas.csv"}
+        output, 
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+        headers={"Content-Disposition": "attachment; filename=reporte_ventas.xlsx"}
     )
 
 # --- NUEVO: RUTA DE DEUDAS CON WHATSAPP ---
