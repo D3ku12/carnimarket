@@ -268,7 +268,10 @@
                 </div>
                 <div class="form-group">
                     <label>Cliente</label>
-                    <input type="text" id="venta-cliente" list="lista-clientes" placeholder="Cliente General">
+                    <select id="venta-cliente">
+                        <option value="">Cliente General</option>
+                    </select>
+                    <datalist id="lista-clientes"></datalist>
                 </div>
                 <div class="row" style="display:flex; gap:10px;">
                     <div class="form-group" style="flex:1">

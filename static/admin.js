@@ -29,13 +29,15 @@ async function showTab(name, btn) {
 function abrirModal(id) {
     const modal = document.getElementById(id);
     modal.classList.add('open');
-    // Limpiar formulario al abrir para evitar que queden datos de ediciones previas
     const form = modal.querySelector('form');
     if (form) {
         form.reset();
         if(form.querySelector('input[type="hidden"]')) {
             form.querySelector('input[type="hidden"]').value = "";
         }
+    }
+    if (id === 'modal-venta') {
+        cargarSelectores();
     }
 }
 
@@ -466,7 +468,10 @@ async function cargarSelectores() {
     
     const resC = await fetch("/admin/clientes");
     const clis = await resC.json();
-    document.getElementById("lista-clientes").innerHTML = clis.map(c => `<option value="${c.nombre}">`).join("");
+    const opts = clis.map(c => `<option value="${c.nombre}">`).join("");
+    document.getElementById("lista-clientes").innerHTML = opts;
+    document.getElementById("venta-cliente").innerHTML = `<option value="">Cliente General</option>` + 
+        clis.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join("");
 }
 
 // Inicio automático
