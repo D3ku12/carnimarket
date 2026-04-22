@@ -109,10 +109,8 @@
     tbody.innerHTML = "";
 
     for (const [nombre, info] of Object.entries(data)) {
-      // Llenar select
-      if (info.stock > 0) {
-        select.innerHTML += `<option value="${nombre}">${nombre} — ${info.stock}kg disponibles</option>`;
-      }
+      // Llenar select - mostrar todos los productos con su stock
+      select.innerHTML += `<option value="${nombre}">${nombre} — Stock: ${info.stock}kg</option>`;
 
       // Llenar tabla
       let estado, clase;
