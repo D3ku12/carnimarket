@@ -12,6 +12,12 @@ import io
 import urllib.parse
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
+from dotenv import load_dotenv
+from scheduler import iniciar_scheduler, detener_scheduler
+from whatsapp_service import whatsapp_service
+
+# Cargar variables de entorno
+load_dotenv()
 
 app = FastAPI(title="CarniMarket API - Versión Profesional")
 
