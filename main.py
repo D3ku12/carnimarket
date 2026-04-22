@@ -533,7 +533,13 @@ def listar_ventas(
     return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "pagado": v.pagado, "notas": v.notas, "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""} for v in ventas]
 
 @app.put("/admin/venta/{id}")
-def corregir_venta(id: int, data: dict, db: Session = Depends(get_db)):
+def corregir_venta(id: int, data: dict, db: Session = Depends(get_db), token: str = Cookie(default=None)):
+    if not verificar_token(token):
+        raise HTTPException(status_code=401)
+    u = db.query(Usuario).filter(Usuario.email == verificar_token(token), Usuario.activo == True).first()
+    if not u or u.rol not in ["admin", "dueno", "empleado"]:
+        raise HTTPException(status_code=403)
+    
     v = db.query(Venta).filter(Venta.id == id).first()
     if not v: return {"error": "No existe"}
     if "pagado" in data: v.pagado = data["pagado"]

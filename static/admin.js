@@ -251,12 +251,45 @@ async function filtrarVentas() {
             <td><span class="badge ${v.pagado}">${v.pagado}</span></td>
             <td>${v.fecha_vencimiento || "—"}</td>
             <td>
+                <button class="btn-primary" onclick="prepararEdicionVenta(${v.id}, '${v.cliente}', '${v.producto}', ${v.kilos}, '${v.pagado}')"><i class="fas fa-edit"></i></button>
                 <button class="btn-primary" onclick="togglePago(${v.id})"><i class="fas fa-sync"></i></button>
                 <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${v.id})"><i class="fas fa-trash"></i></button>
             </td>
         </tr>
     `).join("");
 }
+
+function prepararEdicionVenta(id, cliente, producto, kilos, pagado) {
+    abrirModal('modal-editar-venta');
+    document.getElementById("edit-venta-id").value = id;
+    document.getElementById("edit-venta-cliente").value = cliente;
+    document.getElementById("edit-venta-producto").value = producto;
+    document.getElementById("edit-venta-kilos").value = kilos;
+    document.getElementById("edit-venta-pagado").value = pagado;
+}
+
+document.getElementById("form-editar-venta").onsubmit = async (e) => {
+    e.preventDefault();
+    const id = document.getElementById("edit-venta-id").value;
+    const body = {
+        kilos: parseFloat(document.getElementById("edit-venta-kilos").value),
+        pagado: document.getElementById("edit-venta-pagado").value
+    };
+    
+    const res = await fetch(`/admin/venta/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    });
+    
+    if (res.ok) {
+        cerrarModal('modal-editar-venta');
+        cargarVentas();
+        cargarDashboard();
+    } else {
+        alert("Error al editar venta");
+    }
+};
 
 function limpiarFiltrosVentas() {
     document.getElementById("ventas-fecha-inicio").value = "";

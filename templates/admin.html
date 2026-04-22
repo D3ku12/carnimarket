@@ -332,8 +332,40 @@
                     </select>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="cerrarModal('modal-venta')">Cerrar</button>
-                    <button type="submit" class="btn-primary">Vender</button>
+<button type="button" class="btn-secondary" onclick="cerrarModal('modal-venta')">Cerrar</button>
+                    <button type="submit" class="btn-primary">Guardar Venta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-editar-venta" class="modal-overlay">
+        <div class="modal">
+            <h3><i class="fas fa-edit"></i> Editar Venta</h3>
+            <form id="form-editar-venta">
+                <input type="hidden" id="edit-venta-id">
+                <div class="form-group">
+                    <label>Cliente</label>
+                    <input type="text" id="edit-venta-cliente" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Producto</label>
+                    <input type="text" id="edit-venta-producto" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Kilos</label>
+                    <input type="number" id="edit-venta-kilos" step="0.1" min="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label>Estado</label>
+                    <select id="edit-venta-pagado" required>
+                        <option value="pagado">Pagado</option>
+                        <option value="debe">Debe</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="cerrarModal('modal-editar-venta')">Cerrar</button>
+                    <button type="submit" class="btn-primary">Guardar Cambios</button>
                 </div>
             </form>
         </div>
