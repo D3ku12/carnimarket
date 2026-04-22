@@ -1,18 +1,18 @@
 /**
- * CARNIMARKET - Sistema de Gestión Profesional
- * Lógica del Panel de Administración (v7.0)
+ * CARNIMARKET - Sistema de Gestión de Carnicería
+ * Lógica del Panel de Administración v8.0
  */
 
-// variables globales para las gráficas
+// Variable global para controlar la instancia de la gráfica y evitar duplicados
 let chartProductos = null;
 
-// --- 1. GESTIÓN DE NAVEGACIÓN Y PESTAÑAS ---
+// --- 1. SISTEMA DE NAVEGACIÓN ---
 
 /**
- * Cambia entre pestañas y dispara la carga de datos correspondiente
+ * Controla el cambio de pestañas y carga los datos respectivos
  */
 async function showTab(name, btn) {
-    // UI: Cambiar clases activas
+    // UI: Gestionar clases activas en botones y secciones
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
     
@@ -22,7 +22,7 @@ async function showTab(name, btn) {
         btn.classList.add('active');
     }
 
-    // Cargar datos según la pestaña activa
+    // Ejecutar la función de carga según la pestaña seleccionada
     switch (name) {
         case 'dashboard':
             await cargarDashboard();
@@ -46,7 +46,7 @@ async function showTab(name, btn) {
     }
 }
 
-// --- 2. AYUDANTES DE INTERFAZ (MODALES) ---
+// --- 2. CONTROL DE MODALES (VENTANAS EMERGENTES) ---
 
 function abrirModal(id) {
     const modal = document.getElementById(id);
@@ -58,10 +58,10 @@ function cerrarModal(id) {
     if (modal) modal.classList.remove('open');
 }
 
-// --- 3. CARGA DE DATOS DESDE EL SERVIDOR (FETCH) ---
+// --- 3. FUNCIONES DE CARGA DE DATOS (BACKEND -> UI) ---
 
 /**
- * Carga métricas principales y gráfica del Dashboard
+ * Carga las métricas del Dashboard y genera la gráfica de Chart.js
  */
 async function cargarDashboard() {
     try {
@@ -73,23 +73,19 @@ async function cargarDashboard() {
         statsDiv.innerHTML = `
             <div class="stat">
                 <span class="valor">$${data.total_hoy.toLocaleString('es-CO')}</span>
-                <span class="label"><i class="fas fa-calendar-day"></i> Ventas Hoy</span>
+                <span class="label">Ventas Hoy</span>
             </div>
             <div class="stat" style="border-left-color: var(--success)">
                 <span class="valor">$${data.total_mes.toLocaleString('es-CO')}</span>
-                <span class="label"><i class="fas fa-calendar-alt"></i> Ventas del Mes</span>
+                <span class="label">Este Mes</span>
             </div>
             <div class="stat" style="border-left-color: var(--warning)">
                 <span class="valor">${data.stock_bajo.length}</span>
-                <span class="label"><i class="fas fa-box-open"></i> Alertas de Stock</span>
-            </div>
-            <div class="stat" style="border-left-color: #3498db">
-                <span class="valor">${data.ventas_hoy_conteo}</span>
-                <span class="label"><i class="fas fa-receipt"></i> Facturas Hoy</span>
+                <span class="label">Alertas de Stock</span>
             </div>
         `;
 
-        // Renderizar Gráfica de Barras (Chart.js)
+        // Lógica de la Gráfica de Barras
         const ctx = document.getElementById('chart-productos').getContext('2d');
         if (chartProductos) chartProductos.destroy();
         
@@ -100,33 +96,30 @@ async function cargarDashboard() {
                 datasets: [{
                     label: 'Kilos Vendidos',
                     data: Object.values(data.productos_ventas),
-                    backgroundColor: 'rgba(192, 57, 43, 0.8)',
-                    borderColor: '#c0392b',
-                    borderWidth: 1,
+                    backgroundColor: '#c0392b',
                     borderRadius: 5
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } } }
+                plugins: { legend: { display: false } }
             }
         });
 
         // Alertas de Stock Bajo
         const alertasDiv = document.getElementById("alertas-stock");
         if (data.stock_bajo.length === 0) {
-            alertasDiv.innerHTML = '<div class="alerta-ok">✅ Todo el stock está al día.</div>';
+            alertasDiv.innerHTML = '<p style="color:var(--success); font-weight:600; padding:10px;">✅ Todo bien en bodega</p>';
         } else {
             alertasDiv.innerHTML = data.stock_bajo.map(p => `
                 <div class="alerta-item">
-                    <span><strong>${p.nombre}</strong></span>
-                    <span class="tag-rojo">${p.stock}kg</span>
+                    <span>${p.nombre}</span>
+                    <span class="tag-rojo">${p.stock} kg</span>
                 </div>
             `).join("");
         }
-    } catch (e) { console.error("Error al cargar dashboard:", e); }
+    } catch (error) { console.error("Error Dashboard:", error); }
 }
 
 /**
@@ -139,40 +132,12 @@ async function cargarInventario() {
     
     tbody.innerHTML = Object.entries(data).map(([nombre, info]) => `
         <tr>
-            <td><div class="prod-info"><strong>${nombre}</strong></div></td>
+            <td><strong>${nombre}</strong></td>
             <td>${info.stock} kg</td>
-            <td>${info.minimo} kg</td>
-            <td><strong>$${info.precio_kilo.toLocaleString('es-CO')}</strong></td>
-            <td><span class="badge ${info.stock <= info.minimo ? 'debe' : 'pagado'}">
-                ${info.stock <= info.minimo ? 'Stock Bajo' : 'Disponible'}
-            </span></td>
+            <td>$${info.precio_kilo.toLocaleString('es-CO')}</td>
             <td>
-                <button class="btn-small" onclick="prepararEdicionProd('${nombre}', ${info.stock}, ${info.minimo}, ${info.precio_kilo})">
+                <button class="btn-primary" style="padding: 5px 10px;" onclick="editarStockPrompt('${nombre}', ${info.stock})">
                     <i class="fas fa-edit"></i>
-                </button>
-            </td>
-        </tr>
-    `).join("");
-}
-
-/**
- * Carga la tabla de Ventas
- */
-async function cargarVentas() {
-    const res = await fetch("/admin/ventas");
-    const ventas = await res.json();
-    const tbody = document.getElementById("tabla-ventas");
-    
-    tbody.innerHTML = ventas.map(v => `
-        <tr>
-            <td class="text-muted">${v.fecha_venta}</td>
-            <td><strong>${v.cliente}</strong></td>
-            <td>${v.producto} <small>(${v.kilos}kg)</small></td>
-            <td><strong>$${v.subtotal.toLocaleString('es-CO')}</strong></td>
-            <td><span class="badge ${v.pagado}">${v.pagado.toUpperCase()}</span></td>
-            <td>
-                <button class="btn-small" onclick="actualizarEstadoPago(${v.id}, '${v.pagado}')">
-                    <i class="fas fa-sync-alt"></i>
                 </button>
             </td>
         </tr>
@@ -183,22 +148,53 @@ async function cargarVentas() {
  * Carga la tabla de Clientes
  */
 async function cargarClientes() {
-    const res = await fetch("/admin/clientes");
-    const clientes = await res.json();
-    const tbody = document.getElementById("tabla-clientes");
+    try {
+        const res = await fetch("/admin/clientes");
+        const clis = await res.json();
+        const tbody = document.getElementById("tabla-clientes");
+        
+        if (clis.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay clientes registrados</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = clis.map(c => `
+            <tr>
+                <td><strong>${c.nombre}</strong></td>
+                <td>${c.telefono || '—'}</td>
+                <td>${c.direccion || '—'}</td>
+                <td style="color:#7f8c8d;">${c.fecha_registro}</td>
+                <td>
+                    <button class="btn-primary" style="background:#3498db; padding:5px 10px;" onclick="editarClientePrompt(${c.id}, '${c.nombre}')">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                    <button class="btn-primary" style="background:var(--danger); padding:5px 10px;" onclick="eliminarCliente(${c.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join("");
+    } catch (e) { console.error("Error Clientes:", e); }
+}
+
+/**
+ * Carga el historial de Ventas
+ */
+async function cargarVentas() {
+    const res = await fetch("/admin/ventas");
+    const ventas = await res.json();
+    const tbody = document.getElementById("tabla-ventas");
     
-    tbody.innerHTML = clientes.map(c => `
+    tbody.innerHTML = ventas.map(v => `
         <tr>
-            <td><strong>${c.nombre}</strong></td>
-            <td>${c.telefono || '—'}</td>
-            <td>${c.direccion || '—'}</td>
-            <td>${c.fecha_registro}</td>
+            <td style="font-size:0.8rem; color:#7f8c8d;">${v.fecha_venta}</td>
+            <td><strong>${v.cliente}</strong></td>
+            <td>${v.producto} <small>(${v.kilos}kg)</small></td>
+            <td><strong>$${v.subtotal.toLocaleString('es-CO')}</strong></td>
+            <td><span class="badge ${v.pagado}">${v.pagado.toUpperCase()}</span></td>
             <td>
-                <button class="btn-small" onclick="editarClientePrompt(${c.id}, '${c.nombre}', '${c.telefono}')">
-                    <i class="fas fa-pencil-alt"></i>
-                </button>
-                <button class="btn-small btn-danger" onclick="eliminarCliente(${c.id})">
-                    <i class="fas fa-trash"></i>
+                <button class="btn-primary" style="background:var(--dark); padding:5px 10px;" onclick="cambiarEstadoPago(${v.id})">
+                    <i class="fas fa-sync"></i>
                 </button>
             </td>
         </tr>
@@ -206,7 +202,7 @@ async function cargarClientes() {
 }
 
 /**
- * Carga la tabla de Deudas con links de WhatsApp
+ * Carga las deudas y los links de WhatsApp
  */
 async function cargarDeudas() {
     const res = await fetch("/admin/deudas");
@@ -216,25 +212,18 @@ async function cargarDeudas() {
     tbody.innerHTML = data.deudas.map(d => `
         <tr>
             <td><strong>${d.cliente}</strong></td>
-            <td class="text-rojo"><strong>$${d.total.toLocaleString('es-CO')}</strong></td>
+            <td style="color:var(--primary); font-weight:800;">$${d.total.toLocaleString('es-CO')}</td>
             <td>
                 ${d.whatsapp_link ? `
                     <a href="${d.whatsapp_link}" target="_blank" class="btn-wa">
-                        <i class="fab fa-whatsapp"></i> COBRAR
-                    </a>` : '<span class="text-muted">Sin Teléfono</span>'}
+                        <i class="fab fa-whatsapp"></i> NOTIFICAR
+                    </a>` : '<span style="color:#999;">Sin Teléfono</span>'}
             </td>
-            <td>
-                <button class="btn-small" onclick="showTab('ventas', document.querySelector('.nav button:nth-child(3)'))">
-                    Ver Detalle
-                </button>
-            </td>
+            <td><button class="btn-primary" style="padding:5px 10px;" onclick="showTab('ventas', document.querySelector('.nav button:nth-child(3)'))">VER</button></td>
         </tr>
     `).join("");
 }
 
-/**
- * Carga el Historial de movimientos
- */
 async function cargarHistorial() {
     const res = await fetch("/admin/historial");
     const logs = await res.json();
@@ -244,17 +233,17 @@ async function cargarHistorial() {
         <tr>
             <td>${l.fecha}</td>
             <td><strong>${l.producto}</strong></td>
-            <td><span class="tipo-${l.tipo}">${l.tipo.toUpperCase()}</span></td>
+            <td><span class="badge ${l.tipo === 'entrada' ? 'pagado' : 'debe'}">${l.tipo}</span></td>
             <td>${l.cantidad} kg</td>
-            <td class="text-muted"><em>${l.motivo}</em></td>
+            <td style="font-style:italic; color:#666;">${l.motivo}</td>
         </tr>
     `).join("");
 }
 
-// --- 4. GESTIÓN DE FORMULARIOS Y ACCIONES (POST/PUT/DELETE) ---
+// --- 4. ACCIONES Y FORMULARIOS (POST/PUT/DELETE) ---
 
 /**
- * Llena los selectores del modal de venta con datos de la DB
+ * Prepara los selectores en el modal de ventas
  */
 async function cargarSelectoresVenta() {
     const resP = await fetch("/inventario");
@@ -268,7 +257,7 @@ async function cargarSelectoresVenta() {
     listC.innerHTML = clis.map(c => `<option value="${c.nombre}">`).join("");
 }
 
-// Registro de Producto
+// Registro de Nuevo Producto
 document.getElementById("form-producto")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const payload = {
@@ -292,7 +281,7 @@ document.getElementById("form-producto")?.addEventListener("submit", async (e) =
     } else { alert(data.error); }
 });
 
-// Registro de Venta
+// Registro de Nueva Venta
 document.getElementById("form-venta")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const payload = {
@@ -312,30 +301,60 @@ document.getElementById("form-venta")?.addEventListener("submit", async (e) => {
     if (data.mensaje) {
         cerrarModal('modal-venta');
         cargarVentas();
-        cargarDashboard(); // Actualizar gráfica
+        cargarDashboard();
         e.target.reset();
     } else { alert(data.error); }
 });
 
-// Acciones de Edición Rápidas
-async function actualizarEstadoPago(id, actual) {
-    const nuevo = actual === 'pagado' ? 'debe' : 'pagado';
-    await fetch(`/admin/venta/${id}`, {
-        method: "PUT",
+// Registro de Nuevo Cliente
+document.getElementById("form-cliente")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const payload = {
+        nombre: document.getElementById("cli-nombre").value,
+        telefono: document.getElementById("cli-tel").value,
+        direccion: document.getElementById("cli-dir").value
+    };
+
+    const res = await fetch("/admin/cliente", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pagado: nuevo })
+        body: JSON.stringify(payload)
     });
+
+    const data = await res.json();
+    if (data.mensaje) {
+        cerrarModal('modal-cliente');
+        cargarClientes();
+        e.target.reset();
+    } else { alert(data.error); }
+});
+
+// Funciones de Actualización Rápida
+async function cambiarEstadoPago(id) {
+    await fetch(`/admin/venta/${id}/pago`, { method: "PUT" });
     cargarVentas();
 }
 
+async function editarStockPrompt(nombre, actual) {
+    const nuevo = prompt(`Actualizar stock para ${nombre}:`, actual);
+    if (nuevo !== null) {
+        await fetch("/admin/stock", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nombre: nombre, stock: parseFloat(nuevo) })
+        });
+        cargarInventario();
+    }
+}
+
 async function eliminarCliente(id) {
-    if (confirm("¿Seguro que deseas eliminar este cliente?")) {
+    if (confirm("¿Eliminar este cliente definitivamente?")) {
         await fetch(`/admin/cliente/${id}`, { method: "DELETE" });
         cargarClientes();
     }
 }
 
-// Al cargar la página por primera vez
+// ARRANQUE INICIAL
 window.onload = () => {
     cargarDashboard();
 };

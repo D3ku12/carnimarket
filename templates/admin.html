@@ -3,35 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CarniMarket | Panel de Administración Profesional</title>
+    <title>CarniMarket | Panel de Control Profesional</title>
+    
     <link rel="stylesheet" href="/static/admin.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
     <header>
-        <div class="logo">
-            <h1>🥩 CarniMarket <span style="font-weight: 300; opacity: 0.8;">Admin</span></h1>
-        </div>
+        <h1><i class="fas fa-meat"></i> CarniMarket <span style="font-weight: 300; opacity: 0.8;">Admin</span></h1>
         <nav class="nav">
             <button class="active" onclick="showTab('dashboard', this)">
-                <i class="fas fa-chart-line"></i> DASHBOARD
+                <i class="fas fa-house"></i> INICIO
             </button>
             <button onclick="showTab('inventario', this)">
-                <i class="fas fa-boxes"></i> INVENTARIO
+                <i class="fas fa-boxes-stacked"></i> STOCK
             </button>
             <button onclick="showTab('ventas', this)">
-                <i class="fas fa-shopping-cart"></i> VENTAS
+                <i class="fas fa-cash-register"></i> VENTAS
             </button>
             <button onclick="showTab('clientes', this)">
-                <i class="fas fa-users"></i> CLIENTES
+                <i class="fas fa-address-book"></i> CLIENTES
             </button>
             <button onclick="showTab('deudas', this)">
                 <i class="fas fa-hand-holding-dollar"></i> DEUDAS
             </button>
             <button onclick="showTab('historial', this)">
-                <i class="fas fa-history"></i> HISTORIAL
+                <i class="fas fa-clock-rotate-left"></i> MOVIMIENTOS
             </button>
         </nav>
     </header>
@@ -44,14 +45,16 @@
             
             <div class="dos-col">
                 <div class="card">
-                    <h2><i class="fas fa-chart-bar" style="color: var(--primary);"></i> Rendimiento de Productos (Kilos)</h2>
-                    <div class="chart-container" style="position: relative; height:300px;">
-                        <canvas id="chart-productos"></canvas>
+                    <div class="card-header">
+                        <h2><i class="fas fa-chart-bar"></i> Rendimiento de Ventas (Kg)</h2>
                     </div>
+                    <canvas id="chart-productos" style="max-height: 300px;"></canvas>
                 </div>
                 <div class="card">
-                    <h2><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> Alertas de Stock Bajo</h2>
-                    <div id="alertas-stock" class="listado-alertas">
+                    <div class="card-header">
+                        <h2><i class="fas fa-triangle-exclamation"></i> Alertas de Stock</h2>
+                    </div>
+                    <div id="alertas-stock">
                         </div>
                 </div>
             </div>
@@ -60,8 +63,8 @@
         <section id="tab-inventario" class="tab">
             <div class="card">
                 <div class="card-header">
-                    <h2>📦 Control de Inventario</h2>
-                    <button class="btn-green" onclick="abrirModal('modal-producto')">
+                    <h2><i class="fas fa-warehouse"></i> Inventario de Carnes</h2>
+                    <button class="btn-primary" onclick="abrirModal('modal-producto')">
                         <i class="fas fa-plus"></i> Nuevo Producto
                     </button>
                 </div>
@@ -69,11 +72,9 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Producto</th>
+                                <th>Nombre</th>
                                 <th>Stock Actual</th>
-                                <th>Stock Mínimo</th>
-                                <th>Precio / Kg</th>
-                                <th>Estado</th>
+                                <th>Precio/Kg</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -87,13 +88,13 @@
         <section id="tab-ventas" class="tab">
             <div class="card">
                 <div class="card-header">
-                    <h2>💰 Registro de Ventas</h2>
-                    <div class="acciones-header">
-                        <a href="/admin/exportar/ventas" class="btn-green" style="background-color: #27ae60;">
-                            <i class="fas fa-file-excel"></i> Exportar Excel
+                    <h2><i class="fas fa-file-invoice-dollar"></i> Historial de Ventas</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <a href="/admin/exportar/ventas" class="btn-green">
+                            <i class="fas fa-file-excel"></i> Excel
                         </a>
-                        <button class="btn-green" onclick="abrirModal('modal-venta')" style="background-color: var(--primary);">
-                            <i class="fas fa-cart-plus"></i> Registrar Venta
+                        <button class="btn-primary" onclick="abrirModal('modal-venta')">
+                            <i class="fas fa-cart-plus"></i> Nueva Venta
                         </button>
                     </div>
                 </div>
@@ -101,11 +102,10 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Fecha y Hora</th>
+                                <th>Fecha</th>
                                 <th>Cliente</th>
                                 <th>Producto</th>
-                                <th>Kilos</th>
-                                <th>Total</th>
+                                <th>Subtotal</th>
                                 <th>Estado</th>
                                 <th>Acción</th>
                             </tr>
@@ -120,8 +120,8 @@
         <section id="tab-clientes" class="tab">
             <div class="card">
                 <div class="card-header">
-                    <h2>👤 Directorio de Clientes</h2>
-                    <button class="btn-green" onclick="abrirModal('modal-cliente')">
+                    <h2><i class="fas fa-user-group"></i> Gestión de Clientes</h2>
+                    <button class="btn-primary" onclick="abrirModal('modal-cliente')">
                         <i class="fas fa-user-plus"></i> Agregar Cliente
                     </button>
                 </div>
@@ -129,10 +129,10 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Nombre</th>
+                                <th>Nombre Completo</th>
                                 <th>Teléfono</th>
                                 <th>Dirección</th>
-                                <th>Fecha Registro</th>
+                                <th>Registro</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -145,15 +145,16 @@
 
         <section id="tab-deudas" class="tab">
             <div class="card">
-                <h2>⚠️ Gestión de Cobros Pendientes</h2>
+                <div class="card-header">
+                    <h2><i class="fas fa-money-bill-wave"></i> Cobros Pendientes</h2>
+                </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
-                                <th>Cliente</th>
-                                <th>Total Deuda</th>
-                                <th>WhatsApp</th>
-                                <th>Acción</th>
+                                <th>Deudor</th>
+                                <th>Total a Cobrar</th>
+                                <th>Notificar</th>
                             </tr>
                         </thead>
                         <tbody id="tabla-deudas">
@@ -165,15 +166,17 @@
 
         <section id="tab-historial" class="tab">
             <div class="card">
-                <h2>📋 Historial de Movimientos</h2>
+                <div class="card-header">
+                    <h2><i class="fas fa-list-check"></i> Registro de Movimientos</h2>
+                </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
-                                <th>Fecha</th>
+                                <th>Fecha/Hora</th>
                                 <th>Producto</th>
-                                <th>Movimiento</th>
-                                <th>Cantidad</th>
+                                <th>Tipo</th>
+                                <th>Cant.</th>
                                 <th>Motivo</th>
                             </tr>
                         </thead>
@@ -188,20 +191,20 @@
 
     <div id="modal-producto" class="modal-overlay">
         <div class="modal">
-            <h3>📦 Gestionar Producto</h3>
+            <h3>📦 Registrar Producto</h3>
             <form id="form-producto">
                 <div class="form-group">
-                    <label>Nombre del Producto</label>
-                    <input type="text" id="prod-nombre" required>
+                    <label>Nombre del Corte</label>
+                    <input type="text" id="prod-nombre" placeholder="Ej: Lomo Fino" required>
                 </div>
-                <div class="row">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div class="form-group">
-                        <label>Stock Inicial (kg)</label>
-                        <input type="number" id="prod-stock" step="0.1" required>
+                        <label>Stock (kg)</label>
+                        <input type="number" id="prod-stock" step="0.1" value="0" required>
                     </div>
                     <div class="form-group">
-                        <label>Mínimo Alerta (kg)</label>
-                        <input type="number" id="prod-minimo" step="0.1" required>
+                        <label>Alerta Mínima</label>
+                        <input type="number" id="prod-minimo" step="0.1" value="5" required>
                     </div>
                 </div>
                 <div class="form-group">
@@ -209,7 +212,7 @@
                     <input type="number" id="prod-precio" required>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="cerrarModal('modal-producto')">Cerrar</button>
+                    <button type="button" class="btn-secondary" onclick="cerrarModal('modal-producto')">Cancelar</button>
                     <button type="submit" class="btn-primary">Guardar Producto</button>
                 </div>
             </form>
@@ -218,38 +221,61 @@
 
     <div id="modal-venta" class="modal-overlay">
         <div class="modal">
-            <h3>🛒 Nueva Venta</h3>
+            <h3>🛒 Registrar Nueva Venta</h3>
             <form id="form-venta">
                 <div class="form-group">
-                    <label>Producto</label>
+                    <label>Seleccionar Corte</label>
                     <select id="venta-producto" required>
                         </select>
                 </div>
                 <div class="form-group">
-                    <label>Cantidad (Kilos)</label>
+                    <label>Kilos a Vender</label>
                     <input type="number" id="venta-kilos" step="0.01" required>
                 </div>
                 <div class="form-group">
-                    <label>Nombre del Cliente</label>
-                    <input type="text" id="venta-cliente" placeholder="Cliente General" list="lista-clientes">
+                    <label>Cliente (Buscar o Escribir)</label>
+                    <input type="text" id="venta-cliente" list="lista-clientes" placeholder="Cliente General">
                     <datalist id="lista-clientes"></datalist>
                 </div>
                 <div class="form-group">
-                    <label>Estado de Pago</label>
+                    <label>Estado Inicial</label>
                     <select id="venta-pagado">
-                        <option value="pagado">Pagado ✅</option>
-                        <option value="debe">Debe ❌</option>
+                        <option value="pagado">Ya Pagó ✅</option>
+                        <option value="debe">Quedó Debiendo ❌</option>
                     </select>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="cerrarModal('modal-venta')">Cerrar</button>
-                    <button type="submit" class="btn-primary">Registrar Venta</button>
+                    <button type="button" class="btn-secondary" onclick="cerrarModal('modal-venta')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Confirmar Venta</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script src="/static/admin.js?v=7.0"></script>
+    <div id="modal-cliente" class="modal-overlay">
+        <div class="modal">
+            <h3>👤 Registro de Cliente Nuevo</h3>
+            <form id="form-cliente">
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="cli-nombre" required>
+                </div>
+                <div class="form-group">
+                    <label>Teléfono (WhatsApp)</label>
+                    <input type="text" id="cli-tel" placeholder="300...">
+                </div>
+                <div class="form-group">
+                    <label>Dirección (Opcional)</label>
+                    <input type="text" id="cli-dir">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="cerrarModal('modal-cliente')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Registrar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
+    <script src="/static/admin.js?v=8.0"></script>
 </body>
 </html>
