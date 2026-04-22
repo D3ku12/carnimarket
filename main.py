@@ -270,17 +270,38 @@ def verificar_auth(token: str = Cookie(default=None)):
 # --- GESTIÓN DE USUARIOS ---
 @app.get("/admin/usuarios")
 def listar_usuarios(db: Session = Depends(get_db), usuario: str = Cookie(default=None)):
-    if not verificar_token(usuario):
-        raise HTTPException(status_code=401, detail="No autorizado")
-    u = db.query(Usuario).filter(Usuario.email == verificar_token(usuario)).first()
-    if not u or u.rol not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Solo admins")
-    
     try:
+        if not verificar_token(usuario):
+            raise HTTPException(status_code=401, detail="No autorizado")
+        email = verificar_token(usuario)
+        if not email:
+            raise HTTPException(status_code=401, detail="Token invalido")
+        u = db.query(Usuario).filter(Usuario.email == email).first()
+        if not u or u.rol not in ["admin"]:
+            raise HTTPException(status_code=403, detail="Solo admins")
+        
         usuarios = db.query(Usuario).order_by(Usuario.fecha_registro.desc()).all()
-        return [{"id": x.id, "email": x.email, "nombre": x.nombre, "rol": x.rol, "activo": x.activo, "ultimo_login": x.ultimo_login.strftime("%Y-%m-%d %H:%M") if x.ultimo_login else ""} for x in usuarios]
+        resultado = []
+        for x in usuarios:
+            try:
+                ultimo = ""
+                if x.ultimo_login:
+                    ultimo = x.ultimo_login.strftime("%Y-%m-%d %H:%M")
+                resultado.append({
+                    "id": x.id, 
+                    "email": x.email or "", 
+                    "nombre": x.nombre or "", 
+                    "rol": x.rol or "empleado", 
+                    "activo": x.activo,
+                    "ultimo_login": ultimo
+                })
+            except:
+                resultado.append({"id": x.id, "email": x.email, "nombre": x.nombre, "rol": x.rol, "activo": x.activo, "ultimo_login": ""})
+        return resultado
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/admin/usuario")
 def crear_usuario(data: dict, db: Session = Depends(get_db), token: str = Cookie(default=None)):
