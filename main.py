@@ -276,8 +276,11 @@ def listar_usuarios(db: Session = Depends(get_db), usuario: str = Cookie(default
     if not u or u.rol not in ["admin"]:
         raise HTTPException(status_code=403, detail="Solo admins")
     
-    usuarios = db.query(Usuario).order_by(Usuario.fecha_registro.desc()).all()
-    return [{"id": x.id, "email": x.email, "nombre": x.nombre, "rol": x.rol, "activo": x.activo, "ultimo_login": x.ultimo_login.strftime("%Y-%m-%d %H:%M") if x.ultimo_login else "—"} for x in usuarios]
+    try:
+        usuarios = db.query(Usuario).order_by(Usuario.fecha_registro.desc()).all()
+        return [{"id": x.id, "email": x.email, "nombre": x.nombre, "rol": x.rol, "activo": x.activo, "ultimo_login": x.ultimo_login.strftime("%Y-%m-%d %H:%M") if x.ultimo_login else ""} for x in usuarios]
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.post("/admin/usuario")
 def crear_usuario(data: dict, db: Session = Depends(get_db), token: str = Cookie(default=None)):
