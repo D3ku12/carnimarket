@@ -276,8 +276,20 @@ async function cargarDeudas() {
             <td>
                 ${d.whatsapp_link ? `<a href="${d.whatsapp_link}" target="_blank" class="btn-wa">COBRAR</a>` : 'N/A'}
             </td>
+            <td>
+                ${d.fecha_vencimiento && d.fecha_vencimiento !== 'Sin vencimiento' ? 
+                    `<a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cobro%20a%20${encodeURIComponent(d.cliente)}&dates=${formatFechaGCal(d.fecha_vencimiento)}/${formatFechaGCal(d.fecha_vencimiento)}&details=Recordatorio%20de%20cobro%20por%20$${d.total.toLocaleString()}" target="_blank" class="btn-primary" style="background:var(--info)"><i class="fas fa-calendar"></i></a>`
+                    : ''}
+            </td>
         </tr>
     `).join("");
+}
+
+function formatFechaGCal(fecha) {
+    if (!fecha || fecha === 'Sin vencimiento') return '';
+    const partes = fecha.split('-');
+    if (partes.length !== 3) return '';
+    return `${partes[0]}${partes[1]}${partes[2]}T000000Z`;
 }
 
 // --- 4. LÓGICA DE EDICIÓN (PRE-RELLENADO) ---
