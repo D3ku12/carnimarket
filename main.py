@@ -385,6 +385,8 @@ def get_dashboard_data(periodo: str = "7dias", db: Session = Depends(get_db)):
         fecha_inicio = inicio_dia - timedelta(days=6)
     elif periodo == "30dias":
         fecha_inicio = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    elif periodo == "todo":
+        fecha_inicio = datetime(2020, 1, 1)
     else:
         fecha_inicio = inicio_dia - timedelta(days=6)
     

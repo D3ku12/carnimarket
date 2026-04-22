@@ -31,12 +31,13 @@
         
         <section id="tab-dashboard" class="tab active">
             <div class="filtros-fechas">
-                <div class="filtro-grupo">
-                    <label>Período</label>
+                <div class="filtro-grupo" style="flex:1">
+                    <label><i class="fas fa-calendar"></i> Período</label>
                     <select id="dashboard-periodo" onchange="filtrarDashboard()">
                         <option value="hoy">Hoy</option>
                         <option value="7dias" selected>Últimos 7 días</option>
                         <option value="30dias">Último mes</option>
+                        <option value="todo">Todo</option>
                     </select>
                 </div>
             </div>
