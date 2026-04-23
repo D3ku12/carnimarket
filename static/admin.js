@@ -438,7 +438,12 @@ document.getElementById("form-gasto").onsubmit = async (e) => {
 // Manejador para Ventas (entrada en gramos, convierte a kilos)
 document.getElementById("form-venta").onsubmit = async (e) => {
     e.preventDefault();
-    const gramos = parseFloat(document.getElementById("venta-gramos").value);
+    const inputGramos = document.getElementById("venta-gramos");
+    if (!inputGramos) {
+        console.error("Elemento venta-gramos no encontrado");
+        return;
+    }
+    const gramos = parseFloat(inputGramos.value);
     if (!gramos || gramos <= 0) {
         alert("Ingresa una cantidad válida en gramos");
         return;
