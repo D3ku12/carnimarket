@@ -626,16 +626,7 @@ def toggle_encargado(id: int, db: Session = Depends(get_db)):
     v = db.query(Venta).filter(Venta.id == id).first()
     if not v: return {"error": "No existe"}
     
-    p = db.query(Producto).filter(Producto.nombre == v.producto).first()
-    
-    # Si cambia de encargado a pagado/debe: descontar stock
-    if v.pagado == "encargado" and p:
-        p.stock -= v.kilos
-    # Si cambia de pagado/debe a encargado: restaurar stock
-    elif v.pagado != "encargado" and p:
-        p.stock += v.kilos
-    
-    # Nuevo estado
+    # Ya no ajusta stock al cambiar estado
     if v.pagado == "encargado":
         v.pagado = "pagado"
     elif v.pagado == "pagado":
@@ -652,14 +643,8 @@ def confirmar_encargado(id: int, db: Session = Depends(get_db)):
     if not v:
         return {"error": "No existe"}
     
-    nuevo_estado = "pagado"
-    
-    p = db.query(Producto).filter(Producto.nombre == v.producto).first()
-    
-    if v.pagado == "encargado" and p and v.kilos:
-        p.stock -= v.kilos
-    
-    v.pagado = nuevo_estado
+    # Ya no ajusta stock al cambiar estado
+    v.pagado = "pagado"
     db.commit()
     return {"mensaje": "Pedido confirmado", "pagado": v.pagado}
     
@@ -674,13 +659,7 @@ async def cambiar_estado(request: Request, db: Session = Depends(get_db)):
         if not v:
             return {"error": "Venta no existe"}
         
-        p = db.query(Producto).filter(Producto.nombre == v.producto).first()
-        
-        if v.pagado == "encargado" and estado != "encargado" and p and v.kilos:
-            p.stock -= v.kilos
-        elif v.pagado != "encargado" and estado == "encargado" and p and v.kilos:
-            p.stock += v.kilos
-        
+        # Ya no se ajusta stock al cambiar estado (se descuenta todo al crear)
         v.pagado = estado
         db.commit()
         return {"OK": True, "pagado": v.pagado}
@@ -730,15 +709,7 @@ def corregir_venta(id: int, data: dict, db: Session = Depends(get_db), token: st
     # Cambio de estado - ajustar inventario
     if "pagado" in data:
         nuevo_estado = data["pagado"]
-        p = db.query(Producto).filter(Producto.nombre == v.producto).first()
-        
-        # De encargado a pagado/debe: descontar stock
-        if v.pagado == "encargado" and nuevo_estado != "encargado" and p and v.kilos:
-            p.stock -= v.kilos
-        # De pagado/debe a encargado: restaurar stock
-        elif v.pagado != "encargado" and nuevo_estado == "encargado" and p and v.kilos:
-            p.stock += v.kilos
-        
+        # Ya no ajusta stock al cambiar estado
         v.pagado = nuevo_estado
     
     if "notas" in data: v.notas = data["notas"]
