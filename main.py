@@ -907,6 +907,9 @@ def get_reporte_deudas(db: Session = Depends(get_db), fecha_inicio: Optional[str
     pendientes = query.all()
     resumen = {}
     for v in pendientes:
+        saldo = v.subtotal - (v.monto_pagado or 0)
+        if saldo <= 0:
+            continue
         if v.cliente_nombre not in resumen:
             cli = db.query(Cliente).filter(Cliente.nombre == v.cliente_nombre).first()
             resumen[v.cliente_nombre] = {
@@ -915,7 +918,7 @@ def get_reporte_deudas(db: Session = Depends(get_db), fecha_inicio: Optional[str
                 "direccion": cli.direccion if cli else "",
                 "fecha_vencimiento": None
             }
-        resumen[v.cliente_nombre]["total"] += v.subtotal
+        resumen[v.cliente_nombre]["total"] += saldo
         if v.fecha_vencimiento:
             if resumen[v.cliente_nombre]["fecha_vencimiento"] is None:
                 resumen[v.cliente_nombre]["fecha_vencimiento"] = v.fecha_vencimiento
