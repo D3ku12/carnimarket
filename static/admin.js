@@ -72,6 +72,10 @@ async function filtrarDashboard() {
             <span class="valor">$${data.total_hoy.toLocaleString()}</span>
             <span class="label">Hoy</span>
         </div>
+        <div class="stat" style="border-left-color: var(--warning)">
+            <span class="valor">$${caja.pendiente?.toLocaleString() || 0}</span>
+            <span class="label">Pendiente</span>
+        </div>
         <div class="stat" style="border-left-color: var(--danger)">
             <span class="valor">$${caja.egresos.toLocaleString()}</span>
             <span class="label">Gastos</span>

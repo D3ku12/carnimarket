@@ -536,9 +536,8 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
     if tipo_producto == "plato":
         if v.unidad != "plato":
             return {"error": "Este producto se vende solo por platos"}
-        # Los platos se pueden vender sin importar el stock
-        # Solo descontar si NO es encargado y hay stock
-        if not es_encargado and p.stock > 0:
+        # Siempre descontar stock (encargado o no, para tener control)
+        if p.stock > 0:
             if v.cantidad <= p.stock:
                 p.stock -= v.cantidad
             else:
@@ -553,13 +552,10 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
         else:
             kilos = v.cantidad
         
-        # Solo verificar stock y descontar si NO es encargado
-        if not es_encargado:
-            if kilos > p.stock:
-                return {"error": f"Stock insuficiente ({p.stock}kg)"}
-            p.stock -= kilos
-        else:
-            kilos = kilos  # mantiene 0 para encargado
+        # Siempre verificar stock y descontar
+        if kilos > p.stock:
+            return {"error": f"Stock insuficiente ({p.stock}kg)"}
+        p.stock -= kilos
         total = kilos * p.precio_kilo
     
     ahora = obtener_hora_colombia()
@@ -780,9 +776,9 @@ def toggle_pago_venta(id: int, db: Session = Depends(get_db)):
 def eliminar_venta(id: int, db: Session = Depends(get_db)):
     v = db.query(Venta).filter(Venta.id == id).first()
     if not v: return {"error": "No existe"}
-    # Restaurar stock SOLO si NO era encargado
+    # Restaurar stock siempre (encargado o no)
     p = db.query(Producto).filter(Producto.nombre == v.producto).first()
-    if p and v.pagado != "encargado" and v.kilos:
+    if p and v.kilos:
         p.stock += v.kilos
     db.delete(v)
     db.commit()
@@ -816,7 +812,9 @@ def eliminar_gasto(id: int, db: Session = Depends(get_db)):
 def estado_caja(db: Session = Depends(get_db)):
     ingresos = db.query(func.sum(Venta.subtotal)).filter(Venta.pagado == "pagado").scalar() or 0
     egresos = db.query(func.sum(Gasto.monto)).scalar() or 0
-    return {"saldo_real": ingresos - egresos, "ingresos": ingresos, "egresos": egresos}
+    # Pendiente: encargado - ventas que no se han confirmado
+    pendiente = db.query(func.sum(Venta.subtotal)).filter(Venta.pagado == "encargado").scalar() or 0
+    return {"saldo_real": ingresos - egresos, "ingresos": ingresos, "egresos": egresos, "pendiente": pendiente}
 
 @app.get("/admin/caja-detalle")
 def caja_detalle(
