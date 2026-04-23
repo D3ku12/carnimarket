@@ -643,8 +643,9 @@ def confirmar_encargado(id: int, db: Session = Depends(get_db)):
     if not v:
         return {"error": "No existe"}
     
-    # Ya no ajusta stock al cambiar estado
+    # Marcar como pagado y setear monto_pagado = subtotal
     v.pagado = "pagado"
+    v.monto_pagado = v.subtotal
     db.commit()
     return {"mensaje": "Pedido confirmado", "pagado": v.pagado}
     
@@ -659,7 +660,10 @@ async def cambiar_estado(request: Request, db: Session = Depends(get_db)):
         if not v:
             return {"error": "Venta no existe"}
         
-        # Ya no se ajusta stock al cambiar estado (se descuenta todo al crear)
+        # Si marca como pagado, asegurar monto_pagado = subtotal
+        if estado == "pagado":
+            v.monto_pagado = v.subtotal
+        
         v.pagado = estado
         db.commit()
         return {"OK": True, "pagado": v.pagado}
@@ -709,7 +713,9 @@ def corregir_venta(id: int, data: dict, db: Session = Depends(get_db), token: st
     # Cambio de estado - ajustar inventario
     if "pagado" in data:
         nuevo_estado = data["pagado"]
-        # Ya no ajusta stock al cambiar estado
+        # Si marca como pagado, asegurar que monto_pagado = subtotal
+        if nuevo_estado == "pagado":
+            v.monto_pagado = v.subtotal
         v.pagado = nuevo_estado
     
     if "notas" in data: v.notas = data["notas"]
