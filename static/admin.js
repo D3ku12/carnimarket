@@ -167,16 +167,34 @@ async function cargarEncargados() {
     const data = await res.json();
     document.getElementById("tabla-encargados").innerHTML = data.map(v => `
         <tr>
-            <td><small>${v.fecha_venta}</small></td>
+            <td>${v.fecha_venta}</td>
             <td>${v.cliente}</td>
-            <td>${v.producto} (${Math.round(v.kilos * 1000)}g)</td>
-            <td>$${v.subtotal.toLocaleString()}</td>
+            <td>${v.producto}</td>
+            <td>$${v.subtotal}</td>
             <td>
-                <button class="btn-primary" onclick="abrirCambiarEstado(${v.id})">Confirmar</button>
-                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${v.id})">Borrar</button>
+                <button type="button" onclick="confirmarEncargo(${v.id})">Confirmar</button>
+                <button type="button" onclick="eliminarVenta(${v.id})">Borrar</button>
             </td>
         </tr>
     `).join("");
+}
+
+async function confirmarEncargo(id) {
+    console.log("Confirmando encargo:", id);
+    const res = await fetch("/api/cambiar-estado", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: id, estado: "pagado" })
+    });
+    const data = await res.json();
+    console.log("Resultado:", data);
+    if (res.ok) {
+        cargarEncargados();
+        carregarVentas();
+        carregarDashboard();
+    } else {
+        alert("Error: " + (data.error || "Unknown"));
+    }
 }
 
 function abrirCambiarEstado(id) {
