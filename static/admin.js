@@ -334,7 +334,7 @@ document.getElementById("tabla-ventas").innerHTML = data.map(v => {
                     <option value="pagado" ${estadoActual === 'pagado' ? 'selected' : ''}>Pagado</option>
                     <option value="debe" ${estadoActual === 'debe' ? 'selected' : ''}>Debe</option>
                 </select>
-                ${saldo > 0 ? `<button type="button" onclick="abrirAbonoModal(${vid}, ${saldo})">Abonar</button>` : ''}
+                ${(saldo > 0 && estadoActual === 'debe') ? `<button type="button" onclick="abrirAbonoModal(${vid}, ${saldo})">Abonar</button>` : ''}
                 <button type="button" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, '${estadoActual}')">Editar</button>
                 <button type="button" onclick="eliminarVenta(${vid})">Borrar</button>
             </td>
