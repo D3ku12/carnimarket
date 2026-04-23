@@ -289,7 +289,10 @@ async function filtrarVentas() {
     
     const res = await fetch(url);
     const data = await res.json();
-    document.getElementById("tabla-ventas").innerHTML = data.map(v => `
+    document.getElementById("tabla-ventas").innerHTML = data.map(v => {
+        const vid = v.id || 0;
+        console.log("Venta ID:", vid);
+        return `
         <tr>
             <td><small>${v.fecha_venta}</small></td>
             <td>${v.cliente}</td>
@@ -298,17 +301,17 @@ async function filtrarVentas() {
             <td><span class="badge ${v.pagado}">${v.pagado}</span></td>
             <td>${v.fecha_vencimiento || "—"}</td>
             <td>
-                <select onchange="cambiarEstadoVenta(${v.id}, this.value)" style="padding:8px; border-radius:6px; border:1px solid #ddd; margin-bottom:4px;">
+                <select onchange="cambiarEstadoVenta(${vid}, this.value)" style="padding:8px; border-radius:6px; border:1px solid #ddd; margin-bottom:4px;">
                     <option value="">Cambiar Estado</option>
                     <option value="encargado">En Cargo</option>
                     <option value="pagado">Pagado</option>
                     <option value="debe">Debe</option>
                 </select>
-                <button class="btn-primary" onclick="prepararEdicionVenta(${v.id}, '${v.cliente}', '${v.producto}', ${v.kilos}, '${v.pagado}')">Editar</button>
-                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${v.id})">Borrar</button>
+                <button class="btn-primary" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, '${v.pagado}')">Editar</button>
+                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${vid})">Borrar</button>
             </td>
         </tr>
-    `).join("");
+    `}).join("");
 }
 
 function prepararEdicionVenta(id, cliente, producto, kilos, pagado) {
@@ -537,9 +540,10 @@ document.getElementById("form-venta").onsubmit = async (e) => {
         cantidad: cantidad,
         unidad: unidad,
         cliente_nombre: document.getElementById("venta-cliente").value || "Cliente General",
-        pagado: document.getElementById("venta-pagado").value,
-        fecha_venta: document.getElementById("venta-fecha").value || null,
-        fecha_vencimiento: document.getElementById("venta-vencimiento").value || null
+        pagado: document.getElementById("venta-pagado").value || "encargado",
+        fecha_venta: document.getElementById("venta-fecha").value || "",
+        fecha_vencimiento: document.getElementById("venta-vencimiento").value || "",
+        notas: ""
     };
 
     const res = await fetch("/vender", {
@@ -569,7 +573,12 @@ async function togglePago(id) {
 }
 
 async function cambiarEstadoVenta(id, nuevoEstado) {
-    if (!nuevoEstado) return;
+    if (!nuevoEstado || !id) {
+        console.log("ID o estado faltante:", id, nuevoEstado);
+        return;
+    }
+    
+    console.log("Cambiando estado:", id, nuevoEstado);
     
     const res = await fetch(`/admin/venta/${id}`, {
         method: "PUT",
@@ -577,11 +586,14 @@ async function cambiarEstadoVenta(id, nuevoEstado) {
         body: JSON.stringify({ pagado: nuevoEstado })
     });
     
+    const data = await res.json();
+    console.log("Res:", res.ok, data);
+    
     if (res.ok) {
         cargarVentas();
         cargarDashboard();
     } else {
-        alert("Error al cambiar estado");
+        alert("Error: " + (data.error || "Unknown"));
     }
 }
 
