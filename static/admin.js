@@ -318,6 +318,7 @@ document.getElementById("tabla-ventas").innerHTML = data.map(v => {
         const estadoActual = v.pagado || "encargado";
         const montoPagado = v.monto_pagado || 0;
         const saldo = v.subtotal - montoPagado;
+        console.log("Row:", vid, "saldo:", saldo, "estado:", estadoActual);
         return `<tr>
             <td>${v.fecha_venta}</td>
             <td>${v.cliente}</td>
@@ -658,6 +659,7 @@ async function eliminarVenta(id) {
 }
 
 function abrirAbonoModal(id, saldo) {
+    console.log("abrirAbonoModal:", id, saldo);
     document.getElementById("abono-id").value = id;
     document.getElementById("abono-saldo").textContent = "Saldo: $" + saldo;
     abrirModal("modal-abono");
