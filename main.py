@@ -673,7 +673,21 @@ def corregir_venta(id: int, data: dict, db: Session = Depends(get_db), token: st
     
     v = db.query(Venta).filter(Venta.id == id).first()
     if not v: return {"error": "No existe"}
-    if "pagado" in data: v.pagado = data["pagado"]
+    
+    # Cambio de estado - ajustar inventario
+    if "pagado" in data:
+        nuevo_estado = data["pagado"]
+        p = db.query(Producto).filter(Producto.nombre == v.producto).first()
+        
+        # De encargado a pagado/debe: descontar stock
+        if v.pagado == "encargado" and nuevo_estado != "encargado" and p and v.kilos:
+            p.stock -= v.kilos
+        # De pagado/debe a encargado: restaurar stock
+        elif v.pagado != "encargado" and nuevo_estado == "encargado" and p and v.kilos:
+            p.stock += v.kilos
+        
+        v.pagado = nuevo_estado
+    
     if "notas" in data: v.notas = data["notas"]
     if "kilos" in data:
         dif = data["kilos"] - v.kilos

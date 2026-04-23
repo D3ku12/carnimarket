@@ -305,8 +305,13 @@ async function filtrarVentas() {
             <td><span class="badge ${v.pagado}">${v.pagado}</span></td>
             <td>${v.fecha_vencimiento || "—"}</td>
             <td>
+                <select onchange="cambiarEstadoVenta(${v.id}, this.value)" style="padding:6px; border-radius:6px; border:1px solid #ddd;">
+                    <option value="">Cambiar Estado</option>
+                    <option value="encargado">En Cargo</option>
+                    <option value="pagado">Pagado</option>
+                    <option value="debe">Debe</option>
+                </select>
                 <button class="btn-primary" onclick="prepararEdicionVenta(${v.id}, '${v.cliente}', '${v.producto}', ${v.kilos}, '${v.pagado}')"><i class="fas fa-edit"></i></button>
-                <button class="btn-primary" onclick="togglePago(${v.id})"><i class="fas fa-sync"></i></button>
                 <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${v.id})"><i class="fas fa-trash"></i></button>
             </td>
         </tr>
@@ -567,6 +572,23 @@ async function togglePago(id) {
         cargarVentas();
     } else {
         alert("Error al cambiar estado de pago");
+    }
+}
+
+async function cambiarEstadoVenta(id, nuevoEstado) {
+    if (!nuevoEstado) return;
+    
+    const res = await fetch(`/admin/venta/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pagado: nuevoEstado })
+    });
+    
+    if (res.ok) {
+        cargarVentas();
+        cargarDashboard();
+    } else {
+        alert("Error al cambiar estado");
     }
 }
 
