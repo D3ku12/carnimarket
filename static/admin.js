@@ -665,19 +665,23 @@ function abrirAbonoModal(id, saldo) {
 
 async function registrarAbono() {
     const id = document.getElementById("abono-id").value;
-    const monto = Number(document.getElementById("abono-monto").value);
+    const montoInput = document.getElementById("abono-monto").value;
+    const monto = Number(montoInput);
     
-    console.log("Abono - id:", id, "monto:", monto);
+    console.log("Abono - id:", id, "montoInput:", montoInput, "monto:", monto, "type:", typeof monto);
     
     if (!id || isNaN(monto) || monto <= 0) {
         alert("Ingrese un monto válido");
         return;
     }
     
+    const bodyData = { id: Number(id), monto: monto };
+    console.log("Sending:", JSON.stringify(bodyData));
+    
     const res = await fetch("/api/registrar-abono", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: Number(id), monto: monto })
+        body: JSON.stringify(bodyData)
     });
     
     const data = await res.json();

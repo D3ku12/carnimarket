@@ -694,6 +694,8 @@ async def registrar_abono(request: Request, db: Session = Depends(get_db)):
         id_val = int(body.get("id", 0))
         monto = float(body.get("monto", 0))
         
+        print(f"registrar-abono: id={id_val}, monto={monto}")
+        
         v = db.query(Venta).filter(Venta.id == id_val).first()
         if not v:
             return {"error": "Venta no existe"}
