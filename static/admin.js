@@ -62,19 +62,19 @@ async function filtrarDashboard() {
     document.getElementById("stats-dashboard").innerHTML = `
         <div class="stat" style="border-left-color: var(--success)">
             <span class="valor">$${caja.saldo_real.toLocaleString()}</span>
-            <span class="label">Saldo en Caja</span>
+            <span class="label">Caja</span>
         </div>
         <div class="stat">
             <span class="valor">$${(data.total_periodo || data.total_hoy).toLocaleString()}</span>
-            <span class="label">Ventas (${labels[periodo] || periodo})</span>
+            <span class="label">${labels[periodo] || periodo}</span>
         </div>
         <div class="stat">
             <span class="valor">$${data.total_hoy.toLocaleString()}</span>
-            <span class="label">Ventas de Hoy</span>
+            <span class="label">Hoy</span>
         </div>
         <div class="stat" style="border-left-color: var(--danger)">
             <span class="valor">$${caja.egresos.toLocaleString()}</span>
-            <span class="label">Gastos Totales</span>
+            <span class="label">Gastos</span>
         </div>
     `;
 

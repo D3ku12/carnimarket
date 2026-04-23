@@ -150,21 +150,22 @@ header h1 {
 /* --- ESTADÍSTICAS --- */
 .stat-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     margin-bottom: 12px;
 }
 
 .stat {
     background: var(--white);
-    padding: 12px;
+    padding: 10px 8px;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
-    border-left: 4px solid var(--primary);
+    border-left: 3px solid var(--primary);
+    text-align: center;
 }
 
 .stat .valor {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 800;
     display: block;
     color: var(--dark);
@@ -172,9 +173,15 @@ header h1 {
 
 .stat .label {
     color: var(--gray-500);
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     font-weight: 600;
     text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+    .stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 /* --- TABLAS --- */
@@ -457,11 +464,11 @@ td select {
     }
     
     .stat-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
     
     .card {
-        padding: 12px;
+        padding: 10px;
         border-radius: 10px;
     }
     
