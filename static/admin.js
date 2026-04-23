@@ -290,28 +290,23 @@ async function filtrarVentas() {
     const res = await fetch(url);
     const data = await res.json();
     document.getElementById("tabla-ventas").innerHTML = data.map(v => {
-        const vid = v.id;
-        console.log("Venta:", vid);
-        return `
-        <tr>
-            <td><small>${v.fecha_venta}</small></td>
+        // Ensure id is a number
+        const vid = Number(v.id);
+        console.log("Venta data:", v.id, v, typeof v.id);
+        return `<tr>
+            <td>${v.fecha_venta}</td>
             <td>${v.cliente}</td>
-            <td>${v.producto} (${Math.round(v.kilos * 1000)}g)</td>
-            <td>$${v.subtotal.toLocaleString()}</td>
-            <td><span class="badge ${v.pagado}">${v.pagado}</span></td>
-            <td>${v.fecha_vencimiento || "—"}</td>
+            <td>${v.producto}</td>
+            <td>$${v.subtotal}</td>
+            <td>${v.pagado}</td>
+            <td>${v.fecha_vencimiento || "-"}</td>
             <td>
-                <select onchange="cambiarEstadoVenta(${vid}, this.value)" style="padding:8px; border-radius:6px; border:1px solid #ddd; margin-bottom:4px;">
-                    <option value="">Cambiar</option>
-                    <option value="encargado">En Cargo</option>
-                    <option value="pagado">Pagado</option>
-                    <option value="debe">Debe</option>
-                </select>
-                <button class="btn-primary" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, '${v.pagado}')">Editar</button>
-                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${vid})">Borrar</button>
+                <button type="button" onclick="cambiarEstadoVenta(${vid}, 'pagado')">Pagado</button>
+                <button type="button" onclick="cambiarEstadoVenta(${vid}, 'debe')">Debe</button>
+                <button type="button" onclick="cambiarEstadoVenta(${vid}, 'encargado')">Encargo</button>
             </td>
-        </tr>
-    `}).join("");
+        </tr>`;
+    }).join("");
 }
 
 function prepararEdicionVenta(id, cliente, producto, kilos, pagado) {
