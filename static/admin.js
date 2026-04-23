@@ -34,11 +34,9 @@ function abrirModal(id) {
     modal.classList.add('open');
     const form = modal.querySelector('form');
     if (form) {
-        form.reset();
-        if(form.querySelector('input[type="hidden"]')) {
-            form.querySelector('input[type="hidden"]').value = "";
-        }
+        form.querySelectorAll('input:not([type="hidden"])').forEach(input => input.value = "");
     }
+}
     if (id === 'modal-venta') {
         initModalVenta();
     }
