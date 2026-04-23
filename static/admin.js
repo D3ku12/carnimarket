@@ -323,11 +323,12 @@ document.getElementById("tabla-ventas").innerHTML = data.map(v => {
         const estadoActual = v.pagado || "encargado";
         const montoPagado = v.monto_pagado || 0;
         const saldo = v.subtotal - montoPagado;
+        const cantidadMostrar = v.cantidad ? `${v.cantidad}${v.unidad === 'gramos' ? 'g' : 'kg'}` : `${v.kilos}kg`;
         console.log("Row:", vid, "saldo:", saldo, "estado:", estadoActual);
         return `<tr>
             <td>${v.fecha_venta}</td>
             <td>${v.cliente}</td>
-            <td>${v.producto}</td>
+            <td>${v.producto} <small style="color:#666">(${cantidadMostrar})</small></td>
             <td>$${v.subtotal}</td>
             <td>$${montoPagado}</td>
             <td style="color:${saldo > 0 ? 'red' : 'green'}">$${saldo}</td>
@@ -341,19 +342,24 @@ document.getElementById("tabla-ventas").innerHTML = data.map(v => {
                     <option value="debe" ${estadoActual === 'debe' ? 'selected' : ''}>Debe</option>
                 </select>
                 ${(saldo > 0 && estadoActual === 'debe') ? `<button type="button" onclick="abrirAbonoModal(${vid}, ${saldo})">Abonar</button>` : ''}
-                <button type="button" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, ${montoPagado}, '${estadoActual}')">Editar</button>
+                <button type="button" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, ${v.cantidad || 0}, '${v.unidad || 'kilo'}', ${montoPagado}, '${estadoActual}')">Editar</button>
                 <button type="button" onclick="eliminarVenta(${vid})">Borrar</button>
             </td>
         </tr>`;
     }).join("");
 }
 
-function prepararEdicionVenta(id, cliente, producto, kilos, montoPagado, pagado) {
+function prepararEdicionVenta(id, cliente, producto, kilos, cantidad, unidad, montoPagado, pagado) {
     abrirModal('modal-editar-venta');
     document.getElementById("edit-venta-id").value = id;
     document.getElementById("edit-venta-cliente").value = cliente;
     document.getElementById("edit-venta-producto").value = producto;
-    document.getElementById("edit-venta-gramos").value = Math.round(kilos * 1000);
+    // Convertir a la unidad original
+    if (unidad === 'gramos') {
+        document.getElementById("edit-venta-gramos").value = cantidad || Math.round(kilos * 1000);
+    } else {
+        document.getElementById("edit-venta-gramos").value = Math.round(kilos * 1000);
+    }
     document.getElementById("edit-venta-abono").value = montoPagado;
     document.getElementById("edit-venta-pagado").value = pagado;
 }

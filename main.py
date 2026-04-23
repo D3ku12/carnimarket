@@ -575,9 +575,11 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
         except:
             fecha_vencimiento = None
     
-    nueva_venta = Venta(
+nueva_venta = Venta(
         producto=v.producto,
         kilos=kilos,
+        cantidad=v.cantidad,
+        unidad=v.unidad or "kilo",
         precio_kilo=p.precio_kilo,
         subtotal=total,
         monto_pagado=total if v.pagado == "pagado" else 0,
@@ -612,7 +614,7 @@ def listar_ventas(
         query = query.filter(Venta.fecha_venta <= ff)
     
     ventas = query.order_by(Venta.fecha_venta.desc()).limit(150).all()
-    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "monto_pagado": v.monto_pagado or 0, "pagado": v.pagado, "notas": v.notas, "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""} for v in ventas]
+    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "cantidad": getattr(v, 'cantidad', 0) or v.cantidad, "unidad": getattr(v, 'unidad', 'kilo') or v.unidad, "subtotal": v.subtotal, "monto_pagado": v.monto_pagado or 0, "pagado": v.pagado, "notas": v.notas, "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""} for v in ventas]
 
 @app.get("/admin/encargados")
 def listar_encargados(db: Session = Depends(get_db)):
@@ -776,10 +778,19 @@ def toggle_pago_venta(id: int, db: Session = Depends(get_db)):
 def eliminar_venta(id: int, db: Session = Depends(get_db)):
     v = db.query(Venta).filter(Venta.id == id).first()
     if not v: return {"error": "No existe"}
-    # Restaurar stock siempre (encargado o no)
+    
+    # Restaurar stock basado en la unidad original
     p = db.query(Producto).filter(Producto.nombre == v.producto).first()
-    if p and v.kilos:
-        p.stock += v.kilos
+    if p:
+        tipo_producto = getattr(p, 'tipo', 'kilo') or 'kilo'
+        if tipo_producto == "plato":
+            if getattr(v, 'cantidad', 0):
+                p.stock += v.cantidad
+        else:
+            # Para kilo/gramos, restaurar los kilos guardados
+            if v.kilos:
+                p.stock += v.kilos
+    
     db.delete(v)
     db.commit()
     return {"mensaje": "Venta eliminada"}

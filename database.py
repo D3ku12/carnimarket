@@ -54,6 +54,8 @@ class Venta(Base):
     fecha_vencimiento = Column(DateTime, nullable=True)
     producto = Column(String)
     kilos = Column(Float)
+    cantidad = Column(Float)  # cantidad original
+    unidad = Column(String)   # kilo, gramos o plato
     precio_kilo = Column(Float)
     subtotal = Column(Float)
     monto_pagado = Column(Float, default=0)
@@ -105,6 +107,14 @@ def init_db():
             # Migration: agregar columna monto_pagado a ventas
             if 'monto_pagado' not in columnas_ventas:
                 conn.execute(text("ALTER TABLE ventas ADD COLUMN monto_pagado FLOAT DEFAULT 0"))
+                conn.commit()
+            
+            # Migration: agregar cantidad y unidad a ventas
+            if 'cantidad' not in columnas_ventas:
+                conn.execute(text("ALTER TABLE ventas ADD COLUMN cantidad FLOAT DEFAULT 0"))
+                conn.commit()
+            if 'unidad' not in columnas_ventas:
+                conn.execute(text("ALTER TABLE ventas ADD COLUMN unidad VARCHAR DEFAULT 'kilo'"))
                 conn.commit()
     except Exception as e:
         print(f"Migration error: {e}")
