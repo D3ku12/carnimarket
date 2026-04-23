@@ -52,14 +52,15 @@
     .exito { background: #e8f5e9; color: #2e7d32; }
     .error { background: #fdecea; color: #c0392b; }
     .precio { color: #c0392b; font-weight: bold; }
-    .stock-card {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 10px; border-bottom: 1px solid #eee;
+    .tipo-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
     }
-    .stock-card:last-child { border-bottom: none; }
-    .stock-info { flex: 1; }
-    .stock-nombre { font-weight: bold; }
-    .stock-datos { font-size: 12px; color: #666; }
+    .tipo-kilo { background: #e8f5e9; color: #166534; }
+    .tipo-plato { background: #fff8e1; color: #b45309; }
   </style>
 </head>
 <body>
@@ -74,19 +75,29 @@
   <!-- Registrar venta -->
   <div class="card">
     <h2>Registrar Venta</h2>
-    <p>Selecciona el corte de carne que vas a vender y escribe la cantidad en gramos (1 kilo = 1000 gramos).</p>
+    <p>Selecciona el producto y la cantidad que vas a vender.</p>
     <div id="mensaje" class="mensaje"></div>
     <div class="form-group">
       <label>¿Qué producto vas a vender?</label>
-      <select id="producto">
+      <select id="producto" onchange="actualizarCampos()">
         <option value="">Selecciona un producto...</option>
       </select>
     </div>
-    <div class="form-group">
-      <label>¿Cuántos gramos vas a vender?</label>
-      <input type="number" id="gramos" placeholder="Ej: 500" step="1" min="1">
-      <div class="ayuda">Escribe la cantidad en gramos. Ej: 250g = cuarto de libra, 500g = media libra, 1000g = un kilo</div>
+    
+    <!-- Campos para productos por kilo -->
+    <div id="campo-kilos" class="form-group" style="display:none;">
+      <label>¿Cuántos kilos?</label>
+      <input type="number" id="kilos" placeholder="Ej: 1.5" step="0.1" min="0.1">
     </div>
+    
+    <!-- Campos para productos por plato -->
+    <div id="campo-platos" class="form-group" style="display:none;">
+      <label>¿Cuántos platos?</label>
+      <input type="number" id="platos" placeholder="Ej: 2" step="1" min="1">
+    </div>
+    
+    <div id="ayuda-venta" class="ayuda" style="display:none;"></div>
+    
     <button onclick="registrarVenta()">Registrar Venta</button>
   </div>
 
@@ -98,7 +109,7 @@
         <tr>
           <th>Producto</th>
           <th>Cantidad</th>
-          <th>Mínimo</th>
+          <th>Mín</th>
           <th>Estado</th>
         </tr>
       </thead>
@@ -113,6 +124,33 @@
 <script>
   let inventarioData = {};
 
+  // Actualizar campos según tipo de producto
+  function actualizarCampos() {
+    const select = document.getElementById("producto");
+    const nombre = select.value;
+    if (!nombre) {
+      document.getElementById("campo-kilos").style.display = "none";
+      document.getElementById("campo-platos").style.display = "none";
+      document.getElementById("ayuda-venta").style.display = "none";
+      return;
+    }
+    
+    const info = inventarioData[nombre];
+    const tipo = info.tipo || "kilo";
+    
+    if (tipo === "plato") {
+      document.getElementById("campo-kilos").style.display = "none";
+      document.getElementById("campo-platos").style.display = "block";
+      document.getElementById("ayuda-venta").style.display = "block";
+      document.getElementById("ayuda-venta").textContent = `Precio por plato: $${info.precio_kilo.toLocaleString()}`;
+    } else {
+      document.getElementById("campo-kilos").style.display = "block";
+      document.getElementById("campo-platos").style.display = "none";
+      document.getElementById("ayuda-venta").style.display = "block";
+      document.getElementById("ayuda-venta").textContent = "Escribe en kilos. Ej: 0.5 = media libra, 1 = un kilo";
+    }
+  }
+
   // Cargar inventario al abrir
   async function cargarInventario() {
     const res = await fetch("/inventario");
@@ -126,27 +164,29 @@
     tbody.innerHTML = "";
 
     for (const [nombre, info] of Object.entries(data)) {
-      const stockKg = info.stock;
-      const precioKilo = info.precio_kilo;
+      const tipo = info.tipo || "kilo";
+      const stock = tipo === "plato" ? info.stock + " platos" : info.stock + "kg";
+      const precio = tipo === "plato" ? `$${info.precio_kilo.toLocaleString()}/plat` : `$${info.precio_kilo.toLocaleString()}/kg`;
+      const tipoBadge = tipo === "plato" ? '<span class="tipo-badge tipo-plato">PLATO</span>' : '<span class="tipo-badge tipo-kilo">KILO</span>';
       
-      // Llenar select - mostrar todos los productos con su stock
-      select.innerHTML += `<option value="${nombre}" data-stock="${stockKg}">${nombre} - Stock: ${stockKg}kg - $${precioKilo.toLocaleString()}/kg</option>`;
+      // Llenar select
+      select.innerHTML += `<option value="${nombre}" data-tipo="${tipo}">${nombre} - ${stock} - ${precio}</option>`;
 
       // Llenar tabla
       let estado, clase;
-      if (stockKg === 0) {
+      if (info.stock === 0) {
         estado = "Agotado"; clase = "agotado";
-      } else if (stockKg <= info.minimo) {
-        estado = "Stock bajo"; clase = "bajo";
+      } else if (info.stock <= info.minimo) {
+        estado = "Bajo"; clase = "bajo";
       } else {
         estado = "OK"; clase = "ok";
       }
 
       tbody.innerHTML += `
         <tr>
-          <td><strong>${nombre}</strong></td>
-          <td>${stockKg}kg <span class="precio">$${precioKilo.toLocaleString()}/kg</span></td>
-          <td>${info.minimo}kg</td>
+          <td><strong>${nombre}</strong>${tipoBadge}</td>
+          <td>${stock}<br><span class="precio">${precio}</span></td>
+          <td>${info.minimo}${tipo === "plato" ? "" : "kg"}</td>
           <td><span class="badge ${clase}">${estado}</span></td>
         </tr>`;
     }
@@ -155,32 +195,59 @@
   // Registrar venta
   async function registrarVenta() {
     const producto = document.getElementById("producto").value;
-    const gramos = parseFloat(document.getElementById("gramos").value);
     const msg = document.getElementById("mensaje");
 
-    if (!producto || !gramos) {
+    if (!producto) {
       msg.className = "mensaje error";
       msg.style.display = "block";
-      msg.textContent = "⚠️ Por favor completa todos los campos.";
+      msg.textContent = "⚠️ Selecciona un producto.";
       return;
     }
 
-    // Convertir gramos a kilos
-    const kilos = gramos / 1000;
-    
-    // Verificar stock antes de vender
     const info = inventarioData[producto];
-    if (kilos > info.stock) {
-      msg.className = "mensaje error";
-      msg.style.display = "block";
-      msg.textContent = `⚠️ Stock insuficiente. Solo hay ${info.stock}kg disponibles.`;
-      return;
+    const tipo = info.tipo || "kilo";
+    let cantidad = 0;
+    let unidad = "kilo";
+
+    if (tipo === "plato") {
+      cantidad = parseInt(document.getElementById("platos").value) || 0;
+      if (cantidad <= 0) {
+        msg.className = "mensaje error";
+        msg.style.display = "block";
+        msg.textContent = "⚠️ Ingresa la cantidad de platos.";
+        return;
+      }
+      if (cantidad > info.stock) {
+        msg.className = "mensaje error";
+        msg.style.display = "block";
+        msg.textContent = `⚠️ Stock insuficiente. Solo hay ${info.stock} platos.`;
+        return;
+      }
+      unidad = "plato";
+    } else {
+      cantidad = parseFloat(document.getElementById("kilos").value) || 0;
+      if (cantidad <= 0) {
+        msg.className = "mensaje error";
+        msg.style.display = "block";
+        msg.textContent = "⚠️ Ingresa la cantidad en kilos.";
+        return;
+      }
+      if (cantidad > info.stock) {
+        msg.className = "mensaje error";
+        msg.style.display = "block";
+        msg.textContent = `⚠️ Stock insuficiente. Solo hay ${info.stock}kg.`;
+        return;
+      }
     }
 
     const res = await fetch("/vender", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({producto, kilos})
+      body: JSON.stringify({
+        producto: producto,
+        cantidad: cantidad,
+        unidad: unidad
+      })
     });
 
     const data = await res.json();
@@ -190,9 +257,11 @@
       msg.className = "mensaje error";
       msg.textContent = "❌ " + data.error;
     } else {
+      const cantidadStr = tipo === "plato" ? `${data.platos} platos` : `${data.kilos}kg`;
       msg.className = "mensaje exito";
-      msg.textContent = `✅ Venta registrada: ${data.producto} ${data.kilos}kg = $${data.subtotal.toLocaleString()} | Stock restante: ${data.stock_restante}kg`;
-      document.getElementById("gramos").value = "";
+      msg.textContent = `✅ Venta registrada: ${data.producto} ${cantidadStr} = $${data.subtotal.toLocaleString()}`;
+      document.getElementById("kilos").value = "";
+      document.getElementById("platos").value = "";
       cargarInventario();
     }
   }

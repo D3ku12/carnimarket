@@ -42,6 +42,7 @@ class Producto(Base):
     stock = Column(Float, default=0)
     minimo = Column(Float, default=2)
     precio_kilo = Column(Float, default=0)
+    tipo = Column(String, default="kilo")  # "kilo" o "plato"
 
 # Tabla de ventas
 class Venta(Base):

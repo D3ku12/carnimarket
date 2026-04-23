@@ -39,7 +39,11 @@ function abrirModal(id) {
         }
     }
     if (id === 'modal-venta') {
-        cargarSelectores();
+        initModalVenta();
+    }
+    if (id === 'modal-producto') {
+        document.getElementById("prod-tipo").value = "kilo";
+        cambiarTipoProducto();
     }
 }
 
@@ -108,11 +112,15 @@ async function cargarInventario() {
     const res = await fetch("/inventario");
     const data = await res.json();
     const tbody = document.getElementById("tabla-admin");
-    tbody.innerHTML = Object.entries(data).map(([nombre, info]) => `
+    tbody.innerHTML = Object.entries(data).map(([nombre, info]) => {
+        const stock = info.tipo === "plato" ? `${info.stock} platos` : `${info.stock}kg`;
+        const precio = info.tipo === "plato" ? `$${info.precio_kilo.toLocaleString()}/plato` : `$${info.precio_kilo.toLocaleString()}/kg`;
+        const tipoLabel = info.tipo === "plato" ? "🥩 Plato" : "🥩 Kilo";
+        return `
         <tr>
-            <td><strong>${nombre}</strong></td>
-            <td>${info.stock}kg</td>
-            <td>$${info.precio_kilo.toLocaleString()}/kg</td>
+            <td><strong>${nombre}</strong><br><small style="color:var(--gray-500)">${tipoLabel}</small></td>
+            <td>${stock}</td>
+            <td>${precio}</td>
             <td>
                 <button class="btn-primary" onclick="prepararEdicionProd('${nombre.replaceAll("'", "\\'")}', ${JSON.stringify(info).replaceAll('"', '&quot;')})">
                     <i class="fas fa-edit"></i>
@@ -122,7 +130,7 @@ async function cargarInventario() {
                 </button>
             </td>
         </tr>
-    `).join("");
+    `}).join("");
 }
 
 async function cargarClientes() {
@@ -339,7 +347,14 @@ function prepararEdicionProd(nombre, info) {
     document.getElementById("prod-stock").value = info.stock;
     document.getElementById("prod-minimo").value = info.minimo;
     document.getElementById("prod-precio").value = info.precio_kilo;
+    document.getElementById("prod-tipo-original").value = info.tipo || "kilo";
+    document.getElementById("prod-tipo").value = info.tipo || "kilo";
     document.getElementById("titulo-modal-prod").innerText = "✏️ Editar " + nombre;
+    
+    // Actualizar labels
+    const tipo = info.tipo || "kilo";
+    document.getElementById("label-stock").textContent = tipo === "plato" ? "(platos)" : "(kg)";
+    document.getElementById("label-precio").textContent = tipo === "plato" ? "por Plato" : "por Kilo";
 }
 
 function prepararEdicionCli(c) {
@@ -357,11 +372,14 @@ document.getElementById("form-producto").onsubmit = async (e) => {
     e.preventDefault();
     const id = document.getElementById("prod-id").value;
     const nombre = document.getElementById("prod-nombre").value;
+    const tipo = document.getElementById("prod-tipo").value;
+    const stock = tipo === "plato" ? parseInt(document.getElementById("prod-stock").value) : parseFloat(document.getElementById("prod-stock").value);
     const body = {
         nombre: nombre,
-        stock: parseFloat(document.getElementById("prod-stock").value),
-        minimo: parseFloat(document.getElementById("prod-minimo").value),
-        precio_kilo: parseFloat(document.getElementById("prod-precio").value)
+        stock: stock,
+        minimo: tipo === "plato" ? parseInt(document.getElementById("prod-minimo").value) : parseFloat(document.getElementById("prod-minimo").value),
+        precio_kilo: parseFloat(document.getElementById("prod-precio").value),
+        tipo: tipo
     };
 
     const url = id ? `/admin/producto/${id}` : "/admin/producto";
@@ -435,23 +453,48 @@ document.getElementById("form-gasto").onsubmit = async (e) => {
     }
 };
 
-// Manejador para Ventas (entrada en gramos, convierte a kilos)
+// Manejador para Ventas (soporta kilos, gramos o platos)
 document.getElementById("form-venta").onsubmit = async (e) => {
     e.preventDefault();
-    const inputGramos = document.getElementById("venta-gramos");
-    if (!inputGramos) {
-        console.error("Elemento venta-gramos no encontrado");
-        return;
+    
+    const select = document.getElementById("venta-producto");
+    const tipoProducto = select.options[select.selectedIndex]?.dataset?.tipo || "kilo";
+    
+    let cantidad = 0;
+    let unidad = "kilo";
+    
+    if (tipoProducto === "plato") {
+        const inputPlatos = document.getElementById("venta-platos");
+        cantidad = parseInt(inputPlatos?.value || 0);
+        if (!cantidad || cantidad <= 0) {
+            alert("Ingresa la cantidad de platos");
+            return;
+        }
+        unidad = "plato";
+    } else {
+        // Productos por kilo
+        const inputKilos = document.getElementById("venta-kilos");
+        const inputGramos = document.getElementById("venta-gramos");
+        
+        const kilos = parseFloat(inputKilos?.value || 0);
+        const gramos = parseFloat(inputGramos?.value || 0);
+        
+        if (gramos > 0) {
+            cantidad = gramos;
+            unidad = "gramos";
+        } else if (kilos > 0) {
+            cantidad = kilos;
+            unidad = "kilo";
+        } else {
+            alert("Ingresa una cantidad válida en kilos o gramos");
+            return;
+        }
     }
-    const gramos = parseFloat(inputGramos.value);
-    if (!gramos || gramos <= 0) {
-        alert("Ingresa una cantidad válida en gramos");
-        return;
-    }
-    const kilos = gramos / 1000;
+    
     const body = {
-        producto: document.getElementById("venta-producto").value,
-        kilos: kilos,
+        producto: select.value,
+        cantidad: cantidad,
+        unidad: unidad,
         cliente_nombre: document.getElementById("venta-cliente").value || "Cliente General",
         pagado: document.getElementById("venta-pagado").value,
         fecha_venta: document.getElementById("venta-fecha").value || null,
@@ -533,9 +576,13 @@ async function eliminarGasto(id) {
 async function cargarSelectores() {
     const resP = await fetch("/inventario");
     const prods = await resP.json();
-    document.getElementById("venta-producto").innerHTML = Object.keys(prods).map(p => 
-        `<option value="${p}">${p} — Stock: ${prods[p].stock}kg — $${prods[p].precio_kilo.toLocaleString()}/kg</option>`
-    ).join("");
+    window.productosData = prods;
+    document.getElementById("venta-producto").innerHTML = Object.keys(prods).map(p => {
+        const prod = prods[p];
+        const stock = prod.tipo === "plato" ? `${prod.stock} platos` : `${prod.stock}kg`;
+        const precio = prod.tipo === "plato" ? `$${prod.precio_kilo.toLocaleString()}/plato` : `$${prod.precio_kilo.toLocaleString()}/kg`;
+        return `<option value="${p}" data-tipo="${prod.tipo}">${p} — Stock: ${stock} — ${precio}</option>`;
+    }).join("");
     
     const resC = await fetch("/admin/clientes");
     const clis = await resC.json();
@@ -543,6 +590,42 @@ async function cargarSelectores() {
     document.getElementById("lista-clientes").innerHTML = opts;
     document.getElementById("venta-cliente").innerHTML = `<option value="">Cliente General</option>` + 
         clis.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join("");
+}
+
+// Actualizar campos según tipo de producto
+function actualizarCamposVenta() {
+    const select = document.getElementById("venta-producto");
+    if (!select || select.selectedIndex < 0) return;
+    
+    const tipo = select.options[select.selectedIndex]?.dataset?.tipo || "kilo";
+    
+    document.getElementById("campo-kilos").style.display = "none";
+    document.getElementById("campo-gramos").style.display = "none";
+    document.getElementById("campo-platos").style.display = "none";
+    
+    const campoKilos = document.getElementById("campo-kilos");
+    const campoGramos = document.getElementById("campo-gramos");
+    const campoPlatos = document.getElementById("campo-platos");
+    
+    if (tipo === "plato") {
+        campoPlatos.style.display = "block";
+    } else {
+        campoKilos.style.display = "block";
+    }
+}
+
+// Inicializar modal de venta al abrir
+function initModalVenta() {
+    cargarSelectores();
+    // Esperar un momento para que carguen las opciones
+    setTimeout(actualizarCamposVenta, 100);
+}
+
+// Cambiar labels al crear/editar producto
+function cambiarTipoProducto() {
+    const tipo = document.getElementById("prod-tipo").value;
+    document.getElementById("label-stock").textContent = tipo === "plato" ? "(platos)" : "(kg)";
+    document.getElementById("label-precio").textContent = tipo === "plato" ? "por Plato" : "por Kilo";
 }
 
 // Verificar rol al cargar

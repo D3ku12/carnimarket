@@ -248,13 +248,23 @@
         <div class="modal">
             <h3 id="titulo-modal-prod">📦 Gestionar Producto</h3>
             <form id="form-producto">
-                <input type="hidden" id="prod-id"> <div class="form-group">
+                <input type="hidden" id="prod-id"> 
+                <input type="hidden" id="prod-tipo-original">
+                <div class="form-group">
                     <label>Nombre del Corte</label>
                     <input type="text" id="prod-nombre" required>
                 </div>
+                <div class="form-group">
+                    <label>Tipo de Venta</label>
+                    <select id="prod-tipo" onchange="cambiarTipoProducto()">
+                        <option value="kilo">Por Kilo (permite kilos o gramos)</option>
+                        <option value="plato">Por Plato (solo platos)</option>
+                    </select>
+                    <small style="color:var(--gray-500); font-size:11px;">Si es "por plato", no se puede usar kilos/gramos</small>
+                </div>
                 <div class="row" style="display:flex; gap:10px;">
                     <div class="form-group" style="flex:1">
-                        <label>Stock (kg)</label>
+                        <label>Stock <span id="label-stock">(kg)</span></label>
                         <input type="number" id="prod-stock" step="0.1" required>
                     </div>
                     <div class="form-group" style="flex:1">
@@ -263,7 +273,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Precio por Kilo ($)</label>
+                    <label>Precio <span id="label-precio">por Kilo</span> ($)</label>
                     <input type="number" id="prod-precio" required>
                 </div>
                 <div class="modal-footer">
@@ -305,13 +315,26 @@
             <form id="form-venta">
                 <div class="form-group">
                     <label>Corte</label>
-                    <select id="venta-producto" required></select>
+                    <select id="venta-producto" onchange="actualizarCamposVenta()" required></select>
                 </div>
-                <div class="form-group">
+                
+                <div id="campo-kilos" class="form-group">
+                    <label>Cantidad (Kilos)</label>
+                    <input type="number" id="venta-kilos" step="0.1" min="0.1" placeholder="Ej: 1.5">
+                </div>
+                
+                <div id="campo-gramos" class="form-group" style="display:none;">
                     <label>Cantidad en Gramos</label>
-                    <input type="number" id="venta-gramos" step="1" min="1" placeholder="Ej: 500" required>
-                    <small style="color:var(--gray-500); font-size:11px;">Escribe en gramos (250g=cuarto, 500g=media, 1000g=1 kilo)</small>
+                    <input type="number" id="venta-gramos" step="1" min="1" placeholder="Ej: 500">
+                    <small style="color:var(--gray-500); font-size:11px;">250g=cuarto, 500g=media, 1000g=1 kilo</small>
                 </div>
+                
+                <div id="campo-platos" class="form-group" style="display:none;">
+                    <label>Cantidad (Platos)</label>
+                    <input type="number" id="venta-platos" step="1" min="1" placeholder="Ej: 2">
+                    <small style="color:var(--gray-500); font-size:11px;">Número de platos de carne asada</small>
+                </div>
+                
                 <div class="form-group">
                     <label>Cliente</label>
                     <select id="venta-cliente">
@@ -446,6 +469,6 @@
     </div>
 
     <datalist id="lista-clientes"></datalist>
-    <script src="/static/admin.js?v=9.1"></script>
+    <script src="/static/admin.js?v=9.2"></script>
 </body>
 </html>

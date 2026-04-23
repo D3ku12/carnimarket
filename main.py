@@ -146,16 +146,19 @@ class ProductoRequest(BaseModel):
     stock: float
     minimo: float
     precio_kilo: float
+    tipo: str = "kilo"
 
 class ProductoUpdate(BaseModel):
     nombre: Optional[str] = None
     stock: Optional[float] = None
     minimo: Optional[float] = None
     precio_kilo: Optional[float] = None
+    tipo: Optional[str] = None
 
 class VentaRequest(BaseModel):
     producto: str
-    kilos: float
+    cantidad: float  # kilos, gramos (se convierte a kilos), o platos
+    unidad: str = "kilo"  # "kilo", "gramos", "plato"
     cliente_nombre: str = "Cliente general"
     pagado: str = "pagado"
     fecha_venta: Optional[str] = None
@@ -434,16 +437,18 @@ def listar_inventario(db: Session = Depends(get_db)):
             "id": p.id,
             "stock": p.stock,
             "minimo": p.minimo,
-            "precio_kilo": p.precio_kilo
+            "precio_kilo": p.precio_kilo,
+            "tipo": p.tipo or "kilo"
         } for p in productos
     }
 
 @app.post("/admin/producto")
 def crear_producto(p: ProductoRequest, db: Session = Depends(get_db)):
+    tipo = p.tipo if p.tipo in ["kilo", "plato"] else "kilo"
     existe = db.query(Producto).filter(Producto.nombre == p.nombre).first()
     if existe:
         return {"error": "El producto ya existe"}
-    nuevo = Producto(nombre=p.nombre, stock=p.stock, minimo=p.minimo, precio_kilo=p.precio_kilo)
+    nuevo = Producto(nombre=p.nombre, stock=p.stock, minimo=p.minimo, precio_kilo=p.precio_kilo, tipo=tipo)
     db.add(nuevo)
     db.commit()
     ahora = obtener_hora_colombia()
@@ -459,6 +464,7 @@ def editar_producto_completo(id: int, data: ProductoUpdate, db: Session = Depend
     if data.precio_kilo is not None: p.precio_kilo = data.precio_kilo
     if data.minimo is not None: p.minimo = data.minimo
     if data.nombre is not None: p.nombre = data.nombre
+    if data.tipo is not None and data.tipo in ["kilo", "plato"]: p.tipo = data.tipo
     
     if data.stock is not None:
         dif = data.stock - p.stock
@@ -517,10 +523,32 @@ def eliminar_cliente(id: int, db: Session = Depends(get_db)):
 def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
     p = db.query(Producto).filter(Producto.nombre == v.producto).first()
     if not p: return {"error": "El producto no existe"}
-    if v.kilos > p.stock: return {"error": f"Stock insuficiente ({p.stock}kg)"}
     
-    p.stock -= v.kilos
-    total = v.kilos * p.precio_kilo
+    # Convertir según el tipo de venta y producto
+    if p.tipo == "plato":
+        # Solo acepta platos
+        if v.unidad != "plato":
+            return {"error": "Este producto se vende solo por platos"}
+        if v.cantidad > p.stock:
+            return {"error": f"Stock insuficiente ({int(p.stock)} platos)"}
+        p.stock -= v.cantidad
+        kilos = 0  # Los platos no se cuentan en kilos para el historial
+        total = v.cantidad * p.precio_kilo
+    else:
+        # Productos por kilo
+        if v.unidad == "gramos":
+            kilos = v.cantidad / 1000
+        elif v.unidad == "plato":
+            return {"error": "Este producto se vende por kilos/gramos, no por platos"}
+        else:
+            kilos = v.cantidad
+        
+        if kilos > p.stock:
+            return {"error": f"Stock insuficiente ({p.stock}kg)"}
+        
+        p.stock -= kilos
+        total = kilos * p.precio_kilo
+    
     ahora = obtener_hora_colombia()
     
     # Procesar fechas
@@ -540,7 +568,7 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
     
     nueva_venta = Venta(
         producto=v.producto,
-        kilos=v.kilos,
+        kilos=kilos,
         precio_kilo=p.precio_kilo,
         subtotal=total,
         fecha_venta=fecha_venta,
@@ -550,9 +578,13 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
         notas=v.notas
     )
     db.add(nueva_venta)
-    db.add(Historial(producto=v.producto, tipo="salida", cantidad=v.kilos, motivo=f"Venta a {v.cliente_nombre}", fecha=ahora))
+    db.add(Historial(producto=v.producto, tipo="salida", cantidad=kilos, motivo=f"Venta a {v.cliente_nombre}", fecha=ahora))
     db.commit()
-    return {"mensaje": "Venta exitosa", "producto": v.producto, "kilos": v.kilos, "subtotal": total, "stock_restante": p.stock}
+    
+    if p.tipo == "plato":
+        return {"mensaje": "Venta exitosa", "producto": v.producto, "platos": int(v.cantidad), "subtotal": total, "stock_restante": int(p.stock)}
+    else:
+        return {"mensaje": "Venta exitosa", "producto": v.producto, "kilos": kilos, "subtotal": total, "stock_restante": p.stock}
 
 @app.get("/admin/ventas")
 def listar_ventas(
