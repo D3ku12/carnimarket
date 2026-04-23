@@ -123,6 +123,22 @@ def test_db(db: Session = Depends(get_db)):
 def startup():
     init_db()
     
+    # Migración: agregar columna tipo si no existe
+    from database import engine
+    from sqlalchemy import text
+    try:
+        with engine.connect() as conn:
+            try:
+                conn.execute(text("SELECT tipo FROM productos LIMIT 1"))
+            except:
+                try:
+                    conn.execute(text("ALTER TABLE productos ADD COLUMN tipo VARCHAR DEFAULT 'kilo'"))
+                    conn.commit()
+                except Exception as e:
+                    pass
+    except:
+        pass
+    
     try:
         iniciar_scheduler()
     except Exception:
@@ -431,16 +447,19 @@ def cambiar_contrasena(data: dict, response: Response):
 
 @app.get("/inventario")
 def listar_inventario(db: Session = Depends(get_db)):
-    productos = db.query(Producto).order_by(Producto.nombre).all()
-    return {
-        p.nombre: {
-            "id": p.id,
-            "stock": p.stock,
-            "minimo": p.minimo,
-            "precio_kilo": p.precio_kilo,
-            "tipo": p.tipo or "kilo"
-        } for p in productos
-    }
+    try:
+        productos = db.query(Producto).order_by(Producto.nombre).all()
+        return {
+            p.nombre: {
+                "id": p.id,
+                "stock": p.stock,
+                "minimo": p.minimo,
+                "precio_kilo": p.precio_kilo,
+                "tipo": getattr(p, 'tipo', 'kilo') or "kilo"
+            } for p in productos
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.post("/admin/producto")
 def crear_producto(p: ProductoRequest, db: Session = Depends(get_db)):
@@ -524,8 +543,10 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
     p = db.query(Producto).filter(Producto.nombre == v.producto).first()
     if not p: return {"error": "El producto no existe"}
     
+    tipo_producto = getattr(p, 'tipo', 'kilo') or 'kilo'
+    
     # Convertir según el tipo de venta y producto
-    if p.tipo == "plato":
+    if tipo_producto == "plato":
         # Solo acepta platos
         if v.unidad != "plato":
             return {"error": "Este producto se vende solo por platos"}
@@ -581,7 +602,7 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
     db.add(Historial(producto=v.producto, tipo="salida", cantidad=kilos, motivo=f"Venta a {v.cliente_nombre}", fecha=ahora))
     db.commit()
     
-    if p.tipo == "plato":
+    if tipo_producto == "plato":
         return {"mensaje": "Venta exitosa", "producto": v.producto, "platos": int(v.cantidad), "subtotal": total, "stock_restante": int(p.stock)}
     else:
         return {"mensaje": "Venta exitosa", "producto": v.producto, "kilos": kilos, "subtotal": total, "stock_restante": p.stock}
