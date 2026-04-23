@@ -165,6 +165,7 @@ async function cargarGastos() {
 async function cargarEncargados() {
     const res = await fetch("/admin/encargados");
     const data = await res.json();
+    console.log("Encargados data:", data);
     document.getElementById("tabla-encargados").innerHTML = data.map(v => `
         <tr>
             <td>${v.fecha_venta}</td>
