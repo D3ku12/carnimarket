@@ -172,11 +172,29 @@ async function cargarEncargados() {
             <td>${v.producto}</td>
             <td>$${v.subtotal}</td>
             <td>
-                <button type="button" onclick="confirmarEncargo(${v.id})">Confirmar</button>
-                <button type="button" onclick="eliminarVenta(${v.id})">Borrar</button>
+                <button type="button" onclick="confirmarEncargo(${v.id}, 'pagado')">Pagado ✅</button>
+                <button type="button" onclick="confirmarEncargo(${v.id}, 'debe')">Debe ❌</button>
             </td>
         </tr>
     `).join("");
+}
+
+async function confirmarEncargo(id, estado) {
+    console.log("Confirmando:", id, "estado:", estado);
+    const res = await fetch("/api/cambiar-estado", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: id, estado: estado })
+    });
+    const data = await res.json();
+    console.log("Resultado:", data);
+    if (res.ok) {
+        cargarEncargados();
+        cargarVentas();
+        cargarDashboard();
+    } else {
+        alert("Error: " + (data.error || "Unknown"));
+    }
 }
 
 async function confirmarEncargo(id) {
@@ -307,10 +325,8 @@ async function filtrarVentas() {
     
     const res = await fetch(url);
     const data = await res.json();
-    document.getElementById("tabla-ventas").innerHTML = data.map(v => {
-        // Ensure id is a number
+document.getElementById("tabla-ventas").innerHTML = data.map(v => {
         const vid = Number(v.id);
-        console.log("Venta data:", v.id, v, typeof v.id);
         return `<tr>
             <td>${v.fecha_venta}</td>
             <td>${v.cliente}</td>
@@ -319,9 +335,9 @@ async function filtrarVentas() {
             <td>${v.pagado}</td>
             <td>${v.fecha_vencimiento || "-"}</td>
             <td>
+                <button type="button" onclick="cambiarEstadoVenta(${vid}, 'encargado')">Encargo</button>
                 <button type="button" onclick="cambiarEstadoVenta(${vid}, 'pagado')">Pagado</button>
                 <button type="button" onclick="cambiarEstadoVenta(${vid}, 'debe')">Debe</button>
-                <button type="button" onclick="cambiarEstadoVenta(${vid}, 'encargado')">Encargo</button>
             </td>
         </tr>`;
     }).join("");
