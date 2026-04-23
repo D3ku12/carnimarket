@@ -313,8 +313,12 @@
                 </div>
                 <div class="row" style="display:flex; gap:10px;">
                     <div class="form-group" style="flex:1">
-                        <label>Stock <span id="label-stock">(kg)</span></label>
+                        <label>Stock Kilos <span id="label-stock">(kg)</span></label>
                         <input type="number" id="prod-stock" step="0.1" required>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Stock Gramos (g)</label>
+                        <input type="number" id="prod-gramos" step="1" placeholder="0" style="display:none">
                     </div>
                     <div class="form-group" style="flex:1">
                         <label>Alerta Mínimo</label>
@@ -547,6 +551,6 @@
     </div>
 
     <datalist id="lista-clientes"></datalist>
-    <script src="/static/admin.js?v=10.23"></script>
+    <script src="/static/admin.js?v=10.24"></script>
 </body>
 </html>

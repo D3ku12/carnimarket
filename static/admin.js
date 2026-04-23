@@ -426,7 +426,11 @@ function prepararEdicionProd(nombre, info) {
     abrirModal('modal-producto');
     document.getElementById("prod-id").value = info.id;
     document.getElementById("prod-nombre").value = nombre;
-    document.getElementById("prod-stock").value = info.stock;
+    // Separar stock en kilos y gramos
+    const stockKilos = Math.floor(info.stock);
+    const stockGramos = Math.round((info.stock - stockKilos) * 1000);
+    document.getElementById("prod-stock").value = stockKilos;
+    document.getElementById("prod-gramos").value = stockGramos;
     document.getElementById("prod-minimo").value = info.minimo;
     document.getElementById("prod-precio").value = info.precio_kilo;
     document.getElementById("prod-tipo-original").value = info.tipo || "kilo";
@@ -455,10 +459,15 @@ document.getElementById("form-producto").onsubmit = async (e) => {
     const id = document.getElementById("prod-id").value;
     const nombre = document.getElementById("prod-nombre").value;
     const tipo = document.getElementById("prod-tipo").value;
-    const stock = tipo === "plato" ? parseInt(document.getElementById("prod-stock").value) : parseFloat(document.getElementById("prod-stock").value);
+    
+    // Combinar kilos + gramos
+    const kilos = parseFloat(document.getElementById("prod-stock").value || 0);
+    const gramos = parseFloat(document.getElementById("prod-gramos").value || 0);
+    const stockTotal = kilos + (gramos / 1000);
+    
     const body = {
         nombre: nombre,
-        stock: stock,
+        stock: stockTotal,
         minimo: tipo === "plato" ? parseInt(document.getElementById("prod-minimo").value) : parseFloat(document.getElementById("prod-minimo").value),
         precio_kilo: parseFloat(document.getElementById("prod-precio").value),
         tipo: tipo
@@ -799,6 +808,11 @@ function cambiarTipoProducto() {
     const tipo = document.getElementById("prod-tipo").value;
     document.getElementById("label-stock").textContent = tipo === "plato" ? "(platos)" : "(kg)";
     document.getElementById("label-precio").textContent = tipo === "plato" ? "por Plato" : "por Kilo";
+    // Ocultar/mostrar campo gramos según tipo
+    const campoGramos = document.getElementById("prod-gramos");
+    if (campoGramos) {
+        campoGramos.parentElement.style.display = tipo === "plato" ? "none" : "block";
+    }
 }
 
 // Verificar rol al cargar
