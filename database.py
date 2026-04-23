@@ -42,6 +42,7 @@ class Producto(Base):
     stock = Column(Float, default=0)
     minimo = Column(Float, default=2)
     precio_kilo = Column(Float, default=0)
+    tipo = Column(String, default="kilo")
     tipo = Column(String, default="kilo")  # "kilo" o "plato"
 
 # Tabla de ventas
@@ -82,6 +83,17 @@ class Historial(Base):
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    # Agregar columna tipo si no existe (para SQLite/Postgres)
+    from sqlalchemy import text, inspect
+    try:
+        with engine.connect() as conn:
+            inspector = inspect(engine)
+            columnas = [c['name'] for c in inspector.get_columns('productos')]
+            if 'tipo' not in columnas:
+                conn.execute(text("ALTER TABLE productos ADD COLUMN tipo VARCHAR DEFAULT 'kilo'"))
+                conn.commit()
+    except Exception as e:
+        print(f"Migration error: {e}")
 
 def seed_db():
     db = SessionLocal()
