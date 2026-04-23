@@ -201,20 +201,6 @@ async function confirmarEncargo(id, estado) {
         alert("Error: " + (data.error || "Unknown"));
     }
 }
-
-async function confirmarEncargo(id) {
-    console.log("Confirmando encargo:", id);
-    const res = await fetch("/api/cambiar-estado", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: id, estado: "pagado" })
-    });
-    const data = await res.json();
-    console.log("Resultado:", data);
-    if (res.ok) {
-        cargarEncargados();
-        cargarVentas();
-        cargarDashboard();
     } else {
         alert("Error: " + (data.error || "Unknown"));
     }
