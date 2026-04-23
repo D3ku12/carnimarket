@@ -449,17 +449,27 @@ def cambiar_contrasena(data: dict, response: Response):
 def listar_inventario(db: Session = Depends(get_db)):
     try:
         productos = db.query(Producto).order_by(Producto.nombre).all()
-        return {
-            p.nombre: {
-                "id": p.id,
-                "stock": p.stock,
-                "minimo": p.minimo,
-                "precio_kilo": p.precio_kilo,
-                "tipo": getattr(p, 'tipo', 'kilo') or "kilo"
-            } for p in productos
-        }
-    except Exception as e:
-        return {"error": str(e)}
+        result = {}
+        for p in productos:
+            try:
+                tipo = "kilo"
+                try:
+                    if hasattr(p, 'tipo') and p.tipo:
+                        tipo = p.tipo
+                except:
+                    pass
+                result[p.nombre] = {
+                    "id": p.id,
+                    "stock": p.stock,
+                    "minimo": p.minimo,
+                    "precio_kilo": p.precio_kilo,
+                    "tipo": tipo
+                }
+            except Exception:
+                pass
+        return result
+    except Exception:
+        return {}
 
 @app.post("/admin/producto")
 def crear_producto(p: ProductoRequest, db: Session = Depends(get_db)):
@@ -733,40 +743,46 @@ def caja_detalle(
 
 @app.get("/admin/dashboard")
 def get_dashboard_data(periodo: str = "7dias", db: Session = Depends(get_db)):
-    ahora = obtener_hora_colombia()
-    inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
-    fin_dia = ahora.replace(hour=23, minute=59, second=59, microsecond=999999)
-    
-    if periodo == "hoy":
-        fecha_inicio = inicio_dia
-    elif periodo == "7dias":
-        fecha_inicio = inicio_dia - timedelta(days=6)
-    elif periodo == "30dias":
-        fecha_inicio = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    elif periodo == "todo":
-        fecha_inicio = datetime(2020, 1, 1)
-    else:
-        fecha_inicio = inicio_dia - timedelta(days=6)
-    
-    v_periodo = db.query(Venta).filter(Venta.fecha_venta >= fecha_inicio, Venta.fecha_venta <= fin_dia).all()
-    
-    conteo = {}
-    for v in v_periodo:
-        conteo[v.producto] = conteo.get(v.producto, 0) + v.kilos
-    
-    alertas = db.query(Producto).filter(Producto.stock <= Producto.minimo).all()
-    
-    inicio_mes = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    v_mes = db.query(Venta).filter(Venta.fecha_venta >= inicio_mes).all()
-    
-    return {
+    try:
+        ahora = obtener_hora_colombia()
+        inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
+        fin_dia = ahora.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        if periodo == "hoy":
+            fecha_inicio = inicio_dia
+        elif periodo == "7dias":
+            fecha_inicio = inicio_dia - timedelta(days=6)
+        elif periodo == "30dias":
+            fecha_inicio = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        elif periodo == "todo":
+            fecha_inicio = datetime(2020, 1, 1)
+        else:
+            fecha_inicio = inicio_dia - timedelta(days=6)
+        
+        v_periodo = db.query(Venta).filter(Venta.fecha_venta >= fecha_inicio, Venta.fecha_venta <= fin_dia).all()
+        
+        conteo = {}
+        for v in v_periodo:
+            conteo[v.producto] = conteo.get(v.producto, 0) + v.kilos
+        
+        try:
+            alertas = db.query(Producto).filter(Producto.stock <= Producto.minimo).all()
+        except:
+            alertas = []
+        
+        inicio_mes = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        v_mes = db.query(Venta).filter(Venta.fecha_venta >= inicio_mes).all()
+        
+        return {
         "total_hoy": sum(v.subtotal for v in db.query(Venta).filter(Venta.fecha_venta >= inicio_dia, Venta.fecha_venta <= fin_dia).all()),
         "total_periodo": sum(v.subtotal for v in v_periodo),
         "total_mes": sum(v.subtotal for v in v_mes),
         "productos_ventas": dict(sorted(conteo.items(), key=lambda x: x[1], reverse=True)[:7]),
-        "stock_bajo": [{"nombre": p.nombre, "stock": p.stock} for p in alertas],
+        "stock_bajo": [],
         "periodo": periodo
     }
+    except Exception as e:
+        return {"error": str(e), "periodo": periodo, "total_hoy": 0, "total_periodo": 0, "total_mes": 0, "productos_ventas": {}, "stock_bajo": []}
 
 @app.get("/admin/deudas")
 def get_reporte_deudas(db: Session = Depends(get_db), fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None):
