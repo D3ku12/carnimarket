@@ -36,7 +36,6 @@ function abrirModal(id) {
     if (form) {
         form.querySelectorAll('input:not([type="hidden"])').forEach(input => input.value = "");
     }
-}
     if (id === 'modal-venta') {
         initModalVenta();
     }
