@@ -82,27 +82,25 @@ header h1 {
     background: transparent;
     border: none;
     color: var(--gray-400);
-    padding: 12px 10px;
+    padding: 12px 14px;
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 600;
     white-space: nowrap;
     transition: all 0.2s;
     border-bottom: 3px solid transparent;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 2px;
+    gap: 6px;
 }
 
 .nav-icon {
-    font-size: 1.1rem;
-    display: block;
+    font-size: 1rem;
 }
 
 .nav-text {
-    font-size: 0.65rem;
-    display: block;
+    font-size: 0.75rem;
 }
 
 .nav button:hover {
@@ -118,15 +116,18 @@ header h1 {
 /* --- CONTENEDOR --- */
 .container {
     padding: 16px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 /* --- TARJETAS --- */
 .card {
     background: var(--white);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 20px;
     margin-bottom: 16px;
+    border: 1px solid var(--gray-200);
 }
 
 .card-header {
@@ -481,8 +482,9 @@ td select {
         padding: 10px 8px;
     }
     
-    td button {
+    td button, td select {
         padding: 8px;
+        font-size: 0.75rem;
     }
     
     /* Mejorar navigation en mobile */
@@ -490,13 +492,22 @@ td select {
         display: flex;
         overflow-x: auto;
         gap: 0;
-        padding: 8px;
+        padding: 10px 4px;
         justify-content: flex-start;
     }
     
     .nav button {
-        padding: 10px 8px;
-        min-width: 60px;
+        padding: 8px 12px;
+        min-width: auto;
+        font-size: 0.7rem;
+    }
+    
+    .nav-icon {
+        font-size: 0.9rem;
+    }
+    
+    .nav-text {
+        font-size: 0.65rem;
     }
     
     .nav-icon {

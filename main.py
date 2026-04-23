@@ -535,11 +535,13 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
     if tipo_producto == "plato":
         if v.unidad != "plato":
             return {"error": "Este producto se vende solo por platos"}
-        if v.cantidad > p.stock:
-            return {"error": f"Stock insuficiente ({int(p.stock)} platos)"}
-        # Solo descontar si NO es encargado
-        if not es_encargado:
-            p.stock -= v.cantidad
+        # Los platos se pueden vender sin importar el stock
+        # Solo descontar si NO es encargado y hay stock
+        if not es_encargado and p.stock > 0:
+            if v.cantidad <= p.stock:
+                p.stock -= v.cantidad
+            else:
+                p.stock = 0
         kilos = 0
         total = v.cantidad * p.precio_kilo
     else:
@@ -550,11 +552,10 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
         else:
             kilos = v.cantidad
         
-        if kilos > p.stock:
-            return {"error": f"Stock insuficiente ({p.stock}kg)"}
-        
-        # Solo descontar si NO es encargado
+        # Solo verificar stock si NO es encargado
         if not es_encargado:
+            if kilos > p.stock:
+                return {"error": f"Stock insuficiente ({p.stock}kg)"}
             p.stock -= kilos
         total = kilos * p.precio_kilo
     
