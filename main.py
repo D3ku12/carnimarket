@@ -645,17 +645,15 @@ def toggle_encargado(id: int, db: Session = Depends(get_db)):
     return {"mensaje": "Estado actualizado", "pagado": v.pagado}
 
 @app.put("/admin/encargados/{id}")
-def confirmar_encargado(id: int, data: dict, db: Session = Depends(get_db)):
+def confirmar_encargado(id: int, db: Session = Depends(get_db)):
     v = db.query(Venta).filter(Venta.id == id).first()
-    if not v: return {"error": "No existe"}
+    if not v:
+        return {"error": "No existe"}
     
-    nuevo_estado = data.get("estado", "pagado")
-    if nuevo_estado not in ["pagado", "debe"]:
-        return {"error": "Estado inválido"}
+    nuevo_estado = "pagado"
     
     p = db.query(Producto).filter(Producto.nombre == v.producto).first()
     
-    # Solo descontar stock si venia de encargado
     if v.pagado == "encargado" and p and v.kilos:
         p.stock -= v.kilos
     

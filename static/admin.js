@@ -189,18 +189,21 @@ document.getElementById("form-cambiar-estado").onsubmit = async (e) => {
     const id = document.getElementById("cambio-id").value;
     const estado = document.getElementById("cambio-estado").value;
     
-    const res = await fetch(`/admin/encargados/${id}`, {
+    // Usar el mismo PUT /admin/venta/{id}
+    const res = await fetch(`/admin/venta/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado })
+        body: JSON.stringify({ pagado: estado })
     });
     
+    const data = await res.json();
     if (res.ok) {
         cerrarModal("modal-cambiar-estado");
         cargarEncargados();
+        cargarVentas();
         cargarDashboard();
     } else {
-        alert("Error al confirmar");
+        alert("Error: " + (data.error || "Unknown"));
     }
 };
 
