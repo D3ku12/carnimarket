@@ -660,7 +660,7 @@ def confirmar_encargado(id: int, db: Session = Depends(get_db)):
     return {"mensaje": "Pedido confirmado", "pagado": v.pagado}
     
 @app.post("/admin/venta/cambiar-estado")
-def cambiar_estado_venta(request: Request, db: Session = Depends(get_db)):
+async def cambiar_estado_venta(request: Request, db: Session = Depends(get_db)):
     try:
         body = await request.json()
         id_val = int(body.get("id", 0))
