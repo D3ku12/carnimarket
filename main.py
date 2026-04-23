@@ -659,8 +659,8 @@ def confirmar_encargado(id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensaje": "Pedido confirmado", "pagado": v.pagado}
     
-@app.post("/admin/venta/cambiar-estado")
-async def cambiar_estado_venta(request: Request, db: Session = Depends(get_db)):
+@app.post("/api/cambiar-estado")
+async def cambiar_estado(request: Request, db: Session = Depends(get_db)):
     try:
         body = await request.json()
         id_val = int(body.get("id", 0))
@@ -679,7 +679,7 @@ async def cambiar_estado_venta(request: Request, db: Session = Depends(get_db)):
         
         v.pagado = estado
         db.commit()
-        return {"mensaje": "OK", "pagado": v.pagado}
+        return {"OK": True, "pagado": v.pagado}
     except Exception as e:
         return {"error": str(e)}
 

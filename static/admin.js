@@ -575,21 +575,16 @@ async function togglePago(id) {
 }
 
 async function cambiarEstadoVenta(id, nuevoEstado) {
-    if (!nuevoEstado || !id) {
-        console.log("Faltante:", id, nuevoEstado);
-        return;
-    }
+    if (!nuevoEstado || !id) return;
     
-    console.log("Cambiando:", id, nuevoEstado);
-    
-    const res = await fetch("/admin/venta/cambiar-estado", {
+    const res = await fetch("/api/cambiar-estado", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: id, estado: nuevoEstado })
     });
     
     const data = await res.json();
-    console.log("Res:", data);
+    console.log("Cambiar estado:", data);
     
     if (res.ok) {
         cargarVentas();
