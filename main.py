@@ -575,7 +575,7 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
         except:
             fecha_vencimiento = None
     
-nueva_venta = Venta(
+    nueva_venta = Venta(
         producto=v.producto,
         kilos=kilos,
         cantidad=v.cantidad,
