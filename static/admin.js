@@ -341,7 +341,7 @@ document.getElementById("tabla-ventas").innerHTML = data.map(v => {
                     <option value="pagado" ${estadoActual === 'pagado' ? 'selected' : ''}>Pagado</option>
                     <option value="debe" ${estadoActual === 'debe' ? 'selected' : ''}>Debe</option>
                 </select>
-                ${(saldo > 0 && estadoActual === 'debe') ? `<button type="button" onclick="abrirAbonoModal(${vid}, ${saldo})">Abonar</button>` : ''}
+                ${(saldo > 0 && estadoActual === 'debe') ? `<button type="button" onclick="abrirAbonoModal(${vid}, ${saldo}, ${v.subtotal})">Abonar</button>` : ''}
                 <button type="button" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, ${montoPagado}, '${estadoActual}')">Editar</button>
                 <button type="button" onclick="eliminarVenta(${vid})">Borrar</button>
             </td>
@@ -668,15 +668,18 @@ async function eliminarVenta(id) {
     }
 }
 
-function abrirAbonoModal(id, saldo) {
-    console.log("abrirAbonoModal:", id, saldo);
+function abrirAbonoModal(id, saldo, total) {
+    console.log("abrirAbonoModal:", id, saldo, total);
     document.getElementById("abono-id").value = id;
-    document.getElementById("abono-saldo").textContent = "Saldo: $" + saldo;
+    document.getElementById("abono-saldo").textContent = "Saldo: $" + saldo + " | Total: $" + total;
+    document.getElementById("abono-id").dataset.saldo = saldo;
+    document.getElementById("abono-id").dataset.total = total;
     abrirModal("modal-abono");
 }
 
 async function registrarAbono() {
     const id = document.getElementById("abono-id").value;
+    const saldo = Number(document.getElementById("abono-id").dataset.saldo);
     const montoInput = document.getElementById("abono-monto").value;
     const monto = Number(montoInput);
     
@@ -684,6 +687,11 @@ async function registrarAbono() {
     
     if (!id || isNaN(monto) || monto <= 0) {
         alert("Ingrese un monto válido");
+        return;
+    }
+    
+    if (monto > saldo) {
+        alert("No puedeabonar más del saldo pendiente: $" + saldo);
         return;
     }
     
