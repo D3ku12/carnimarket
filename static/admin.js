@@ -667,7 +667,9 @@ async function registrarAbono() {
     const id = document.getElementById("abono-id").value;
     const monto = Number(document.getElementById("abono-monto").value);
     
-    if (!id || monto <= 0) {
+    console.log("Abono - id:", id, "monto:", monto);
+    
+    if (!id || isNaN(monto) || monto <= 0) {
         alert("Ingrese un monto válido");
         return;
     }
