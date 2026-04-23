@@ -859,17 +859,19 @@ async function cargarUsuarios() {
     const res = await fetch("/admin/usuarios");
     const data = await res.json();
     
-    if (data.error) {
-        document.getElementById("tabla-usuarios").innerHTML = "<tr><td colspan='6'>" + data.error + "</td></tr>";
+    // Aceptar tanto arrays como responses con error
+    if (!res.ok) {
+        document.getElementById("tabla-usuarios").innerHTML = "<tr><td colspan='6'>" + (data.error || "Error") + "</td></tr>";
         return;
     }
     
-    if (res.status === 401 || res.status === 403) {
-        alert("No tienes permiso para ver usuarios");
+    if (!Array.isArray(data)) {
+        document.getElementById("tabla-usuarios").innerHTML = "<tr><td colspan='6'>" + (data.error || 'Datos inválidos') + "</td></tr>";
         return;
     }
-    if (!Array.isArray(data)) {
-        document.getElementById("tabla-usuarios").innerHTML = "<tr><td colspan='6'>Error: " + (data.detail || 'Datos invalidos') + "</td></tr>";
+    
+    if (data.length === 0) {
+        document.getElementById("tabla-usuarios").innerHTML = "<tr><td colspan='6'>No hay usuarios</td></tr>";
         return;
     }
     

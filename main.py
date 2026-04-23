@@ -282,15 +282,12 @@ def verificar_auth(token: str = Cookie(default=None)):
 # --- GESTIÓN DE USUARIOS ---
 @app.get("/admin/usuarios")
 def listar_usuarios(db: Session = Depends(get_db), usuario: str = Cookie(default=None)):
-    if not verificar_token(usuario):
-        return {"error": "No autorizado", "usuarios": []}
-    
-    email = verificar_token(usuario)
+    email = verificar_token(usuario) if usuario else None
     if not email:
-        return {"error": "No autorizado", "usuarios": []}
+        return {"error": "Sesión inválida", "usuarios": []}
     
     u = db.query(Usuario).filter(Usuario.email == email).first()
-    if not u or u.rol not in ["admin"]:
+    if not u or u.rol not in ["admin", "dueno"]:
         return {"error": "Solo admins pueden ver usuarios", "usuarios": []}
     
     usuarios = db.query(Usuario).order_by(Usuario.fecha_registro.desc()).all()
