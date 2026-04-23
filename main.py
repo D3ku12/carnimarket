@@ -159,6 +159,7 @@ class VentaRequest(BaseModel):
     cantidad: float
     unidad: str
     cliente_nombre: str = "Cliente general"
+    direccion: str = ""
     pagado: str = "encargado"
     fecha_venta: Optional[str] = None
     fecha_vencimiento: Optional[str] = None
@@ -584,6 +585,7 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
         fecha_venta=fecha_venta,
         fecha_vencimiento=fecha_vencimiento,
         cliente_nombre=v.cliente_nombre,
+        direccion=v.direccion,
         pagado=v.pagado,
         notas=v.notas
     )
@@ -611,12 +613,12 @@ def listar_ventas(
         query = query.filter(Venta.fecha_venta <= ff)
     
     ventas = query.order_by(Venta.fecha_venta.desc()).limit(150).all()
-    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "pagado": v.pagado, "notas": v.notas, "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""} for v in ventas]
+    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "pagado": v.pagado, "notas": v.notas, "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""} for v in ventas]
 
 @app.get("/admin/encargados")
 def listar_encargados(db: Session = Depends(get_db)):
     ventas = db.query(Venta).filter(Venta.pagado == "encargado").order_by(Venta.fecha_venta.desc()).all()
-    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "notas": v.notas} for v in ventas]
+    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "notas": v.notas} for v in ventas]
 
 @app.get("/admin/encargados/toggle/{id}")
 def toggle_encargado(id: int, db: Session = Depends(get_db)):

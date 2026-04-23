@@ -58,6 +58,7 @@ class Venta(Base):
     subtotal = Column(Float)
     cliente_id = Column(Integer, default=None)
     cliente_nombre = Column(String, default="Cliente general")
+    direccion = Column(String, default="")
     pagado = Column(String, default="pagado")
     notas = Column(String, default="")
 
@@ -83,14 +84,21 @@ class Historial(Base):
 
 def init_db():
     Base.metadata.create_all(bind=engine)
-    # Agregar columna tipo si no existe (para SQLite/Postgres)
     from sqlalchemy import text, inspect
     try:
         with engine.connect() as conn:
             inspector = inspect(engine)
-            columnas = [c['name'] for c in inspector.get_columns('productos')]
-            if 'tipo' not in columnas:
+            
+            # Migration: agregar columna tipo a productos
+            columnas_productos = [c['name'] for c in inspector.get_columns('productos')]
+            if 'tipo' not in columnas_productos:
                 conn.execute(text("ALTER TABLE productos ADD COLUMN tipo VARCHAR DEFAULT 'kilo'"))
+                conn.commit()
+            
+            # Migration: agregar columna direccion a ventas
+            columnas_ventas = [c['name'] for c in inspector.get_columns('ventas')]
+            if 'direccion' not in columnas_ventas:
+                conn.execute(text("ALTER TABLE ventas ADD COLUMN direccion VARCHAR DEFAULT ''"))
                 conn.commit()
     except Exception as e:
         print(f"Migration error: {e}")

@@ -169,6 +169,7 @@ async function cargarEncargados() {
         <tr>
             <td>${v.fecha_venta}</td>
             <td>${v.cliente}</td>
+            <td>${v.direccion || '-'}</td>
             <td>${v.producto}</td>
             <td>$${v.subtotal}</td>
             <td>
@@ -579,6 +580,7 @@ const body = {
         cantidad: Number(cantidad),
         unidad: String(unidad),
         cliente_nombre: String(document.getElementById("venta-cliente").value || "Cliente General"),
+        direccion: String(document.getElementById("venta-direccion").value || ""),
         pagado: String(document.getElementById("venta-pagado").value || "encargado"),
         fecha_venta: String(document.getElementById("venta-fecha").value || ""),
         fecha_vencimiento: String(document.getElementById("venta-vencimiento").value || ""),
