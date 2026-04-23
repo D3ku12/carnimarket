@@ -21,6 +21,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     .card h2 { font-size: 18px; margin-bottom: 16px; color: #c0392b; }
+    .card p { font-size: 14px; color: #666; margin-bottom: 12px; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
     th { background: #fdf0ee; padding: 10px; text-align: left; color: #c0392b; }
     td { padding: 10px; border-bottom: 1px solid #f0f0f0; }
@@ -33,6 +34,7 @@
     .agotado { background: #fdecea; color: #c0392b; }
     .form-group { margin-bottom: 14px; }
     label { display: block; font-size: 13px; margin-bottom: 5px; font-weight: bold; }
+    .ayuda { font-size: 11px; color: #888; margin-top: 3px; }
     select, input {
       width: 100%; padding: 10px; border-radius: 8px;
       border: 1px solid #ddd; font-size: 14px;
@@ -49,6 +51,15 @@
     }
     .exito { background: #e8f5e9; color: #2e7d32; }
     .error { background: #fdecea; color: #c0392b; }
+    .precio { color: #c0392b; font-weight: bold; }
+    .stock-card {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px; border-bottom: 1px solid #eee;
+    }
+    .stock-card:last-child { border-bottom: none; }
+    .stock-info { flex: 1; }
+    .stock-nombre { font-weight: bold; }
+    .stock-datos { font-size: 12px; color: #666; }
   </style>
 </head>
 <body>
@@ -63,16 +74,18 @@
   <!-- Registrar venta -->
   <div class="card">
     <h2>Registrar Venta</h2>
+    <p>Selecciona el corte de carne que vas a vender y escribe la cantidad en gramos (1 kilo = 1000 gramos).</p>
     <div id="mensaje" class="mensaje"></div>
     <div class="form-group">
-      <label>Producto</label>
+      <label>¿Qué producto vas a vender?</label>
       <select id="producto">
         <option value="">Selecciona un producto...</option>
       </select>
     </div>
     <div class="form-group">
-      <label>Kilos</label>
-      <input type="number" id="kilos" placeholder="Ej: 2.5" step="0.1" min="0.1">
+      <label>¿Cuántos gramos vas a vender?</label>
+      <input type="number" id="gramos" placeholder="Ej: 500" step="1" min="1">
+      <div class="ayuda">Escribe la cantidad en gramos. Ej: 250g = cuarto de libra, 500g = media libra, 1000g = un kilo</div>
     </div>
     <button onclick="registrarVenta()">Registrar Venta</button>
   </div>
@@ -84,7 +97,7 @@
       <thead>
         <tr>
           <th>Producto</th>
-          <th>Stock</th>
+          <th>Cantidad</th>
           <th>Mínimo</th>
           <th>Estado</th>
         </tr>
@@ -98,10 +111,13 @@
 </div>
 
 <script>
+  let inventarioData = {};
+
   // Cargar inventario al abrir
   async function cargarInventario() {
     const res = await fetch("/inventario");
     const data = await res.json();
+    inventarioData = data;
 
     const select = document.getElementById("producto");
     const tbody = document.getElementById("tabla-inventario");
@@ -110,14 +126,17 @@
     tbody.innerHTML = "";
 
     for (const [nombre, info] of Object.entries(data)) {
+      const stockKg = info.stock;
+      const precioKilo = info.precio_kilo;
+      
       // Llenar select - mostrar todos los productos con su stock
-      select.innerHTML += `<option value="${nombre}">${nombre} — Stock: ${info.stock}kg</option>`;
+      select.innerHTML += `<option value="${nombre}" data-stock="${stockKg}">${nombre} - Stock: ${stockKg}kg - $${precioKilo.toLocaleString()}/kg</option>`;
 
       // Llenar tabla
       let estado, clase;
-      if (info.stock === 0) {
+      if (stockKg === 0) {
         estado = "Agotado"; clase = "agotado";
-      } else if (info.stock <= info.minimo) {
+      } else if (stockKg <= info.minimo) {
         estado = "Stock bajo"; clase = "bajo";
       } else {
         estado = "OK"; clase = "ok";
@@ -126,7 +145,7 @@
       tbody.innerHTML += `
         <tr>
           <td><strong>${nombre}</strong></td>
-          <td>${info.stock}kg</td>
+          <td>${stockKg}kg <span class="precio">$${precioKilo.toLocaleString()}/kg</span></td>
           <td>${info.minimo}kg</td>
           <td><span class="badge ${clase}">${estado}</span></td>
         </tr>`;
@@ -136,13 +155,25 @@
   // Registrar venta
   async function registrarVenta() {
     const producto = document.getElementById("producto").value;
-    const kilos = parseFloat(document.getElementById("kilos").value);
+    const gramos = parseFloat(document.getElementById("gramos").value);
     const msg = document.getElementById("mensaje");
 
-    if (!producto || !kilos) {
+    if (!producto || !gramos) {
       msg.className = "mensaje error";
       msg.style.display = "block";
-      msg.textContent = "❌ Completa todos los campos.";
+      msg.textContent = "⚠️ Por favor completa todos los campos.";
+      return;
+    }
+
+    // Convertir gramos a kilos
+    const kilos = gramos / 1000;
+    
+    // Verificar stock antes de vender
+    const info = inventarioData[producto];
+    if (kilos > info.stock) {
+      msg.className = "mensaje error";
+      msg.style.display = "block";
+      msg.textContent = `⚠️ Stock insuficiente. Solo hay ${info.stock}kg disponibles.`;
       return;
     }
 
@@ -160,8 +191,8 @@
       msg.textContent = "❌ " + data.error;
     } else {
       msg.className = "mensaje exito";
-      msg.textContent = `✅ Venta registrada: ${data.producto} ${data.kilos}kg = $${data.subtotal.toLocaleString()} | Stock remaining: ${data.stock_restante}kg`;
-      document.getElementById("kilos").value = "";
+      msg.textContent = `✅ Venta registrada: ${data.producto} ${data.kilos}kg = $${data.subtotal.toLocaleString()} | Stock restante: ${data.stock_restante}kg`;
+      document.getElementById("gramos").value = "";
       cargarInventario();
     }
   }

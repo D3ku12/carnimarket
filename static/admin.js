@@ -112,7 +112,7 @@ async function cargarInventario() {
         <tr>
             <td><strong>${nombre}</strong></td>
             <td>${info.stock}kg</td>
-            <td>$${info.precio_kilo.toLocaleString()}</td>
+            <td>$${info.precio_kilo.toLocaleString()}/kg</td>
             <td>
                 <button class="btn-primary" onclick="prepararEdicionProd('${nombre.replaceAll("'", "\\'")}', ${JSON.stringify(info).replaceAll('"', '&quot;')})">
                     <i class="fas fa-edit"></i>
@@ -249,7 +249,7 @@ async function filtrarVentas() {
         <tr>
             <td><small>${v.fecha_venta}</small></td>
             <td>${v.cliente}</td>
-            <td>${v.producto} (${v.kilos}kg)</td>
+            <td>${v.producto} (${Math.round(v.kilos * 1000)}g)</td>
             <td>$${v.subtotal.toLocaleString()}</td>
             <td><span class="badge ${v.pagado}">${v.pagado}</span></td>
             <td>${v.fecha_vencimiento || "—"}</td>
@@ -267,15 +267,17 @@ function prepararEdicionVenta(id, cliente, producto, kilos, pagado) {
     document.getElementById("edit-venta-id").value = id;
     document.getElementById("edit-venta-cliente").value = cliente;
     document.getElementById("edit-venta-producto").value = producto;
-    document.getElementById("edit-venta-kilos").value = kilos;
+    document.getElementById("edit-venta-gramos").value = Math.round(kilos * 1000);
     document.getElementById("edit-venta-pagado").value = pagado;
 }
 
 document.getElementById("form-editar-venta").onsubmit = async (e) => {
     e.preventDefault();
     const id = document.getElementById("edit-venta-id").value;
+    const gramos = parseFloat(document.getElementById("edit-venta-gramos").value);
+    const kilos = gramos / 1000;
     const body = {
-        kilos: parseFloat(document.getElementById("edit-venta-kilos").value),
+        kilos: kilos,
         pagado: document.getElementById("edit-venta-pagado").value
     };
     
@@ -433,12 +435,18 @@ document.getElementById("form-gasto").onsubmit = async (e) => {
     }
 };
 
-// Manejador para Ventas
+// Manejador para Ventas (entrada en gramos, convierte a kilos)
 document.getElementById("form-venta").onsubmit = async (e) => {
     e.preventDefault();
+    const gramos = parseFloat(document.getElementById("venta-gramos").value);
+    if (!gramos || gramos <= 0) {
+        alert("Ingresa una cantidad válida en gramos");
+        return;
+    }
+    const kilos = gramos / 1000;
     const body = {
         producto: document.getElementById("venta-producto").value,
-        kilos: parseFloat(document.getElementById("venta-kilos").value),
+        kilos: kilos,
         cliente_nombre: document.getElementById("venta-cliente").value || "Cliente General",
         pagado: document.getElementById("venta-pagado").value,
         fecha_venta: document.getElementById("venta-fecha").value || null,
@@ -521,7 +529,7 @@ async function cargarSelectores() {
     const resP = await fetch("/inventario");
     const prods = await resP.json();
     document.getElementById("venta-producto").innerHTML = Object.keys(prods).map(p => 
-        `<option value="${p}">${p} — Stock: ${prods[p].stock}kg</option>`
+        `<option value="${p}">${p} — Stock: ${prods[p].stock}kg — $${prods[p].precio_kilo.toLocaleString()}/kg</option>`
     ).join("");
     
     const resC = await fetch("/admin/clientes");
