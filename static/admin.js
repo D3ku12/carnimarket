@@ -516,7 +516,7 @@ document.getElementById("form-venta").onsubmit = async (e) => {
         }
         unidad = "plato";
     } else {
-        // Productos por kilo
+        // Productos por kilo: aceptar kilos o gramos
         const inputKilos = document.getElementById("venta-kilos");
         const inputGramos = document.getElementById("venta-gramos");
         
@@ -530,7 +530,7 @@ document.getElementById("form-venta").onsubmit = async (e) => {
             cantidad = kilos;
             unidad = "kilo";
         } else {
-            alert("Ingresa una cantidad válida en kilos o gramos");
+            alert("Ingresa la cantidad en KILOS o en GRAMOS");
             return;
         }
     }
@@ -682,7 +682,9 @@ function actualizarCamposVenta() {
     if (tipo === "plato") {
         campoPlatos.style.display = "block";
     } else {
+        // Productos por kilo: mostrar ambos campos
         campoKilos.style.display = "block";
+        campoGramos.style.display = "block";
     }
 }
 
