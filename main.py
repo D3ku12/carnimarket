@@ -824,33 +824,38 @@ def caja_detalle(
     try:
         query_vp = db.query(Venta).filter(Venta.pagado == "pagado")
         query_vd = db.query(Venta).filter(Venta.pagado == "debe")
+        query_ve = db.query(Venta).filter(Venta.pagado == "encargado")
         query_g = db.query(Gasto)
         
         if fecha_inicio:
             fi = datetime.strptime(fecha_inicio, "%Y-%m-%d").replace(hour=0, minute=0, second=0)
             query_vp = query_vp.filter(Venta.fecha_venta >= fi)
             query_vd = query_vd.filter(Venta.fecha_venta >= fi)
+            query_ve = query_ve.filter(Venta.fecha_venta >= fi)
             query_g = query_g.filter(Gasto.fecha >= fi)
         
         if fecha_fin:
             ff = datetime.strptime(fecha_fin, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
             query_vp = query_vp.filter(Venta.fecha_venta <= ff)
             query_vd = query_vd.filter(Venta.fecha_venta <= ff)
+            query_ve = query_ve.filter(Venta.fecha_venta <= ff)
             query_g = query_g.filter(Gasto.fecha <= ff)
         
         vp = sum(v.subtotal for v in query_vp.all())
         vd = sum(v.subtotal for v in query_vd.all())
+        ve = sum(v.subtotal for v in query_ve.all())
         g = sum(g_.monto for g_ in query_g.all())
         
         return {
             "ventas_pagadas": vp,
             "ventas_deben": vd,
-            "total_ventas": vp + vd,
+            "pendiente": ve,
+            "total_ventas": vp + vd + ve,
             "gastos": g,
             "saldo_real": vp - g
         }
     except Exception as e:
-        return {"error": str(e), "ventas_pagadas": 0, "ventas_deben": 0, "total_ventas": 0, "gastos": 0, "saldo_real": 0}
+        return {"error": str(e), "ventas_pagadas": 0, "ventas_deben": 0, "pendiente": 0, "total_ventas": 0, "gastos": 0, "saldo_real": 0}
 
 @app.get("/admin/dashboard")
 def get_dashboard_data(periodo: str = "7dias", db: Session = Depends(get_db)):

@@ -265,23 +265,27 @@ async function filtrarCaja() {
         document.getElementById("stats-caja").innerHTML = `
         <div class="stat" style="border-left-color: var(--success)">
             <span class="valor">$${(data.ventas_pagadas || 0).toLocaleString()}</span>
-            <span class="label">Ventas Pagadas</span>
+            <span class="label">Pagadas</span>
         </div>
         <div class="stat" style="border-left-color: var(--warning)">
             <span class="valor">$${(data.ventas_deben || 0).toLocaleString()}</span>
-            <span class="label">Ventas que Deben</span>
+            <span class="label">Deben</span>
+        </div>
+        <div class="stat" style="border-left-color: var(--info)">
+            <span class="valor">$${(data.pendiente || 0).toLocaleString()}</span>
+            <span class="label">Pendiente</span>
         </div>
         <div class="stat">
             <span class="valor">$${(data.total_ventas || 0).toLocaleString()}</span>
-            <span class="label">Total Ventas</span>
+            <span class="label">Total</span>
         </div>
         <div class="stat" style="border-left-color: var(--danger)">
             <span class="valor">$${(data.gastos || 0).toLocaleString()}</span>
-            <span class="label">Gastos Totales</span>
+            <span class="label">Gastos</span>
         </div>
-        <div class="stat" style="border-left-color: var(--info)">
+        <div class="stat" style="border-left-color: var(--success)">
             <span class="valor">$${(data.saldo_real || 0).toLocaleString()}</span>
-            <span class="label">Saldo Real en Caja</span>
+            <span class="label">Caja</span>
         </div>
     `;
     } catch (e) {
