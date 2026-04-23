@@ -530,15 +530,13 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
     if not p: return {"error": "El producto no existe"}
     
     tipo_producto = getattr(p, 'tipo', 'kilo') or 'kilo'
-    es_encargado = v.pagado == "encargado"
     
     # Convertir según el tipo de venta y producto
     if tipo_producto == "plato":
         if v.unidad != "plato":
             return {"error": "Este producto se vende solo por platos"}
-        # Los platos se pueden vender sin importar el stock
-        # Solo descontar si NO es encargado y hay stock
-        if not es_encargado and p.stock > 0:
+        # Siempre descontar stock, luego ajustar si es encargado
+        if p.stock > 0:
             if v.cantidad <= p.stock:
                 p.stock -= v.cantidad
             else:
@@ -553,11 +551,10 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
         else:
             kilos = v.cantidad
         
-        # Solo verificar stock si NO es encargado
-        if not es_encargado:
-            if kilos > p.stock:
-                return {"error": f"Stock insuficiente ({p.stock}kg)"}
-            p.stock -= kilos
+        # Verificar stock disponible
+        if kilos > p.stock:
+            return {"error": f"Stock insuficiente ({p.stock}kg)"}
+        p.stock -= kilos
         total = kilos * p.precio_kilo
     
     ahora = obtener_hora_colombia()
@@ -778,9 +775,9 @@ def toggle_pago_venta(id: int, db: Session = Depends(get_db)):
 def eliminar_venta(id: int, db: Session = Depends(get_db)):
     v = db.query(Venta).filter(Venta.id == id).first()
     if not v: return {"error": "No existe"}
-    # Restaurar stock del producto
+    # Restaurar stock SOLO si NO era encargado (solo se descuenta cuando no es encargado)
     p = db.query(Producto).filter(Producto.nombre == v.producto).first()
-    if p:
+    if p and v.pagado != "encargado" and v.kilos:
         p.stock += v.kilos
     db.delete(v)
     db.commit()
