@@ -123,12 +123,8 @@ async function cargarInventario() {
             <td>${stock}</td>
             <td>${precio}</td>
             <td>
-                <button class="btn-primary" onclick="prepararEdicionProd('${nombre.replaceAll("'", "\\'")}', ${JSON.stringify(info).replaceAll('"', '&quot;')})">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarProducto(${info.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <button class="btn-primary" onclick="prepararEdicionProd('${nombre.replaceAll("'", "\\'")}', ${JSON.stringify(info).replaceAll('"', '&quot;')})">Editar</button>
+                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarProducto(${info.id})">Borrar</button>
             </td>
         </tr>
     `}).join("");
@@ -143,12 +139,8 @@ async function cargarClientes() {
             <td>${c.telefono}</td>
             <td>${c.direccion}</td>
             <td>
-                <button class="btn-primary" onclick="prepararEdicionCli(${JSON.stringify(c).replaceAll('"', '&quot;')})">
-                    <i class="fas fa-user-edit"></i>
-                </button>
-                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarCliente(${c.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <button class="btn-primary" onclick="prepararEdicionCli(${JSON.stringify(c).replaceAll('"', '&quot;')})">Editar</button>
+                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarCliente(${c.id})">Borrar</button>
             </td>
         </tr>
     `).join("");
@@ -164,9 +156,7 @@ async function cargarGastos() {
             <td><span class="badge">${g.categoria}</span></td>
             <td style="color:var(--danger)">-$${g.monto.toLocaleString()}</td>
             <td>
-                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarGasto(${g.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarGasto(${g.id})"><i class="fas fa-trash"></i></button>
             </td>
         </tr>
     `).join("");
@@ -182,8 +172,8 @@ async function cargarEncargados() {
             <td>${v.producto} (${Math.round(v.kilos * 1000)}g)</td>
             <td>$${v.subtotal.toLocaleString()}</td>
             <td>
-                <button class="btn-primary" onclick="abrirCambiarEstado(${v.id})"><i class="fas fa-check"></i> Confirmar</button>
-                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${v.id})"><i class="fas fa-trash"></i></button>
+                <button class="btn-primary" onclick="abrirCambiarEstado(${v.id})">Confirmar</button>
+                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${v.id})">Borrar</button>
             </td>
         </tr>
     `).join("");
@@ -305,14 +295,14 @@ async function filtrarVentas() {
             <td><span class="badge ${v.pagado}">${v.pagado}</span></td>
             <td>${v.fecha_vencimiento || "—"}</td>
             <td>
-                <select onchange="cambiarEstadoVenta(${v.id}, this.value)" style="padding:6px; border-radius:6px; border:1px solid #ddd;">
+                <select onchange="cambiarEstadoVenta(${v.id}, this.value)" style="padding:8px; border-radius:6px; border:1px solid #ddd; margin-bottom:4px;">
                     <option value="">Cambiar Estado</option>
                     <option value="encargado">En Cargo</option>
                     <option value="pagado">Pagado</option>
                     <option value="debe">Debe</option>
                 </select>
-                <button class="btn-primary" onclick="prepararEdicionVenta(${v.id}, '${v.cliente}', '${v.producto}', ${v.kilos}, '${v.pagado}')"><i class="fas fa-edit"></i></button>
-                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${v.id})"><i class="fas fa-trash"></i></button>
+                <button class="btn-primary" onclick="prepararEdicionVenta(${v.id}, '${v.cliente}', '${v.producto}', ${v.kilos}, '${v.pagado}')">Editar</button>
+                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${v.id})">Borrar</button>
             </td>
         </tr>
     `).join("");

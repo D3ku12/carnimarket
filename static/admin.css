@@ -82,13 +82,27 @@ header h1 {
     background: transparent;
     border: none;
     color: var(--gray-400);
-    padding: 14px 16px;
+    padding: 12px 10px;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     white-space: nowrap;
     transition: all 0.2s;
     border-bottom: 3px solid transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.nav-icon {
+    font-size: 1.1rem;
+    display: block;
+}
+
+.nav-text {
+    font-size: 0.65rem;
+    display: block;
 }
 
 .nav button:hover {
@@ -202,8 +216,8 @@ button,
     color: var(--white);
     border: none;
     border-radius: 8px;
-    padding: 10px 16px;
-    font-size: 0.8rem;
+    padding: 12px 20px;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
@@ -211,6 +225,7 @@ button,
     align-items: center;
     justify-content: center;
     gap: 6px;
+    min-height: 44px;
 }
 
 .btn-primary:hover {
@@ -397,6 +412,24 @@ td button i {
     font-size: 0.8rem;
 }
 
+/* Botones en tablas más legibles */
+td .btn-primary {
+    padding: 10px 14px;
+    font-size: 0.8rem;
+    margin: 2px;
+    border-radius: 6px;
+}
+
+/* Select para cambiar estado */
+td select {
+    padding: 10px 8px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    border: 1px solid var(--gray-300);
+    background: var(--white);
+    min-width: 120px;
+}
+
 /* --- TAG --- */
 .tag-rojo {
     background: var(--danger);
@@ -450,6 +483,44 @@ td button i {
     
     td button {
         padding: 8px;
+    }
+    
+    /* Mejorar navigation en mobile */
+    .nav {
+        display: flex;
+        overflow-x: auto;
+        gap: 0;
+        padding: 8px;
+        justify-content: flex-start;
+    }
+    
+    .nav button {
+        padding: 10px 8px;
+        min-width: 60px;
+    }
+    
+    .nav-icon {
+        font-size: 1.2rem;
+    }
+    
+    .nav-text {
+        font-size: 0.6rem;
+    }
+    
+    /* Botones más grandes en mobile */
+    td button, .btn-primary {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+    }
+    
+    /* Tabla con texto más legible */
+    td {
+        font-size: 0.85rem;
+    }
+    
+    th {
+        font-size: 0.7rem;
+        padding: 8px 6px;
     }
 }
 
