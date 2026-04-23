@@ -535,16 +535,18 @@ document.getElementById("form-venta").onsubmit = async (e) => {
         }
     }
     
-    const body = {
-        producto: select.value,
-        cantidad: cantidad,
-        unidad: unidad,
-        cliente_nombre: document.getElementById("venta-cliente").value || "Cliente General",
-        pagado: document.getElementById("venta-pagado").value || "encargado",
-        fecha_venta: document.getElementById("venta-fecha").value || "",
-        fecha_vencimiento: document.getElementById("venta-vencimiento").value || "",
-        notas: ""
+const body = {
+        producto: String(select.value),
+        cantidad: Number(cantidad),
+        unidad: String(unidad),
+        cliente_nombre: String(document.getElementById("venta-cliente").value || "Cliente General"),
+        pagado: String(document.getElementById("venta-pagado").value || "encargado"),
+        fecha_venta: String(document.getElementById("venta-fecha").value || ""),
+        fecha_vencimiento: String(document.getElementById("venta-vencimiento").value || ""),
+        notas: String("")
     };
+
+    console.log("Enviando a /vender:", JSON.stringify(body));
 
     const res = await fetch("/vender", {
         method: "POST",

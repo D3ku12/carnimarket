@@ -156,23 +156,21 @@ class ProductoUpdate(BaseModel):
 
 class VentaRequest(BaseModel):
     producto: str
-    cantidad: float  # kilos, gramos (se convierte a kilos), o platos
-    unidad: str = "kilo"  # "kilo", "gramos", "plato"
+    cantidad: float
+    unidad: str
     cliente_nombre: str = "Cliente general"
-    pagado: str = "encargado"  #默认为encargado
+    pagado: str = "encargado"
     fecha_venta: Optional[str] = None
     fecha_vencimiento: Optional[str] = None
     notas: str = ""
     
-    @validator('producto', 'cliente_nombre', 'notas')
-    def sanitize_strings(cls, v):
+    @validator('producto')
+    def sanitize_producto(cls, v):
         return sanitize_input(v)
     
-    @validator('cantidad')
-    def validate_cantidad(cls, v):
-        if v <= 0 or v > 1000:
-            raise ValueError('Cantidad inválida')
-        return v
+    @validator('cliente_nombre')
+    def sanitize_cliente(cls, v):
+        return sanitize_input(v)
 
 class ClienteRequest(BaseModel):
     nombre: str
