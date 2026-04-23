@@ -688,7 +688,7 @@ async def cambiar_estado(request: Request, db: Session = Depends(get_db)):
         return {"error": str(e)}
 
 @app.post("/api/registrar-abono")
-def registrar_abono(request: Request, db: Session = Depends(get_db)):
+async def registrar_abono(request: Request, db: Session = Depends(get_db)):
     try:
         body = await request.json()
         id_val = int(body.get("id", 0))
