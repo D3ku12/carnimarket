@@ -171,9 +171,12 @@ async function cargarEncargados() {
             <td>${v.cliente}</td>
             <td>${v.producto}</td>
             <td>$${v.subtotal}</td>
-            <td style="display:flex; gap:4px; flex-wrap:wrap;">
-                <button type="button" onclick="confirmarEncargo(${v.id}, 'pagado')">Pagado ✅</button>
-                <button type="button" onclick="confirmarEncargo(${v.id}, 'debe')">Debe ❌</button>
+            <td>
+                <select onchange="if(this.value)confirmarEncargo(${v.id}, this.value)">
+                    <option value="">Confirmar como:</option>
+                    <option value="pagado">Pagado ✅</option>
+                    <option value="debe">Debe ❌</option>
+                </select>
                 <button type="button" onclick="eliminarVenta(${v.id})">Borrar</button>
             </td>
         </tr>
@@ -328,18 +331,22 @@ async function filtrarVentas() {
     const data = await res.json();
 document.getElementById("tabla-ventas").innerHTML = data.map(v => {
         const vid = Number(v.id);
+        const estadoActual = v.pagado || "encargado";
         return `<tr>
             <td>${v.fecha_venta}</td>
             <td>${v.cliente}</td>
             <td>${v.producto}</td>
             <td>$${v.subtotal}</td>
-            <td>${v.pagado}</td>
+            <td>${estadoActual}</td>
             <td>${v.fecha_vencimiento || "-"}</td>
-            <td style="display:flex; gap:4px; flex-wrap:wrap;">
-                <button type="button" onclick="cambiarEstadoVenta(${vid}, 'encargado')">Encargo</button>
-                <button type="button" onclick="cambiarEstadoVenta(${vid}, 'pagado')">Pagado</button>
-                <button type="button" onclick="cambiarEstadoVenta(${vid}, 'debe')">Debe</button>
-                <button type="button" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, '${v.pagado}')">Editar</button>
+            <td>
+                <select onchange="if(this.value)cambiarEstadoVenta(${vid}, this.value)">
+                    <option value="">Cambiar a:</option>
+                    <option value="encargado" ${estadoActual === 'encargado' ? 'selected' : ''}>En Cargo</option>
+                    <option value="pagado" ${estadoActual === 'pagado' ? 'selected' : ''}>Pagado</option>
+                    <option value="debe" ${estadoActual === 'debe' ? 'selected' : ''}>Debe</option>
+                </select>
+                <button type="button" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, '${estadoActual}')">Editar</button>
                 <button type="button" onclick="eliminarVenta(${vid})">Borrar</button>
             </td>
         </tr>`;
