@@ -659,6 +659,30 @@ def confirmar_encargado(id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensaje": "Pedido confirmado", "pagado": v.pagado}
     
+@app.post("/admin/venta/cambiar-estado")
+def cambiar_estado_venta(request: Request, db: Session = Depends(get_db)):
+    try:
+        body = await request.json()
+        id_val = int(body.get("id", 0))
+        estado = body.get("estado", "pagado")
+        
+        v = db.query(Venta).filter(Venta.id == id_val).first()
+        if not v:
+            return {"error": "Venta no existe"}
+        
+        p = db.query(Producto).filter(Producto.nombre == v.producto).first()
+        
+        if v.pagado == "encargado" and estado != "encargado" and p and v.kilos:
+            p.stock -= v.kilos
+        elif v.pagado != "encargado" and estado == "encargado" and p and v.kilos:
+            p.stock += v.kilos
+        
+        v.pagado = estado
+        db.commit()
+        return {"mensaje": "OK", "pagado": v.pagado}
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.put("/admin/venta/{id}")
 def corregir_venta(id: int, data: dict, db: Session = Depends(get_db), token: str = Cookie(default=None)):
     if not verificar_token(token):

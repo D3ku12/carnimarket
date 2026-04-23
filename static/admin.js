@@ -291,7 +291,7 @@ async function filtrarVentas() {
     const data = await res.json();
     document.getElementById("tabla-ventas").innerHTML = data.map(v => {
         const vid = v.id;
-        console.log("Venta:", vid, v.cliente);
+        console.log("Venta:", vid);
         return `
         <tr>
             <td><small>${v.fecha_venta}</small></td>
@@ -301,8 +301,8 @@ async function filtrarVentas() {
             <td><span class="badge ${v.pagado}">${v.pagado}</span></td>
             <td>${v.fecha_vencimiento || "—"}</td>
             <td>
-                <select onchange="console.log('change', ${vid}, this.value); cambiarEstadoVenta(${vid}, this.value)" style="padding:8px; border-radius:6px; border:1px solid #ddd; margin-bottom:4px;">
-                    <option value="">Cambiar Estado</option>
+                <select onchange="cambiarEstadoVenta(${vid}, this.value)" style="padding:8px; border-radius:6px; border:1px solid #ddd; margin-bottom:4px;">
+                    <option value="">Cambiar</option>
                     <option value="encargado">En Cargo</option>
                     <option value="pagado">Pagado</option>
                     <option value="debe">Debe</option>
@@ -576,20 +576,20 @@ async function togglePago(id) {
 
 async function cambiarEstadoVenta(id, nuevoEstado) {
     if (!nuevoEstado || !id) {
-        console.log("ID o estado faltante:", id, nuevoEstado);
+        console.log("Faltante:", id, nuevoEstado);
         return;
     }
     
-    console.log("Cambiando estado:", id, nuevoEstado);
+    console.log("Cambiando:", id, nuevoEstado);
     
-    const res = await fetch(`/admin/venta/${id}`, {
-        method: "PUT",
+    const res = await fetch("/admin/venta/cambiar-estado", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pagado: nuevoEstado })
+        body: JSON.stringify({ id: id, estado: nuevoEstado })
     });
     
     const data = await res.json();
-    console.log("Res:", res.ok, data);
+    console.log("Res:", data);
     
     if (res.ok) {
         cargarVentas();
