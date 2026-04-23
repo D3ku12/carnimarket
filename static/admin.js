@@ -323,7 +323,7 @@ document.getElementById("tabla-ventas").innerHTML = data.map(v => {
         const estadoActual = v.pagado || "encargado";
         const montoPagado = v.monto_pagado || 0;
         const saldo = v.subtotal - montoPagado;
-        const cantidadMostrar = v.cantidad ? `${v.cantidad}${v.unidad === 'gramos' ? 'g' : 'kg'}` : `${v.kilos}kg`;
+        const cantidadMostrar = v.kilos ? `${v.kilos}kg` : `${v.cantidad || 0}kg`;
         console.log("Row:", vid, "saldo:", saldo, "estado:", estadoActual);
         return `<tr>
             <td>${v.fecha_venta}</td>
@@ -342,24 +342,19 @@ document.getElementById("tabla-ventas").innerHTML = data.map(v => {
                     <option value="debe" ${estadoActual === 'debe' ? 'selected' : ''}>Debe</option>
                 </select>
                 ${(saldo > 0 && estadoActual === 'debe') ? `<button type="button" onclick="abrirAbonoModal(${vid}, ${saldo})">Abonar</button>` : ''}
-                <button type="button" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, ${v.cantidad || 0}, '${v.unidad || 'kilo'}', ${montoPagado}, '${estadoActual}')">Editar</button>
+                <button type="button" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, ${montoPagado}, '${estadoActual}')">Editar</button>
                 <button type="button" onclick="eliminarVenta(${vid})">Borrar</button>
             </td>
         </tr>`;
     }).join("");
 }
 
-function prepararEdicionVenta(id, cliente, producto, kilos, cantidad, unidad, montoPagado, pagado) {
+function prepararEdicionVenta(id, cliente, producto, kilos, montoPagado, pagado) {
     abrirModal('modal-editar-venta');
     document.getElementById("edit-venta-id").value = id;
     document.getElementById("edit-venta-cliente").value = cliente;
     document.getElementById("edit-venta-producto").value = producto;
-    // Convertir a la unidad original
-    if (unidad === 'gramos') {
-        document.getElementById("edit-venta-gramos").value = cantidad || Math.round(kilos * 1000);
-    } else {
-        document.getElementById("edit-venta-gramos").value = Math.round(kilos * 1000);
-    }
+    document.getElementById("edit-venta-gramos").value = Math.round(kilos * 1000);
     document.getElementById("edit-venta-abono").value = montoPagado;
     document.getElementById("edit-venta-pagado").value = pagado;
 }
@@ -559,23 +554,24 @@ document.getElementById("form-venta").onsubmit = async (e) => {
         }
         unidad = "plato";
     } else {
-        // Productos por kilo: aceptar kilos o gramos
+        // Productos por kilo: aceptar kilos y/o gramos
         const inputKilos = document.getElementById("venta-kilos");
         const inputGramos = document.getElementById("venta-gramos");
         
         const kilos = parseFloat(inputKilos?.value || 0);
         const gramos = parseFloat(inputGramos?.value || 0);
         
-        if (gramos > 0) {
-            cantidad = gramos;
-            unidad = "gramos";
-        } else if (kilos > 0) {
-            cantidad = kilos;
-            unidad = "kilo";
-        } else {
-            alert("Ingresa la cantidad en KILOS o en GRAMOS");
+        // Permitir usar ambos: kilos + gramos
+        const totalKilos = kilos + (gramos / 1000);
+        
+        if (totalKilos <= 0) {
+            alert("Ingresa la cantidad en KILOS o GRAMOS");
             return;
         }
+        
+        // Enviar en kilos, el servidor convierte
+        cantidad = totalKilos;
+        unidad = "kilo";
     }
     
 const body = {

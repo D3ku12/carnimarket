@@ -578,8 +578,8 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
     nueva_venta = Venta(
         producto=v.producto,
         kilos=kilos,
-        cantidad=v.cantidad,
-        unidad=v.unidad or "kilo",
+        cantidad=kilos,  # guardar en kilos para consistencia
+        unidad="kilo",
         precio_kilo=p.precio_kilo,
         subtotal=total,
         monto_pagado=total if v.pagado == "pagado" else 0,
@@ -614,7 +614,7 @@ def listar_ventas(
         query = query.filter(Venta.fecha_venta <= ff)
     
     ventas = query.order_by(Venta.fecha_venta.desc()).limit(150).all()
-    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "cantidad": getattr(v, 'cantidad', 0) or v.cantidad, "unidad": getattr(v, 'unidad', 'kilo') or v.unidad, "subtotal": v.subtotal, "monto_pagado": v.monto_pagado or 0, "pagado": v.pagado, "notas": v.notas, "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""} for v in ventas]
+    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "cantidad": getattr(v, 'cantidad', v.kilos) or v.kilos, "subtotal": v.subtotal, "monto_pagado": v.monto_pagado or 0, "pagado": v.pagado, "notas": v.notas, "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""} for v in ventas]
 
 @app.get("/admin/encargados")
 def listar_encargados(db: Session = Depends(get_db)):
