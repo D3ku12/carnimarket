@@ -169,8 +169,8 @@ class VentaRequest(BaseModel):
     def sanitize_strings(cls, v):
         return sanitize_input(v)
     
-    @validator('kilos')
-    def validate_kilos(cls, v):
+    @validator('cantidad')
+    def validate_cantidad(cls, v):
         if v <= 0 or v > 1000:
             raise ValueError('Cantidad inválida')
         return v
