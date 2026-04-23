@@ -333,19 +333,20 @@ document.getElementById("tabla-ventas").innerHTML = data.map(v => {
                     <option value="debe" ${estadoActual === 'debe' ? 'selected' : ''}>Debe</option>
                 </select>
                 ${(saldo > 0 && estadoActual === 'debe') ? `<button type="button" onclick="abrirAbonoModal(${vid}, ${saldo})">Abonar</button>` : ''}
-                <button type="button" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, '${estadoActual}')">Editar</button>
+                <button type="button" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, ${montoPagado}, '${estadoActual}')">Editar</button>
                 <button type="button" onclick="eliminarVenta(${vid})">Borrar</button>
             </td>
         </tr>`;
     }).join("");
 }
 
-function prepararEdicionVenta(id, cliente, producto, kilos, pagado) {
+function prepararEdicionVenta(id, cliente, producto, kilos, montoPagado, pagado) {
     abrirModal('modal-editar-venta');
     document.getElementById("edit-venta-id").value = id;
     document.getElementById("edit-venta-cliente").value = cliente;
     document.getElementById("edit-venta-producto").value = producto;
     document.getElementById("edit-venta-gramos").value = Math.round(kilos * 1000);
+    document.getElementById("edit-venta-abono").value = montoPagado;
     document.getElementById("edit-venta-pagado").value = pagado;
 }
 
@@ -354,8 +355,10 @@ document.getElementById("form-editar-venta").onsubmit = async (e) => {
     const id = document.getElementById("edit-venta-id").value;
     const gramos = parseFloat(document.getElementById("edit-venta-gramos").value);
     const kilos = gramos / 1000;
+    const montoPagado = Number(document.getElementById("edit-venta-abono").value);
     const body = {
         kilos: kilos,
+        monto_pagado: montoPagado,
         pagado: document.getElementById("edit-venta-pagado").value
     };
     

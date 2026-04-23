@@ -742,6 +742,15 @@ def corregir_venta(id: int, data: dict, db: Session = Depends(get_db), token: st
         v.pagado = nuevo_estado
     
     if "notas" in data: v.notas = data["notas"]
+    if "monto_pagado" in data:
+        v.monto_pagado = float(data["monto_pagado"])
+        if v.monto_pagado >= v.subtotal:
+            v.pagado = "pagado"
+            v.fecha_pago = obtener_hora_colombia()
+        elif v.monto_pagado > 0:
+            v.pagado = "debe"
+        else:
+            v.pagado = "encargado"
     if "kilos" in data:
         dif = data["kilos"] - v.kilos
         p = db.query(Producto).filter(Producto.nombre == v.producto).first()
