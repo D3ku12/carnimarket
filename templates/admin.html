@@ -513,7 +513,10 @@
                 </div>
                 <div class="form-group">
                     <label>Contraseña</label>
-                    <input type="password" id="user-password" required>
+                    <div style="display:flex; gap:8px;">
+                        <input type="password" id="user-password" required style="flex:1">
+                        <button type="button" onclick="togglePassword('user-password', this)" style="padding:8px 12px;">👁️</button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Rol</label>
@@ -551,6 +554,6 @@
     </div>
 
     <datalist id="lista-clientes"></datalist>
-    <script src="/static/admin.js?v=10.25"></script>
+    <script src="/static/admin.js?v=10.26"></script>
 </body>
 </html>

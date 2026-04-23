@@ -49,6 +49,14 @@ function cerrarModal(id) {
     document.getElementById(id).classList.remove('open');
 }
 
+// Toggle password visibility
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (input) {
+        input.type = input.type === 'password' ? 'text' : 'password';
+    }
+}
+
 // --- 3. FUNCIONES DE CARGA (FETCH) ---
 
 async function filtrarDashboard() {
