@@ -67,7 +67,7 @@
             <div class="card">
                 <div class="card-header">
                     <h2>📦 Inventario de Carnes</h2>
-                    <button class="btn-primary" onclick="abrirModal('modal-producto')">
+                    <button class="btn-primary" onclick="abrirModal('modal-producto'); initModalProd();">
                         <i class="fas fa-plus"></i> Nuevo
                     </button>
                 </div>
@@ -318,7 +318,7 @@
                     </div>
                     <div class="form-group" style="flex:1">
                         <label>Stock Gramos (g)</label>
-                        <input type="number" id="prod-gramos" step="1" placeholder="0" style="display:none">
+                        <input type="number" id="prod-gramos" step="1" placeholder="0">
                     </div>
                     <div class="form-group" style="flex:1">
                         <label>Alerta Mínimo</label>
@@ -551,6 +551,6 @@
     </div>
 
     <datalist id="lista-clientes"></datalist>
-    <script src="/static/admin.js?v=10.24"></script>
+    <script src="/static/admin.js?v=10.25"></script>
 </body>
 </html>

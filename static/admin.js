@@ -424,6 +424,7 @@ function formatFechaGCal(fecha) {
 
 function prepararEdicionProd(nombre, info) {
     abrirModal('modal-producto');
+    initModalProd();
     document.getElementById("prod-id").value = info.id;
     document.getElementById("prod-nombre").value = nombre;
     // Separar stock en kilos y gramos
@@ -810,9 +811,14 @@ function cambiarTipoProducto() {
     document.getElementById("label-precio").textContent = tipo === "plato" ? "por Plato" : "por Kilo";
     // Ocultar/mostrar campo gramos según tipo
     const campoGramos = document.getElementById("prod-gramos");
-    if (campoGramos) {
-        campoGramos.parentElement.style.display = tipo === "plato" ? "none" : "block";
+    if (campoGramos && campoGramos.parentElement) {
+        campoGramos.parentElement.style.display = tipo === "plato" ? "none" : "";
     }
+}
+
+// Init tipo al abrir modal
+function initModalProd() {
+    cambiarTipoProducto();
 }
 
 // Verificar rol al cargar
