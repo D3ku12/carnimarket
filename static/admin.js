@@ -719,10 +719,20 @@ async function cargarSelectores() {
     
     const resC = await fetch("/admin/clientes");
     const clis = await resC.json();
+    window.clientesData = clis;
     const opts = clis.map(c => `<option value="${c.nombre}">`).join("");
     document.getElementById("lista-clientes").innerHTML = opts;
     document.getElementById("venta-cliente").innerHTML = `<option value="">Cliente General</option>` + 
         clis.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join("");
+}
+
+function cargarDireccionCliente() {
+    const select = document.getElementById("venta-cliente");
+    const nombre = select.value;
+    const cliente = window.clientesData?.find(c => c.nombre === nombre);
+    if (cliente && cliente.direccion) {
+        document.getElementById("venta-direccion").value = cliente.direccion;
+    }
 }
 
 // Actualizar campos según tipo de producto

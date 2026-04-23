@@ -386,7 +386,7 @@
                 
                 <div class="form-group">
                     <label>Cliente</label>
-                    <select id="venta-cliente">
+                    <select id="venta-cliente" onchange="cargarDireccionCliente()">
                         <option value="">Cliente General</option>
                     </select>
                     <datalist id="lista-clientes"></datalist>
@@ -543,6 +543,6 @@
     </div>
 
     <datalist id="lista-clientes"></datalist>
-    <script src="/static/admin.js?v=10.14"></script>
+    <script src="/static/admin.js?v=10.15"></script>
 </body>
 </html>
