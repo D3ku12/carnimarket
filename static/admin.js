@@ -195,12 +195,8 @@ async function confirmarEncargo(id, estado) {
     console.log("Resultado:", data);
     if (res.ok) {
         cargarEncargados();
-        cargarVentas();
+cargarVentas();
         cargarDashboard();
-    } else {
-        alert("Error: " + (data.error || "Unknown"));
-    }
-}
     } else {
         alert("Error: " + (data.error || "Unknown"));
     }
