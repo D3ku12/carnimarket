@@ -171,9 +171,10 @@ async function cargarEncargados() {
             <td>${v.cliente}</td>
             <td>${v.producto}</td>
             <td>$${v.subtotal}</td>
-            <td>
+            <td style="display:flex; gap:4px; flex-wrap:wrap;">
                 <button type="button" onclick="confirmarEncargo(${v.id}, 'pagado')">Pagado ✅</button>
                 <button type="button" onclick="confirmarEncargo(${v.id}, 'debe')">Debe ❌</button>
+                <button type="button" onclick="eliminarVenta(${v.id})">Borrar</button>
             </td>
         </tr>
     `).join("");
@@ -334,10 +335,12 @@ document.getElementById("tabla-ventas").innerHTML = data.map(v => {
             <td>$${v.subtotal}</td>
             <td>${v.pagado}</td>
             <td>${v.fecha_vencimiento || "-"}</td>
-            <td>
+            <td style="display:flex; gap:4px; flex-wrap:wrap;">
                 <button type="button" onclick="cambiarEstadoVenta(${vid}, 'encargado')">Encargo</button>
                 <button type="button" onclick="cambiarEstadoVenta(${vid}, 'pagado')">Pagado</button>
                 <button type="button" onclick="cambiarEstadoVenta(${vid}, 'debe')">Debe</button>
+                <button type="button" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, '${v.pagado}')">Editar</button>
+                <button type="button" onclick="eliminarVenta(${vid})">Borrar</button>
             </td>
         </tr>`;
     }).join("");
