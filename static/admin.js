@@ -290,8 +290,8 @@ async function filtrarVentas() {
     const res = await fetch(url);
     const data = await res.json();
     document.getElementById("tabla-ventas").innerHTML = data.map(v => {
-        const vid = v.id || 0;
-        console.log("Venta ID:", vid);
+        const vid = v.id;
+        console.log("Venta:", vid, v.cliente);
         return `
         <tr>
             <td><small>${v.fecha_venta}</small></td>
@@ -301,7 +301,7 @@ async function filtrarVentas() {
             <td><span class="badge ${v.pagado}">${v.pagado}</span></td>
             <td>${v.fecha_vencimiento || "—"}</td>
             <td>
-                <select onchange="cambiarEstadoVenta(${vid}, this.value)" style="padding:8px; border-radius:6px; border:1px solid #ddd; margin-bottom:4px;">
+                <select onchange="console.log('change', ${vid}, this.value); cambiarEstadoVenta(${vid}, this.value)" style="padding:8px; border-radius:6px; border:1px solid #ddd; margin-bottom:4px;">
                     <option value="">Cambiar Estado</option>
                     <option value="encargado">En Cargo</option>
                     <option value="pagado">Pagado</option>
