@@ -19,6 +19,7 @@ async function showTab(name, btn) {
     if (name === 'dashboard') await cargarDashboard();
     if (name === 'inventario') await cargarInventario();
     if (name === 'ventas') { await cargarVentas(); await cargarSelectores(); }
+    if (name === 'encargados') await cargarEncargados();
     if (name === 'caja') await cargarCaja();
     if (name === 'clientes') await cargarClientes();
     if (name === 'gastos') await cargarGastos();
@@ -169,6 +170,32 @@ async function cargarGastos() {
             </td>
         </tr>
     `).join("");
+}
+
+async function cargarEncargados() {
+    const res = await fetch("/admin/encargados");
+    const data = await res.json();
+    document.getElementById("tabla-encargados").innerHTML = data.map(v => `
+        <tr>
+            <td><small>${v.fecha_venta}</small></td>
+            <td>${v.cliente}</td>
+            <td>${v.producto} (${Math.round(v.kilos * 1000)}g)</td>
+            <td>$${v.subtotal.toLocaleString()}</td>
+            <td>
+                <button class="btn-primary" onclick="toggleEncargado(${v.id})"><i class="fas fa-check"></i> Confirmar</button>
+                <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${v.id})"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>
+    `).join("");
+}
+
+async function toggleEncargado(id) {
+    const res = await fetch(`/admin/encargados/toggle/${id}`, { method: "PUT" });
+    if (res.ok) {
+        cargarEncargados();
+    } else {
+        alert("Error al cambiar estado");
+    }
 }
 
 async function cargarCaja() {

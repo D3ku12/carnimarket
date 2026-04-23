@@ -23,6 +23,7 @@
             <button class="active" onclick="showTab('dashboard', this)"><i class="fas fa-chart-line"></i></button>
             <button onclick="showTab('inventario', this)"><i class="fas fa-box"></i></button>
             <button onclick="showTab('ventas', this)"><i class="fas fa-receipt"></i></button>
+            <button onclick="showTab('encargados', this)"><i class="fas fa-clock"></i></button>
             <button onclick="showTab('caja', this)"><i class="fas fa-cash-register"></i></button>
             <button onclick="showTab('clientes', this)"><i class="fas fa-users"></i></button>
             <button onclick="showTab('gastos', this)"><i class="fas fa-wallet"></i></button>
@@ -120,6 +121,29 @@
                             </tr>
                         </thead>
                         <tbody id="tabla-ventas"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-encargados" class="tab">
+            <div class="card">
+                <div class="card-header">
+                    <h2>⏳ Pedidos en Encargo</h2>
+                </div>
+                <p style="margin-bottom:12px; color:var(--gray-500)">Ventas que están pendientes de confirmar. No se descuenta del inventario hasta confirmar.</p>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Detalle</th>
+                                <th>Total</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-encargados"></tbody>
                     </table>
                 </div>
             </div>
@@ -355,6 +379,7 @@
                 <div class="form-group">
                     <label>Estado de Pago</label>
                     <select id="venta-pagado">
+                        <option value="encargado">En Cargo ⏳</option>
                         <option value="pagado">Pagado ✅</option>
                         <option value="debe">Debe ❌</option>
                     </select>
@@ -388,6 +413,7 @@
                 <div class="form-group">
                     <label>Estado</label>
                     <select id="edit-venta-pagado" required>
+                        <option value="encargado">En Cargo</option>
                         <option value="pagado">Pagado</option>
                         <option value="debe">Debe</option>
                     </select>
@@ -469,6 +495,6 @@
     </div>
 
     <datalist id="lista-clientes"></datalist>
-    <script src="/static/admin.js?v=9.2"></script>
+    <script src="/static/admin.js?v=9.3"></script>
 </body>
 </html>

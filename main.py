@@ -159,7 +159,7 @@ class VentaRequest(BaseModel):
     cantidad: float  # kilos, gramos (se convierte a kilos), o platos
     unidad: str = "kilo"  # "kilo", "gramos", "plato"
     cliente_nombre: str = "Cliente general"
-    pagado: str = "pagado"
+    pagado: str = "encargado"  #默认为encargado
     fecha_venta: Optional[str] = None
     fecha_vencimiento: Optional[str] = None
     notas: str = ""
@@ -531,19 +531,20 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
     if not p: return {"error": "El producto no existe"}
     
     tipo_producto = getattr(p, 'tipo', 'kilo') or 'kilo'
+    es_encargado = v.pagado == "encargado"
     
     # Convertir según el tipo de venta y producto
     if tipo_producto == "plato":
-        # Solo acepta platos
         if v.unidad != "plato":
             return {"error": "Este producto se vende solo por platos"}
         if v.cantidad > p.stock:
             return {"error": f"Stock insuficiente ({int(p.stock)} platos)"}
-        p.stock -= v.cantidad
-        kilos = 0  # Los platos no se cuentan en kilos para el historial
+        # Solo descontar si NO es encargado
+        if not es_encargado:
+            p.stock -= v.cantidad
+        kilos = 0
         total = v.cantidad * p.precio_kilo
     else:
-        # Productos por kilo
         if v.unidad == "gramos":
             kilos = v.cantidad / 1000
         elif v.unidad == "plato":
@@ -554,7 +555,9 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
         if kilos > p.stock:
             return {"error": f"Stock insuficiente ({p.stock}kg)"}
         
-        p.stock -= kilos
+        # Solo descontar si NO es encargado
+        if not es_encargado:
+            p.stock -= kilos
         total = kilos * p.precio_kilo
     
     ahora = obtener_hora_colombia()
@@ -611,6 +614,36 @@ def listar_ventas(
     ventas = query.order_by(Venta.fecha_venta.desc()).limit(150).all()
     return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "pagado": v.pagado, "notas": v.notas, "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""} for v in ventas]
 
+@app.get("/admin/encargados")
+def listar_encargados(db: Session = Depends(get_db)):
+    ventas = db.query(Venta).filter(Venta.pagado == "encargado").order_by(Venta.fecha_venta.desc()).all()
+    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "notas": v.notas} for v in ventas]
+
+@app.get("/admin/encargados/toggle/{id}")
+def toggle_encargado(id: int, db: Session = Depends(get_db)):
+    v = db.query(Venta).filter(Venta.id == id).first()
+    if not v: return {"error": "No existe"}
+    
+    p = db.query(Producto).filter(Producto.nombre == v.producto).first()
+    
+    # Si cambia de encargado a pagado/debe: descontar stock
+    if v.pagado == "encargado" and p:
+        p.stock -= v.kilos
+    # Si cambia de pagado/debe a encargado: restaurar stock
+    elif v.pagado != "encargado" and p:
+        p.stock += v.kilos
+    
+    # Nuevo estado
+    if v.pagado == "encargado":
+        v.pagado = "pagado"
+    elif v.pagado == "pagado":
+        v.pagado = "debe"
+    else:
+        v.pagado = "encargado"
+    
+    db.commit()
+    return {"mensaje": "Estado actualizado", "pagado": v.pagado}
+    
 @app.put("/admin/venta/{id}")
 def corregir_venta(id: int, data: dict, db: Session = Depends(get_db), token: str = Cookie(default=None)):
     if not verificar_token(token):
@@ -636,7 +669,13 @@ def corregir_venta(id: int, data: dict, db: Session = Depends(get_db), token: st
 def toggle_pago_venta(id: int, db: Session = Depends(get_db)):
     v = db.query(Venta).filter(Venta.id == id).first()
     if not v: return {"error": "No existe"}
-    v.pagado = "pagado" if v.pagado == "debe" else "debe"
+    #轮回切换: encargado -> pagado -> debe -> encargado
+    if v.pagado == "encargado":
+        v.pagado = "pagado"
+    elif v.pagado == "pagado":
+        v.pagado = "debe"
+    else:
+        v.pagado = "encargado"
     db.commit()
     return {"mensaje": "Estado de pago actualizado", "pagado": v.pagado}
 
