@@ -182,21 +182,37 @@ async function cargarEncargados() {
             <td>${v.producto} (${Math.round(v.kilos * 1000)}g)</td>
             <td>$${v.subtotal.toLocaleString()}</td>
             <td>
-                <button class="btn-primary" onclick="toggleEncargado(${v.id})"><i class="fas fa-check"></i> Confirmar</button>
+                <button class="btn-primary" onclick="abrirCambiarEstado(${v.id})"><i class="fas fa-check"></i> Confirmar</button>
                 <button class="btn-primary" style="background:var(--danger)" onclick="eliminarVenta(${v.id})"><i class="fas fa-trash"></i></button>
             </td>
         </tr>
     `).join("");
 }
 
-async function toggleEncargado(id) {
-    const res = await fetch(`/admin/encargados/toggle/${id}`, { method: "PUT" });
-    if (res.ok) {
-        cargarEncargados();
-    } else {
-        alert("Error al cambiar estado");
-    }
+function abrirCambiarEstado(id) {
+    document.getElementById("cambio-id").value = id;
+    abrirModal("modal-cambiar-estado");
 }
+
+document.getElementById("form-cambiar-estado").onsubmit = async (e) => {
+    e.preventDefault();
+    const id = document.getElementById("cambio-id").value;
+    const estado = document.getElementById("cambio-estado").value;
+    
+    const res = await fetch(`/admin/encargados/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado })
+    });
+    
+    if (res.ok) {
+        cerrarModal("modal-cambiar-estado");
+        cargarEncargados();
+        cargarDashboard();
+    } else {
+        alert("Error al confirmar");
+    }
+};
 
 async function cargarCaja() {
     filtrarCaja();

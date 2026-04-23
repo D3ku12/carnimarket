@@ -643,6 +643,25 @@ def toggle_encargado(id: int, db: Session = Depends(get_db)):
     
     db.commit()
     return {"mensaje": "Estado actualizado", "pagado": v.pagado}
+
+@app.put("/admin/encargados/{id}")
+def confirmar_encargado(id: int, data: dict, db: Session = Depends(get_db)):
+    v = db.query(Venta).filter(Venta.id == id).first()
+    if not v: return {"error": "No existe"}
+    
+    nuevo_estado = data.get("estado", "pagado")
+    if nuevo_estado not in ["pagado", "debe"]:
+        return {"error": "Estado inválido"}
+    
+    p = db.query(Producto).filter(Producto.nombre == v.producto).first()
+    
+    # Solo descontar stock si venia de encargado
+    if v.pagado == "encargado" and p and v.kilos:
+        p.stock -= v.kilos
+    
+    v.pagado = nuevo_estado
+    db.commit()
+    return {"mensaje": "Pedido confirmado", "pagado": v.pagado}
     
 @app.put("/admin/venta/{id}")
 def corregir_venta(id: int, data: dict, db: Session = Depends(get_db), token: str = Cookie(default=None)):

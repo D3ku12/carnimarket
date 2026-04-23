@@ -274,6 +274,7 @@ button,
 
 .badge.pagado { background: #dcfce7; color: #166534; }
 .badge.debe { background: #fee2e2; color: #991b1b; }
+.badge.encargado { background: #fef3c7; color: #92400e; }
 .badge.admin { background: var(--primary); color: var(--white); }
 .badge.dueno { background: #581c87; color: var(--white); }
 .badge.empleado { background: #1e40af; color: var(--white); }

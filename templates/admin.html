@@ -149,6 +149,28 @@
             </div>
         </section>
 
+    <!-- Modal para cambiar estado de encargado -->
+    <div id="modal-cambiar-estado" class="modal-overlay">
+        <div class="modal">
+            <h3>Confirmar Pedido</h3>
+            <p style="margin-bottom:16px; color:var(--gray-500)">Selecciona el nuevo estado del pedido:</p>
+            <form id="form-cambiar-estado">
+                <input type="hidden" id="cambio-id">
+                <div class="form-group">
+                    <label>Nuevo Estado</label>
+                    <select id="cambio-estado" required>
+                        <option value="pagado">Pagado ✅</option>
+                        <option value="debe">Debe ❌</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="cerrarModal('modal-cambiar-estado')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
         <section id="tab-caja" class="tab">
             <div class="card">
                 <h2>💰 Estado de Caja</h2>
