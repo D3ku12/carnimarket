@@ -335,7 +335,7 @@ document.getElementById("tabla-ventas").innerHTML = data.map(v => {
             <td>${estadoActual}</td>
             <td>${v.fecha_vencimiento || "-"}</td>
             <td>
-                <select onchange="if(this.value)cambiarEstadoVenta(${vid}, this.value)">
+                <select onchange="if(this.value)cambiarEstadoVenta(${vid}, this.value, ${saldo})">
                     <option value="">Cambiar a:</option>
                     <option value="encargado" ${estadoActual === 'encargado' ? 'selected' : ''}>En Cargo</option>
                     <option value="pagado" ${estadoActual === 'pagado' ? 'selected' : ''}>Pagado</option>
@@ -614,8 +614,15 @@ async function togglePago(id) {
     }
 }
 
-async function cambiarEstadoVenta(id, nuevoEstado) {
+async function cambiarEstadoVenta(id, nuevoEstado, saldo) {
     if (!nuevoEstado || !id) return;
+    
+    // Si saldo es 0, solo permitir cambiar a pagado
+    if (saldo <= 0 && nuevoEstado !== "pagado") {
+        alert("Esta venta ya está pagada (saldo en 0). Solo puede cambiar a pagado.");
+        cargarVentas();
+        return;
+    }
     
     const res = await fetch("/api/cambiar-estado", {
         method: "POST",
