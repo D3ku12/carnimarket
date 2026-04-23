@@ -582,6 +582,7 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
         kilos=kilos,
         precio_kilo=p.precio_kilo,
         subtotal=total,
+        monto_pagado=total if v.pagado == "pagado" else 0,
         fecha_venta=fecha_venta,
         fecha_vencimiento=fecha_vencimiento,
         cliente_nombre=v.cliente_nombre,
@@ -613,12 +614,12 @@ def listar_ventas(
         query = query.filter(Venta.fecha_venta <= ff)
     
     ventas = query.order_by(Venta.fecha_venta.desc()).limit(150).all()
-    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "pagado": v.pagado, "notas": v.notas, "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""} for v in ventas]
+    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "monto_pagado": v.monto_pagado or 0, "pagado": v.pagado, "notas": v.notas, "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""} for v in ventas]
 
 @app.get("/admin/encargados")
 def listar_encargados(db: Session = Depends(get_db)):
     ventas = db.query(Venta).filter(Venta.pagado == "encargado").order_by(Venta.fecha_venta.desc()).all()
-    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "notas": v.notas} for v in ventas]
+    return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "monto_pagado": v.monto_pagado or 0, "notas": v.notas} for v in ventas]
 
 @app.get("/admin/encargados/toggle/{id}")
 def toggle_encargado(id: int, db: Session = Depends(get_db)):
@@ -683,6 +684,33 @@ async def cambiar_estado(request: Request, db: Session = Depends(get_db)):
         v.pagado = estado
         db.commit()
         return {"OK": True, "pagado": v.pagado}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/registrar-abono")
+def registrar_abono(request: Request, db: Session = Depends(get_db)):
+    try:
+        body = await request.json()
+        id_val = int(body.get("id", 0))
+        monto = float(body.get("monto", 0))
+        
+        v = db.query(Venta).filter(Venta.id == id_val).first()
+        if not v:
+            return {"error": "Venta no existe"}
+        
+        if monto <= 0:
+            return {"error": "Monto debe ser mayor a 0"}
+        
+        v.monto_pagado = (v.monto_pagado or 0) + monto
+        
+        if v.monto_pagado >= v.subtotal:
+            v.pagado = "pagado"
+            v.fecha_pago = obtener_hora_colombia()
+        elif v.monto_pagado > 0:
+            v.pagado = "debe"
+        
+        db.commit()
+        return {"OK": True, "monto_pagado": v.monto_pagado, "saldo": v.subtotal - v.monto_pagado, "pagado": v.pagado}
     except Exception as e:
         return {"error": str(e)}
 

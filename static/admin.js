@@ -316,11 +316,15 @@ async function filtrarVentas() {
 document.getElementById("tabla-ventas").innerHTML = data.map(v => {
         const vid = Number(v.id);
         const estadoActual = v.pagado || "encargado";
+        const montoPagado = v.monto_pagado || 0;
+        const saldo = v.subtotal - montoPagado;
         return `<tr>
             <td>${v.fecha_venta}</td>
             <td>${v.cliente}</td>
             <td>${v.producto}</td>
             <td>$${v.subtotal}</td>
+            <td>$${montoPagado}</td>
+            <td style="color:${saldo > 0 ? 'red' : 'green'}">$${saldo}</td>
             <td>${estadoActual}</td>
             <td>${v.fecha_vencimiento || "-"}</td>
             <td>
@@ -330,6 +334,7 @@ document.getElementById("tabla-ventas").innerHTML = data.map(v => {
                     <option value="pagado" ${estadoActual === 'pagado' ? 'selected' : ''}>Pagado</option>
                     <option value="debe" ${estadoActual === 'debe' ? 'selected' : ''}>Debe</option>
                 </select>
+                ${saldo > 0 ? `<button type="button" onclick="abrirAbonoModal(${vid}, ${saldo})">Abonar</button>` : ''}
                 <button type="button" onclick="prepararEdicionVenta(${vid}, '${v.cliente}', '${v.producto}', ${v.kilos}, '${estadoActual}')">Editar</button>
                 <button type="button" onclick="eliminarVenta(${vid})">Borrar</button>
             </td>
@@ -649,6 +654,38 @@ async function eliminarVenta(id) {
         } else {
             alert("Error al eliminar venta");
         }
+    }
+}
+
+function abrirAbonoModal(id, saldo) {
+    document.getElementById("abono-id").value = id;
+    document.getElementById("abono-saldo").textContent = "Saldo: $" + saldo;
+    abrirModal("modal-abono");
+}
+
+async function registrarAbono() {
+    const id = document.getElementById("abono-id").value;
+    const monto = Number(document.getElementById("abono-monto").value);
+    
+    if (!id || monto <= 0) {
+        alert("Ingrese un monto válido");
+        return;
+    }
+    
+    const res = await fetch("/api/registrar-abono", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: Number(id), monto: monto })
+    });
+    
+    const data = await res.json();
+    if (res.ok) {
+        alert("Abono registrado: $" + monto + ". Saldo restante: $" + data.saldo);
+        cerrarModal("modal-abono");
+        cargarVentas();
+        cargarDashboard();
+    } else {
+        alert("Error: " + (data.error || "Unknown"));
     }
 }
 

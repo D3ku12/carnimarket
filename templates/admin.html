@@ -115,6 +115,8 @@
                                 <th>Cliente</th>
                                 <th>Detalle</th>
                                 <th>Total</th>
+                                <th>Abono</th>
+                                <th>Saldo</th>
                                 <th>Estado</th>
                                 <th>Vencimiento</th>
                                 <th>Acción</th>
@@ -521,7 +523,26 @@
         </div>
     </div>
 
+    <!-- Modal Abono -->
+    <div id="modal-abono" class="modal-overlay">
+        <div class="modal">
+            <h3>Registrar Abono</h3>
+            <p id="abono-saldo" style="margin-bottom:16px; color:var(--primary); font-weight:bold;"></p>
+            <form id="form-abono" onsubmit="event.preventDefault(); registrarAbono();">
+                <input type="hidden" id="abono-id">
+                <div class="form-group">
+                    <label>Monto del abono</label>
+                    <input type="number" id="abono-monto" placeholder="Ej: 10000" step="100" min="1" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="cerrarModal('modal-abono')">Cerrar</button>
+                    <button type="submit" class="btn-primary">Registrar Abono</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <datalist id="lista-clientes"></datalist>
-    <script src="/static/admin.js?v=10.6"></script>
+    <script src="/static/admin.js?v=10.7"></script>
 </body>
 </html>

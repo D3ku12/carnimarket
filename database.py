@@ -56,6 +56,7 @@ class Venta(Base):
     kilos = Column(Float)
     precio_kilo = Column(Float)
     subtotal = Column(Float)
+    monto_pagado = Column(Float, default=0)
     cliente_id = Column(Integer, default=None)
     cliente_nombre = Column(String, default="Cliente general")
     direccion = Column(String, default="")
@@ -99,6 +100,11 @@ def init_db():
             columnas_ventas = [c['name'] for c in inspector.get_columns('ventas')]
             if 'direccion' not in columnas_ventas:
                 conn.execute(text("ALTER TABLE ventas ADD COLUMN direccion VARCHAR DEFAULT ''"))
+                conn.commit()
+            
+            # Migration: agregar columna monto_pagado a ventas
+            if 'monto_pagado' not in columnas_ventas:
+                conn.execute(text("ALTER TABLE ventas ADD COLUMN monto_pagado FLOAT DEFAULT 0"))
                 conn.commit()
     except Exception as e:
         print(f"Migration error: {e}")
