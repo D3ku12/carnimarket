@@ -750,17 +750,11 @@ def eliminar_venta(id: int, db: Session = Depends(get_db)):
     v = db.query(Venta).filter(Venta.id == id).first()
     if not v: return {"error": "No existe"}
     
-    # Restaurar stock basado en la unidad original
+    # Restaurar stock usando los kilos guardados
     p = db.query(Producto).filter(Producto.nombre == v.producto).first()
-    if p:
-        tipo_producto = getattr(p, 'tipo', 'kilo') or 'kilo'
-        if tipo_producto == "plato":
-            if getattr(v, 'cantidad', 0):
-                p.stock += v.cantidad
-        else:
-            # Para kilo/gramos, restaurar los kilos guardados
-            if v.kilos:
-                p.stock += v.kilos
+    if p and v.kilos:
+        print(f"Eliminando venta {id}: restaurar {v.kilos}kg al stock de {v.producto}")
+        p.stock += v.kilos
     
     db.delete(v)
     db.commit()
