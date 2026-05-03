@@ -276,9 +276,10 @@ button, .btn-primary {
 td .btn-primary { padding:8px 12px; font-size:.78rem; margin:2px; border-radius:6px; }
 td select {
     padding:8px; font-size:.8rem; border-radius:6px;
-    border:1px solid var(--border); background:var(--bg-card);
+    border:1px solid var(--border); background:var(--bg-card); color:var(--text);
     min-width:110px; font-family:inherit;
 }
+td select option { background:var(--bg-card); color:var(--text); }
 
 /* ===== BADGES ===== */
 .badge {
