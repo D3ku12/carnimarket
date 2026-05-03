@@ -7,7 +7,7 @@
   <title>CarniMarket — Login</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥩</text></svg>">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="stylesheet" href="/static/admin.css?v=11.1">
+  <link rel="stylesheet" href="/static/admin.css?v=11.3">
   <style>
     body {
       display: flex; align-items: center; justify-content: center;
@@ -38,9 +38,10 @@
     .logo p { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; }
     
     .input-wrapper { position: relative; }
-    .input-wrapper i {
+    .input-wrapper > i {
       position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
       color: var(--text-muted); font-size: 1rem; transition: var(--transition);
+      pointer-events: none;
     }
     .form-group input { padding-left: 42px; }
     .form-group input:focus + i, .form-group input:focus ~ i { color: var(--primary); }
