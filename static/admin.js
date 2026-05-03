@@ -920,12 +920,43 @@ async function cargarUsuarios() {
                 <td data-label="Estado">${u.activo ? '<span class="badge pagado">Activo</span>' : '<span class="badge debe">Inactivo</span>'}</td>
                 <td data-label="Último Login">${u.ultimo_login || '-'}</td>
                 <td data-label="Acciones">
+                    <button class="btn-primary" onclick="prepararEdicionUsuario(${u.id}, '${u.email}', '${u.nombre}', '${u.rol}', ${u.activo})"><i class="fas fa-edit"></i></button>
                     <button class="btn-primary" style="background:var(--danger)" onclick="eliminarUsuario(${u.id})"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>
         `).join("");
     } catch(e) { showToast("Error", "error"); }
 }
+
+function prepararEdicionUsuario(id, email, nombre, rol, activo) {
+    abrirModal("modal-usuario");
+    document.getElementById("user-id").value = id;
+    document.getElementById("user-email").value = email;
+    document.getElementById("user-email").readOnly = true; // No permitimos cambiar email
+    document.getElementById("user-nombre").value = nombre;
+    document.getElementById("user-password").required = false;
+    document.getElementById("pwd-help").style.display = "inline";
+    document.getElementById("user-rol").value = rol;
+    document.getElementById("user-activo").value = activo ? "true" : "false";
+    document.getElementById("group-activo").style.display = "block";
+    document.getElementById("titulo-modal-usuario").innerHTML = '<i class="fas fa-user-edit"></i> Editar Usuario';
+    document.getElementById("btn-submit-usuario").textContent = "Guardar Cambios";
+}
+
+// Override abrirModal para limpiar estado de edición al crear nuevo
+const originalAbrirModal = abrirModal;
+abrirModal = function(id) {
+    originalAbrirModal(id);
+    if (id === "modal-usuario") {
+        document.getElementById("user-id").value = "";
+        document.getElementById("user-email").readOnly = false;
+        document.getElementById("user-password").required = true;
+        document.getElementById("pwd-help").style.display = "none";
+        document.getElementById("group-activo").style.display = "none";
+        document.getElementById("titulo-modal-usuario").innerHTML = '<i class="fas fa-user-gear"></i> Nuevo Usuario';
+        document.getElementById("btn-submit-usuario").textContent = "Crear Usuario";
+    }
+};
 
 function eliminarUsuario(id) {
     showConfirm("Eliminar Usuario", "¿Estás seguro de eliminar este usuario?", async () => {
@@ -937,20 +968,41 @@ function eliminarUsuario(id) {
 
 document.getElementById("form-usuario").onsubmit = async (e) => {
     e.preventDefault();
+    const btn = document.getElementById("btn-submit-usuario");
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    btn.disabled = true;
+
     try {
+        const id = document.getElementById("user-id").value;
         const body = {
             email: document.getElementById("user-email").value,
             nombre: document.getElementById("user-nombre").value,
-            password: document.getElementById("user-password").value,
             rol: document.getElementById("user-rol").value
         };
-        const res = await fetch("/admin/usuario", {
-            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+        
+        const pwd = document.getElementById("user-password").value;
+        if (pwd) body.password = pwd;
+        
+        if (id) {
+            body.activo = document.getElementById("user-activo").value === "true";
+        }
+
+        const url = id ? `/admin/usuario/${id}` : "/admin/usuario";
+        const method = id ? "PUT" : "POST";
+
+        const res = await fetch(url, {
+            method: method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
         });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
-        showToast("Usuario creado", "success");
+        
+        showToast(id ? "Usuario actualizado" : "Usuario creado", "success");
         cerrarModal("modal-usuario");
         cargarUsuarios();
-    } catch(err) { showToast(err.message, "error"); }
+    } catch(err) { 
+        showToast(err.message, "error"); 
+    } finally {
+        btn.innerHTML = document.getElementById("user-id").value ? "Guardar Cambios" : "Crear Usuario";
+        btn.disabled = false;
+    }
 };
