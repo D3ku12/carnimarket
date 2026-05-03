@@ -2,135 +2,225 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#f8f7f4">
   <title>CarniMarket — Login</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥩</text></svg>">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/admin.css">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: Arial, sans-serif;
-      background: #1a1a1a;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: var(--bg);
+      background-image: radial-gradient(circle at top right, rgba(196,69,54,0.1) 0%, transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(240,160,80,0.1) 0%, transparent 40%);
+      padding: 20px;
     }
+    .login-wrapper { width: 100%; max-width: 400px; }
     .card {
-      background: white; border-radius: 16px;
-      padding: 40px 32px; width: 100%;
-      max-width: 380px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      padding: 40px 32px;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+      border: 1px solid rgba(255,255,255,0.5);
+      transform: translateY(0); animation: floatUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .logo {
-      text-align: center; margin-bottom: 28px;
+    [data-theme="dark"] .card { background: rgba(26, 26, 26, 0.95); border-color: rgba(255,255,255,0.05); }
+    @keyframes floatUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .logo { text-align: center; margin-bottom: 32px; }
+    .logo-icon {
+      font-size: 3rem; background: var(--primary-gradient);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 12px; display: inline-block;
     }
-    .logo h1 { font-size: 24px; color: #1a1a1a; }
-    .logo p { font-size: 13px; color: #999; margin-top: 4px; }
-    .badge {
-      background: #c0392b; color: white;
-      font-size: 11px; padding: 3px 10px;
-      border-radius: 99px; margin-top: 8px;
-      display: inline-block;
+    .logo h1 { font-size: 1.5rem; color: var(--text); font-weight: 800; letter-spacing: -0.5px; }
+    .logo p { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; }
+    
+    .input-wrapper { position: relative; }
+    .input-wrapper i {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); font-size: 1rem; transition: var(--transition);
     }
-    label {
-      display: block; font-size: 13px;
-      font-weight: bold; margin-bottom: 6px;
-      color: #333;
+    .form-group input { padding-left: 42px; }
+    .form-group input:focus + i, .form-group input:focus ~ i { color: var(--primary); }
+    
+    .password-toggle {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; padding: 5px; font-size: 1rem;
     }
-    input {
-      width: 100%; padding: 12px; border-radius: 8px;
-      border: 1px solid #ddd; font-size: 14px;
-      margin-bottom: 16px;
+    .password-toggle:hover { color: var(--text); }
+    
+    button { width: 100%; height: 48px; margin-top: 8px; font-size: 1rem; }
+    
+    .forgot-link {
+      text-align: center; margin-top: 24px; font-size: 0.85rem;
     }
-    input:focus { outline: none; border-color: #c0392b; }
-    button {
-      width: 100%; padding: 13px;
-      background: #c0392b; color: white;
-      border: none; border-radius: 8px;
-      font-size: 15px; font-weight: bold;
-      cursor: pointer;
-    }
-    button:hover { background: #a93226; }
-    .error {
-      background: #fdecea; color: #c0392b;
-      padding: 10px; border-radius: 8px;
-      font-size: 13px; margin-bottom: 16px;
-      display: none;
+    .forgot-link a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+    .forgot-link a:hover { color: var(--primary); }
+    
+    #recuperar {
+      margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border);
+      display: none; animation: fadeIn 0.3s ease;
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="logo">
-      <h1>🥩 CarniMarket</h1>
-      <p>Panel de administración</p>
-      <span class="badge">Acceso restringido</span>
-    </div>
-    <div id="error" class="error">❌ Email o contraseña incorrectos</div>
-    <label>Email</label>
-    <input type="email" id="email" placeholder="correo@ejemplo.com">
-    <label>Contraseña</label>
-    <div style="position:relative">
-        <input type="password" id="password">
-        <button type="button" onclick="this.previousElementSibling.type = this.previousElementSibling.type === 'password' ? 'text' : 'password'" style="position:absolute; right:8px; top:32px; background:none; border:none; cursor:pointer;">👁️</button>
-    </div>
-    <button onclick="login()">Entrar</button>
-    <p style="text-align:center; margin-top:15px;">
-        <a href="#" onclick="showRecuperar(); return false;" style="color:#999; font-size:13px;">¿Olvidaste tu contraseña?</a>
-    </p>
-    <div id="recuperar" style="display:none; margin-top:20px; padding-top:20px; border-top:1px solid #eee;">
-        <h3 style="margin-bottom:15px;">Recuperar contraseña</h3>
-        <div id="msg-recuperar" class="error" style="display:none; margin-bottom:15px;"></div>
-        <label>Tu email</label>
-        <input type="email" id="email-recuperar" placeholder="correo@ejemplo.com">
-        <button onclick="recuperarContrasena()" style="background:#27ae60;">Enviar enlace de recuperación</button>
+  
+  <div class="toast-container" id="toast-container"></div>
+
+  <div class="login-wrapper">
+    <div class="card">
+      <div class="logo">
+        <i class="fas fa-drumstick-bite logo-icon"></i>
+        <h1>CarniMarket</h1>
+        <p>Panel de Administración</p>
+      </div>
+      
+      <div class="form-group">
+        <label>Email</label>
+        <div class="input-wrapper">
+          <input type="email" id="email" placeholder="correo@ejemplo.com" autocomplete="email">
+          <i class="fas fa-envelope"></i>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Contraseña</label>
+        <div class="input-wrapper">
+          <input type="password" id="password" autocomplete="current-password">
+          <i class="fas fa-lock"></i>
+          <button type="button" class="password-toggle" onclick="togglePassword('password', this)">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </div>
+      
+      <button onclick="login()" id="btn-login">Ingresar <i class="fas fa-arrow-right" style="margin-left:4px"></i></button>
+      
+      <div class="forgot-link">
+        <a href="#" onclick="showRecuperar(); return false;">¿Olvidaste tu contraseña?</a>
+      </div>
+      
+      <div id="recuperar">
+        <h3 style="font-size:1rem; margin-bottom:12px;"><i class="fas fa-key"></i> Recuperar acceso</h3>
+        <div class="form-group">
+          <div class="input-wrapper">
+            <input type="email" id="email-recuperar" placeholder="Tu email registrado">
+            <i class="fas fa-at"></i>
+          </div>
+        </div>
+        <button onclick="recuperarContrasena()" class="btn-secondary" id="btn-recover" style="width:100%">Enviar enlace</button>
+      </div>
     </div>
   </div>
 
 <script>
+    // Theme init from admin.css logic
+    (function() {
+        if (localStorage.getItem('cm-theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    })();
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const icons = { success:'fa-check-circle', error:'fa-times-circle', warning:'fa-exclamation-triangle', info:'fa-info-circle' };
+        const toast = document.createElement('div');
+        toast.className = 'toast ' + type;
+        toast.innerHTML = `<i class="fas ${icons[type]}"></i><span>${message}</span><div class="toast-progress"></div>`;
+        container.appendChild(toast);
+        setTimeout(() => { toast.style.animation = 'toastOut .3s ease forwards'; setTimeout(() => toast.remove(), 300); }, 3500);
+    }
+
+    function togglePassword(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    }
+
     async function login() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
-      const error = document.getElementById("error");
+      const btn = document.getElementById("btn-login");
+      
+      if (!email || !password) {
+          showToast("Ingresa email y contraseña", "warning");
+          return;
+      }
 
-      const res = await fetch("/auth/login", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({email, password})
-      });
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...';
+      btn.disabled = true;
 
-      const data = await res.json();
+      try {
+          const res = await fetch("/auth/login", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({email, password})
+          });
 
-      if (data.token) {
-        window.location.href = "/admin";
-      } else {
-        error.style.display = "block";
+          const data = await res.json();
+
+          if (data.token) {
+            window.location.href = "/admin";
+          } else {
+            showToast("Email o contraseña incorrectos", "error");
+          }
+      } catch(e) {
+          showToast("Error de conexión al servidor", "error");
+      } finally {
+          btn.innerHTML = 'Ingresar <i class="fas fa-arrow-right" style="margin-left:4px"></i>';
+          btn.disabled = false;
       }
     }
 
     document.addEventListener("keydown", e => {
-      if (e.key === "Enter") login();
+      if (e.key === "Enter") {
+          if (document.getElementById("recuperar").style.display === "block" && document.activeElement.id === "email-recuperar") {
+              recuperarContrasena();
+          } else {
+              login();
+          }
+      }
     });
 
     function showRecuperar() {
         document.getElementById("recuperar").style.display = "block";
+        document.getElementById("email-recuperar").focus();
     }
 
     async function recuperarContrasena() {
         const email = document.getElementById("email-recuperar").value;
-        const msg = document.getElementById("msg-recuperar");
+        const btn = document.getElementById("btn-recover");
         
-        const res = await fetch("/auth/recuperar", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({email})
-        });
+        if (!email) { showToast("Ingresa tu email", "warning"); return; }
         
-        const data = await res.json();
-        msg.style.display = "block";
-        msg.style.background = "#e8f5e9";
-        msg.style.color = "#2e7d32";
-        msg.textContent = "Si el correo existe, recibirás las instrucciones";
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+        btn.disabled = true;
+        
+        try {
+            await fetch("/auth/recuperar", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({email})
+            });
+            
+            showToast("Si el correo existe, recibirás instrucciones", "success");
+            setTimeout(() => { document.getElementById("recuperar").style.display = "none"; }, 3000);
+        } catch(e) {
+            showToast("Error de conexión", "error");
+        } finally {
+            btn.innerHTML = 'Enviar enlace';
+            btn.disabled = false;
+        }
     }
 </script>
 </body>
