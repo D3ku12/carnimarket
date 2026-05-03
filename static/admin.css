@@ -448,11 +448,15 @@ td select {
     .nav-top { display:none !important; }
     .bottom-bar { display:flex; }
 
-    .container { padding:12px; }
-    .stat-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
-    .dos-col { grid-template-columns:1fr; }
-    .card { padding:14px; border-radius:12px; }
-    .card-header h2 { font-size:.88rem; }
+    .stat-grid { grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom: 20px; }
+    /* Si hay un número impar de stats (ej: 5), el último ocupa todo el ancho */
+    .stat-grid > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+    
+    .dos-col { grid-template-columns:1fr; gap: 16px; }
+    .card { padding:18px 16px; border-radius:16px; }
+    .card-header h2 { font-size:1rem; }
+    
+    .filtros-fechas { margin-bottom: 20px; margin-top: 8px; }
 
     .modal { width:100%; max-width:100%; border-radius:var(--radius-lg) var(--radius-lg) 0 0; animation:slideUp .3s ease; }
     @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
