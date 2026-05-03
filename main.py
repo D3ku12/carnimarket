@@ -281,9 +281,9 @@ def verificar_auth(token: str = Cookie(default=None)):
 
 # --- GESTIÓN DE USUARIOS ---
 @app.get("/admin/usuarios")
-def listar_usuarios(db: Session = Depends(get_db), usuario: str = Cookie(default=None)):
-    print(f"/admin/usuarios - cookie: {usuario[:20] if usuario else None}")
-    email = verificar_token(usuario) if usuario else None
+def listar_usuarios(db: Session = Depends(get_db), token: str = Cookie(default=None)):
+    print(f"/admin/usuarios - cookie: {token[:20] if token else None}")
+    email = verificar_token(token) if token else None
     print(f"email decodificado: {email}")
     if not email:
         return {"error": "Sesión inválida", "usuarios": []}
