@@ -1,3 +1,5 @@
+import os
+import logging
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -6,19 +8,27 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-SECRET_KEY = "carnimarket2026secretkey"
+logger = logging.getLogger(__name__)
+
+SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 8  # 8 horas
+
+if SECRET_KEY == "change-me-in-production":
+    logger.warning(
+        "SECURITY WARNING: SECRET_KEY is using the default placeholder value. "
+        "Set the SECRET_KEY environment variable to a strong random secret before deploying."
+    )
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 ADMIN_USER = "admin"
-ADMIN_PASSWORD = "$2b$12$TXMu/gX1qmmTgn4RIhXTcO7NzJ0Y5ayupmQVgkj2UedKFmfRG3o.y"
-ADMIN_EMAIL = "stevenhm03@gmail.com"
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "change-me")
+ADMIN_EMAIL = os.getenv("SMTP_USER", "")
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-SMTP_USER = "stevenhm03@gmail.com"
-SMTP_PASSWORD = "C@rniMarket"
+SMTP_USER = os.getenv("SMTP_USER")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 
 reset_tokens = {}
 

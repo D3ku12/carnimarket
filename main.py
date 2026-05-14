@@ -96,29 +96,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 def obtener_hora_colombia():
     return datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=5)
 
-@app.get("/test-db")
-def test_db(db: Session = Depends(get_db)):
-    if os.getenv("DEBUG") != "true":
-        raise HTTPException(status_code=404)
-    from auth import pwd_context
-    count = db.query(Usuario).count()
-    usuario = db.query(Usuario).filter(Usuario.email == "stevenhm03@gmail.com").first()
-    
-    if usuario:
-        test_pass = verificar_password("C@rniMarket", usuario.password_hash)
-        return {"usuarios": count, "admin_existe": True, "password_valida": test_pass, "rol": usuario.rol, "activo": usuario.activo}
-    else:
-        nuevo = Usuario(
-            email="stevenhm03@gmail.com",
-            password_hash=pwd_context.hash("C@rniMarket"),
-            nombre="Administrador",
-            rol="admin",
-            activo=True
-        )
-        db.add(nuevo)
-        db.commit()
-        return {"usuarios": count + 1, "admin_creado": True}
-
 @app.on_event("startup")
 def startup():
     init_db()
