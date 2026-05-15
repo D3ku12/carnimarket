@@ -270,7 +270,8 @@ async def subir_imagen(file: UploadFile = File(...), token: str = Cookie(default
         raise HTTPException(status_code=401)
     
     if not CLOUDINARY_OK:
-        return {"error": "Cloudinary no está configurado. Añade las variables CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET en Railway."}
+        url_set = "SI" if os.getenv("CLOUDINARY_URL") else "NO"
+        return {"error": f"Error: CLOUDINARY_URL detectada en Railway = {url_set}. Revisa que esté bien escrita."}
     
     try:
         result = cloudinary.uploader.upload(file.file, folder="carnimarket")
