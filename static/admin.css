@@ -515,8 +515,10 @@ td select option { background:var(--bg-card); color:var(--text); }
     .bottom-bar, .more-menu { display:none !important; }
     .nav-top { display:flex; }
 
-    header { display:flex; justify-content:space-between; align-items:center; padding:0 20px; }
-    header .logo { border:none; padding:0; }
+    header { display:flex; flex-wrap:wrap; align-items:center; padding:0 20px; }
+    header .logo { flex:1 1 auto; border:none; padding:10px 0; min-width:0; }
+    header h1 { flex-shrink:0; }
+    .nav-top { flex:1 0 100%; order:2; padding:0; border-top:1px solid var(--border); }
 
     .container { padding:24px; }
     .stat-grid { grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); }
