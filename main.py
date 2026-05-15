@@ -193,7 +193,7 @@ class RegistroCambio(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 def inicio():
-    with open("templates/index.html", "r", encoding="utf-8") as f:
+    with open("templates/catalogo.html", "r", encoding="utf-8") as f:
         return f.read()
 
 @app.get("/login", response_class=HTMLResponse)
