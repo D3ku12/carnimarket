@@ -4,6 +4,11 @@
  */
 
 let chartProductos = null;
+const NEGOCIO = window.NEGOCIO || "carniceria";
+function nq(url) {
+    const sep = url.includes("?") ? "&" : "?";
+    return url + sep + "negocio=" + NEGOCIO;
+}
 
 // === TOAST SYSTEM ===
 function showToast(message, type = 'info') {
@@ -147,8 +152,8 @@ async function filtrarDashboard() {
     document.getElementById("stats-dashboard").innerHTML = Array(5).fill('<div class="skeleton skeleton-stat"></div>').join('');
     
     try {
-        const res = await fetch(`/admin/dashboard?periodo=${periodo}`);
-        const resCaja = await fetch("/admin/caja");
+        const res = await fetch(nq(`/admin/dashboard?periodo=${periodo}`));
+        const resCaja = await fetch(nq("/admin/caja"));
         const data = await res.json();
         const caja = await resCaja.json();
 
@@ -224,7 +229,7 @@ async function cargarDashboard() {
 
 async function cargarInventario() {
     try {
-        const res = await fetch("/inventario");
+        const res = await fetch(nq("/inventario"));
         const data = await res.json();
         const tbody = document.getElementById("tabla-admin");
         
@@ -275,7 +280,7 @@ async function cargarClientes() {
 
 async function cargarGastos() {
     try {
-        const res = await fetch("/admin/gastos");
+        const res = await fetch(nq("/admin/gastos"));
         const data = await res.json();
         if (data.length === 0) {
             document.getElementById("tabla-gastos").innerHTML = getEmptyState("No hay gastos registrados", "fa-receipt");
@@ -297,7 +302,7 @@ async function cargarGastos() {
 
 async function cargarEncargados() {
     try {
-        const res = await fetch("/admin/encargados");
+        const res = await fetch(nq("/admin/encargados"));
         const data = await res.json();
         if (data.length === 0) {
             document.getElementById("tabla-encargados").innerHTML = getEmptyState("No hay encargos pendientes", "fa-clock");
@@ -375,10 +380,10 @@ async function filtrarCaja() {
     if (fecha_fin) params.append("fecha_fin", fecha_fin);
     if (params.toString()) url += "?" + params.toString();
     
-    document.getElementById("btn-exportar-caja").href = "/admin/exportar/caja" + (params.toString() ? "?" + params.toString() : "");
+    document.getElementById("btn-exportar-caja").href = nq("/admin/exportar/caja" + (params.toString() ? "?" + params.toString() : ""));
     
     try {
-        const res = await fetch(url);
+        const res = await fetch(nq(url));
         if (!res.ok) throw new Error("Error HTTP: " + res.status);
         const data = await res.json();
         
@@ -440,10 +445,10 @@ async function filtrarVentas() {
     if (fecha_fin) params.append("fecha_fin", fecha_fin);
     if (params.toString()) url += "?" + params.toString();
     
-    document.getElementById("btn-exportar-ventas").href = "/admin/exportar/ventas" + (params.toString() ? "?" + params.toString() : "");
+    document.getElementById("btn-exportar-ventas").href = nq("/admin/exportar/ventas" + (params.toString() ? "?" + params.toString() : ""));
     
     try {
-        const res = await fetch(url);
+        const res = await fetch(nq(url));
         const data = await res.json();
         
         if (data.length === 0) {
@@ -564,7 +569,7 @@ function limpiarFiltrosVentas() {
 
 async function cargarDeudas() {
     try {
-        const res = await fetch("/admin/deudas");
+        const res = await fetch(nq("/admin/deudas"));
         const data = await res.json();
         if (data.deudas.length === 0) {
             document.getElementById("tabla-deudas").innerHTML = getEmptyState("No hay deudas pendientes", "fa-check-circle");
@@ -650,8 +655,8 @@ document.getElementById("form-producto").onsubmit = async (e) => {
             tipo: tipo
         };
 
-        const url = id ? `/admin/producto/${id}` : "/admin/producto";
-        const res = await fetch(url, {
+        const url = id ? `/admin/producto/${id}` : nq("/admin/producto");
+        const res = await fetch(id ? url : url, {
             method: id ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body)
@@ -709,7 +714,7 @@ document.getElementById("form-gasto").onsubmit = async (e) => {
             categoria: document.getElementById("gasto-cat").value,
             monto: parseFloat(document.getElementById("gasto-monto").value)
         };
-        const res = await fetch("/admin/gasto", {
+        const res = await fetch(nq("/admin/gasto"), {
             method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
         });
         const data = await res.json();
@@ -757,7 +762,7 @@ document.getElementById("form-venta").onsubmit = async (e) => {
             notas: ""
         };
 
-        const res = await fetch("/vender", {
+        const res = await fetch(nq("/vender"), {
             method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
         });
         
@@ -854,7 +859,7 @@ async function registrarAbono() {
 }
 
 async function cargarSelectores() {
-    const resP = await fetch("/inventario");
+    const resP = await fetch(nq("/inventario"));
     const prods = await resP.json();
     window.productosData = prods;
     document.getElementById("venta-producto").innerHTML = '<option value="">Selecciona un corte...</option>' + Object.keys(prods).map(p => {

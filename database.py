@@ -43,12 +43,13 @@ class Producto(Base):
     minimo = Column(Float, default=2)
     precio_kilo = Column(Float, default=0)
     tipo = Column(String, default="kilo")
-    tipo = Column(String, default="kilo")  # "kilo" o "plato"
+    negocio = Column(String, default="carniceria")
 
 # Tabla de ventas
 class Venta(Base):
     __tablename__ = "ventas"
     id = Column(Integer, primary_key=True, index=True)
+    negocio = Column(String, default="carniceria")
     fecha_venta = Column(DateTime, default=datetime.now)
     fecha_pago = Column(DateTime, nullable=True)
     fecha_vencimiento = Column(DateTime, nullable=True)
@@ -69,6 +70,7 @@ class Venta(Base):
 class Gasto(Base):
     __tablename__ = "gastos"
     id = Column(Integer, primary_key=True, index=True)
+    negocio = Column(String, default="carniceria")
     fecha = Column(DateTime, default=datetime.now)
     descripcion = Column(String)
     categoria = Column(String, default="general")
@@ -79,6 +81,7 @@ class Gasto(Base):
 class Historial(Base):
     __tablename__ = "historial"
     id = Column(Integer, primary_key=True, index=True)
+    negocio = Column(String, default="carniceria")
     fecha = Column(DateTime, default=datetime.now)
     producto = Column(String)
     tipo = Column(String)
@@ -115,6 +118,24 @@ def init_db():
                 conn.commit()
             if 'unidad' not in columnas_ventas:
                 conn.execute(text("ALTER TABLE ventas ADD COLUMN unidad VARCHAR DEFAULT 'kilo'"))
+                conn.commit()
+                
+            # Migration: agregar negocio a todas las tablas
+            if 'negocio' not in columnas_productos:
+                conn.execute(text("ALTER TABLE productos ADD COLUMN negocio VARCHAR DEFAULT 'carniceria'"))
+                conn.commit()
+            if 'negocio' not in columnas_ventas:
+                conn.execute(text("ALTER TABLE ventas ADD COLUMN negocio VARCHAR DEFAULT 'carniceria'"))
+                conn.commit()
+            
+            columnas_gastos = [c['name'] for c in inspector.get_columns('gastos')]
+            if 'negocio' not in columnas_gastos:
+                conn.execute(text("ALTER TABLE gastos ADD COLUMN negocio VARCHAR DEFAULT 'carniceria'"))
+                conn.commit()
+                
+            columnas_historial = [c['name'] for c in inspector.get_columns('historial')]
+            if 'negocio' not in columnas_historial:
+                conn.execute(text("ALTER TABLE historial ADD COLUMN negocio VARCHAR DEFAULT 'carniceria'"))
                 conn.commit()
     except Exception as e:
         print(f"Migration error: {e}")

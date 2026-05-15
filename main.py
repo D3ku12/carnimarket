@@ -194,6 +194,13 @@ def admin(token: str = Cookie(default=None)):
     with open("templates/admin.html", "r", encoding="utf-8") as f:
         return f.read()
 
+@app.get("/asadero", response_class=HTMLResponse)
+def asadero(token: str = Cookie(default=None)):
+    if not token or not verificar_token(token):
+        return RedirectResponse(url="/login", status_code=302)
+    with open("templates/asadero.html", "r", encoding="utf-8") as f:
+        return f.read()
+
 # --- AUTENTICACIÓN ---
 
 @app.post("/auth/login")
@@ -405,8 +412,8 @@ def cambiar_contrasena(data: dict, response: Response):
 # --- GESTIÓN DE PRODUCTOS (INVENTARIO) ---
 
 @app.get("/inventario")
-def listar_inventario(db: Session = Depends(get_db)):
-    productos = db.query(Producto).order_by(Producto.nombre).all()
+def listar_inventario(negocio: str = "carniceria", db: Session = Depends(get_db)):
+    productos = db.query(Producto).filter(Producto.negocio == negocio).order_by(Producto.nombre).all()
     result = {}
     for p in productos:
         try:
@@ -425,16 +432,16 @@ def listar_inventario(db: Session = Depends(get_db)):
     return result
 
 @app.post("/admin/producto")
-def crear_producto(p: ProductoRequest, db: Session = Depends(get_db)):
+def crear_producto(p: ProductoRequest, negocio: str = "carniceria", db: Session = Depends(get_db)):
     tipo = p.tipo if p.tipo in ["kilo", "plato"] else "kilo"
     existe = db.query(Producto).filter(Producto.nombre == p.nombre).first()
     if existe:
         return {"error": "El producto ya existe"}
-    nuevo = Producto(nombre=p.nombre, stock=p.stock, minimo=p.minimo, precio_kilo=p.precio_kilo, tipo=tipo)
+    nuevo = Producto(nombre=p.nombre, stock=p.stock, minimo=p.minimo, precio_kilo=p.precio_kilo, tipo=tipo, negocio=negocio)
     db.add(nuevo)
     db.commit()
     ahora = obtener_hora_colombia()
-    db.add(Historial(producto=p.nombre, tipo="entrada", cantidad=p.stock, motivo="Carga Inicial", fecha=ahora))
+    db.add(Historial(producto=p.nombre, tipo="entrada", cantidad=p.stock, motivo="Carga Inicial", fecha=ahora, negocio=negocio))
     db.commit()
     return {"mensaje": "Producto creado con éxito"}
 
@@ -451,7 +458,7 @@ def editar_producto_completo(id: int, data: ProductoUpdate, db: Session = Depend
     if data.stock is not None:
         dif = data.stock - p.stock
         if dif != 0:
-            db.add(Historial(producto=p.nombre, tipo="ajuste", cantidad=abs(dif), motivo="Corrección manual", fecha=obtener_hora_colombia()))
+            db.add(Historial(producto=p.nombre, tipo="ajuste", cantidad=abs(dif), motivo="Corrección manual", fecha=obtener_hora_colombia(), negocio=p.negocio))
         p.stock = data.stock
         
     db.commit()
@@ -502,8 +509,8 @@ def eliminar_cliente(id: int, db: Session = Depends(get_db)):
 # --- GESTIÓN DE VENTAS ---
 
 @app.post("/vender")
-def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
-    p = db.query(Producto).filter(Producto.nombre == v.producto).first()
+def registrar_venta(v: VentaRequest, negocio: str = "carniceria", db: Session = Depends(get_db)):
+    p = db.query(Producto).filter(Producto.nombre == v.producto, Producto.negocio == negocio).first()
     if not p: return {"error": "El producto no existe"}
     
     tipo_producto = getattr(p, 'tipo', 'kilo') or 'kilo'
@@ -555,7 +562,7 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
     nueva_venta = Venta(
         producto=v.producto,
         kilos=kilos,
-        cantidad=kilos,  # guardar en kilos para consistencia
+        cantidad=kilos,
         unidad="kilo",
         precio_kilo=p.precio_kilo,
         subtotal=total,
@@ -565,10 +572,11 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
         cliente_nombre=v.cliente_nombre,
         direccion=v.direccion,
         pagado=v.pagado,
-        notas=v.notas
+        notas=v.notas,
+        negocio=negocio
     )
     db.add(nueva_venta)
-    db.add(Historial(producto=v.producto, tipo="salida", cantidad=kilos, motivo=f"Venta a {v.cliente_nombre}", fecha=ahora))
+    db.add(Historial(producto=v.producto, tipo="salida", cantidad=kilos, motivo=f"Venta a {v.cliente_nombre}", fecha=ahora, negocio=negocio))
     db.commit()
     
     if tipo_producto == "plato":
@@ -580,8 +588,9 @@ def registrar_venta(v: VentaRequest, db: Session = Depends(get_db)):
 def listar_ventas(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
+    negocio: str = "carniceria",
     db: Session = Depends(get_db)):
-    query = db.query(Venta)
+    query = db.query(Venta).filter(Venta.negocio == negocio)
     
     if fecha_inicio:
         fi = datetime.strptime(fecha_inicio, "%Y-%m-%d").replace(hour=0, minute=0, second=0)
@@ -594,8 +603,8 @@ def listar_ventas(
     return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "cantidad": getattr(v, 'cantidad', v.kilos) or v.kilos, "subtotal": v.subtotal, "monto_pagado": v.monto_pagado or 0, "pagado": v.pagado, "notas": v.notas, "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""} for v in ventas]
 
 @app.get("/admin/encargados")
-def listar_encargados(db: Session = Depends(get_db)):
-    ventas = db.query(Venta).filter(Venta.pagado == "encargado").order_by(Venta.fecha_venta.desc()).all()
+def listar_encargados(negocio: str = "carniceria", db: Session = Depends(get_db)):
+    ventas = db.query(Venta).filter(Venta.pagado == "encargado", Venta.negocio == negocio).order_by(Venta.fecha_venta.desc()).all()
     return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "monto_pagado": v.monto_pagado or 0, "notas": v.notas} for v in ventas]
 
 @app.get("/admin/encargados/toggle/{id}")
@@ -755,15 +764,15 @@ def eliminar_venta(id: int, db: Session = Depends(get_db)):
 # --- GESTIÓN DE GASTOS ---
 
 @app.post("/admin/gasto")
-def registrar_gasto(g: GastoRequest, db: Session = Depends(get_db)):
-    nuevo = Gasto(descripcion=g.descripcion, categoria=g.categoria, monto=g.monto, fecha=obtener_hora_colombia())
+def registrar_gasto(g: GastoRequest, negocio: str = "carniceria", db: Session = Depends(get_db)):
+    nuevo = Gasto(descripcion=g.descripcion, categoria=g.categoria, monto=g.monto, fecha=obtener_hora_colombia(), negocio=negocio)
     db.add(nuevo)
     db.commit()
     return {"mensaje": "Gasto registrado"}
 
 @app.get("/admin/gastos")
-def listar_gastos(db: Session = Depends(get_db)):
-    gs = db.query(Gasto).order_by(Gasto.fecha.desc()).all()
+def listar_gastos(negocio: str = "carniceria", db: Session = Depends(get_db)):
+    gs = db.query(Gasto).filter(Gasto.negocio == negocio).order_by(Gasto.fecha.desc()).all()
     return [{"id": g.id, "fecha": g.fecha.strftime("%Y-%m-%d"), "descripcion": g.descripcion, "monto": g.monto, "categoria": g.categoria} for g in gs]
 
 @app.delete("/admin/gasto/{id}")
@@ -777,23 +786,23 @@ def eliminar_gasto(id: int, db: Session = Depends(get_db)):
 # --- REPORTES Y CAJA ---
 
 @app.get("/admin/caja")
-def estado_caja(db: Session = Depends(get_db)):
-    ingresos = db.query(func.sum(Venta.subtotal)).filter(Venta.pagado == "pagado").scalar() or 0
-    egresos = db.query(func.sum(Gasto.monto)).scalar() or 0
-    # Pendiente: encargado - ventas que no se han confirmado
-    pendiente = db.query(func.sum(Venta.subtotal)).filter(Venta.pagado == "encargado").scalar() or 0
+def estado_caja(negocio: str = "carniceria", db: Session = Depends(get_db)):
+    ingresos = db.query(func.sum(Venta.subtotal)).filter(Venta.pagado == "pagado", Venta.negocio == negocio).scalar() or 0
+    egresos = db.query(func.sum(Gasto.monto)).filter(Gasto.negocio == negocio).scalar() or 0
+    pendiente = db.query(func.sum(Venta.subtotal)).filter(Venta.pagado == "encargado", Venta.negocio == negocio).scalar() or 0
     return {"saldo_real": ingresos - egresos, "ingresos": ingresos, "egresos": egresos, "pendiente": pendiente}
 
 @app.get("/admin/caja-detalle")
 def caja_detalle(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
+    negocio: str = "carniceria",
     db: Session = Depends(get_db)):
     try:
-        query_vp = db.query(Venta).filter(Venta.pagado == "pagado")
-        query_vd = db.query(Venta).filter(Venta.pagado == "debe")
-        query_ve = db.query(Venta).filter(Venta.pagado == "encargado")
-        query_g = db.query(Gasto)
+        query_vp = db.query(Venta).filter(Venta.pagado == "pagado", Venta.negocio == negocio)
+        query_vd = db.query(Venta).filter(Venta.pagado == "debe", Venta.negocio == negocio)
+        query_ve = db.query(Venta).filter(Venta.pagado == "encargado", Venta.negocio == negocio)
+        query_g = db.query(Gasto).filter(Gasto.negocio == negocio)
         
         if fecha_inicio:
             fi = datetime.strptime(fecha_inicio, "%Y-%m-%d").replace(hour=0, minute=0, second=0)
@@ -826,7 +835,7 @@ def caja_detalle(
         return {"error": str(e), "ventas_pagadas": 0, "ventas_deben": 0, "pendiente": 0, "total_ventas": 0, "gastos": 0, "saldo_real": 0}
 
 @app.get("/admin/dashboard")
-def get_dashboard_data(periodo: str = "7dias", db: Session = Depends(get_db)):
+def get_dashboard_data(periodo: str = "7dias", negocio: str = "carniceria", db: Session = Depends(get_db)):
     ahora = obtener_hora_colombia()
     inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
     fin_dia = ahora.replace(hour=23, minute=59, second=59, microsecond=999999)
@@ -842,7 +851,7 @@ def get_dashboard_data(periodo: str = "7dias", db: Session = Depends(get_db)):
     else:
         fecha_inicio = inicio_dia - timedelta(days=6)
     
-    v_periodo = db.query(Venta).filter(Venta.fecha_venta >= fecha_inicio, Venta.fecha_venta <= fin_dia).all()
+    v_periodo = db.query(Venta).filter(Venta.fecha_venta >= fecha_inicio, Venta.fecha_venta <= fin_dia, Venta.negocio == negocio).all()
     
     conteo = {}
     for v in v_periodo:
@@ -851,16 +860,16 @@ def get_dashboard_data(periodo: str = "7dias", db: Session = Depends(get_db)):
     
     alertas = []
     try:
-        prods = db.query(Producto).filter(Producto.stock <= Producto.minimo).all()
+        prods = db.query(Producto).filter(Producto.stock <= Producto.minimo, Producto.negocio == negocio).all()
         alertas = [{"nombre": p.nombre, "stock": p.stock} for p in prods]
     except:
         pass
     
     inicio_mes = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    v_mes = db.query(Venta).filter(Venta.fecha_venta >= inicio_mes).all()
+    v_mes = db.query(Venta).filter(Venta.fecha_venta >= inicio_mes, Venta.negocio == negocio).all()
     
     return {
-        "total_hoy": sum(v.subtotal or 0 for v in db.query(Venta).filter(Venta.fecha_venta >= inicio_dia, Venta.fecha_venta <= fin_dia).all()),
+        "total_hoy": sum(v.subtotal or 0 for v in db.query(Venta).filter(Venta.fecha_venta >= inicio_dia, Venta.fecha_venta <= fin_dia, Venta.negocio == negocio).all()),
         "total_periodo": sum(v.subtotal or 0 for v in v_periodo),
         "total_mes": sum(v.subtotal or 0 for v in v_mes),
         "productos_ventas": dict(sorted(conteo.items(), key=lambda x: x[1], reverse=True)[:7]),
@@ -869,8 +878,8 @@ def get_dashboard_data(periodo: str = "7dias", db: Session = Depends(get_db)):
     }
 
 @app.get("/admin/deudas")
-def get_reporte_deudas(db: Session = Depends(get_db), fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None):
-    query = db.query(Venta).filter(Venta.pagado == "debe")
+def get_reporte_deudas(db: Session = Depends(get_db), negocio: str = "carniceria", fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None):
+    query = db.query(Venta).filter(Venta.pagado == "debe", Venta.negocio == negocio)
 
     if fecha_inicio:
         try:
@@ -920,17 +929,18 @@ def get_reporte_deudas(db: Session = Depends(get_db), fecha_inicio: Optional[str
     return {"deudas": res, "total_pendiente": sum(x["total"] for x in res)}
 
 @app.get("/admin/historial")
-def ver_historial_movimientos(db: Session = Depends(get_db)):
-    logs = db.query(Historial).order_by(Historial.fecha.desc()).limit(100).all()
+def ver_historial_movimientos(negocio: str = "carniceria", db: Session = Depends(get_db)):
+    logs = db.query(Historial).filter(Historial.negocio == negocio).order_by(Historial.fecha.desc()).limit(100).all()
     return [{"fecha": l.fecha.strftime("%Y-%m-%d %H:%M"), "producto": l.producto, "tipo": l.tipo, "cantidad": l.cantidad, "motivo": l.motivo} for l in logs]
 
 @app.get("/admin/exportar/caja")
 def generar_excel_caja(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
+    negocio: str = "carniceria",
     db: Session = Depends(get_db)):
-    query_v = db.query(Venta)
-    query_g = db.query(Gasto)
+    query_v = db.query(Venta).filter(Venta.negocio == negocio)
+    query_g = db.query(Gasto).filter(Gasto.negocio == negocio)
     
     if fecha_inicio:
         fi = datetime.strptime(fecha_inicio, "%Y-%m-%d").replace(hour=0, minute=0, second=0)
@@ -964,8 +974,9 @@ def generar_excel_caja(
 def generar_excel_ventas(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
+    negocio: str = "carniceria",
     db: Session = Depends(get_db)):
-    query = db.query(Venta)
+    query = db.query(Venta).filter(Venta.negocio == negocio)
     
     if fecha_inicio:
         fi = datetime.strptime(fecha_inicio, "%Y-%m-%d").replace(hour=0, minute=0, second=0)
