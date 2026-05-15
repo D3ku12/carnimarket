@@ -124,7 +124,8 @@ function abrirModal(id) {
     if (id === 'modal-producto') { 
         initModalProd();
         quitarFoto();
-        document.getElementById("prod-descripcion").value = "";
+        const descEl = document.getElementById("prod-descripcion");
+        if (descEl) descEl.value = "";
     }
 }
 function cerrarModal(id) {
@@ -641,19 +642,22 @@ function prepararEdicionProd(nombre, info) {
     const stockKilos = Math.floor(info.stock);
     const stockGramos = Math.round((info.stock - stockKilos) * 1000);
     document.getElementById("prod-stock").value = stockKilos;
-    document.getElementById("prod-gramos").value = stockGramos;
+    const gramosEl = document.getElementById("prod-gramos");
+    if (gramosEl) gramosEl.value = stockGramos;
     document.getElementById("prod-minimo").value = info.minimo;
     document.getElementById("prod-precio").value = info.precio_kilo;
     document.getElementById("prod-tipo-original").value = info.tipo || "kilo";
     document.getElementById("prod-tipo").value = info.tipo || "kilo";
-    document.getElementById("prod-descripcion").value = info.descripcion_publica || "";
-    document.getElementById("prod-imagen-url").value = info.imagen_url || "";
+    const descEl = document.getElementById("prod-descripcion");
+    if (descEl) descEl.value = info.descripcion_publica || "";
+    const imgEl = document.getElementById("prod-imagen-url");
+    if (imgEl) imgEl.value = info.imagen_url || "";
     
     if (info.imagen_url) {
         const preview = document.getElementById('prod-foto-preview');
         const container = document.getElementById('preview-container');
-        preview.src = info.imagen_url;
-        container.style.display = 'block';
+        if (preview) preview.src = info.imagen_url;
+        if (container) container.style.display = 'block';
     } else {
         quitarFoto();
     }
@@ -689,9 +693,9 @@ document.getElementById("form-producto").onsubmit = async (e) => {
         
         // Manejar subida de imagen si hay archivo seleccionado
         const fileInput = document.getElementById("prod-foto-file");
-        let finalImageUrl = document.getElementById("prod-imagen-url").value;
+        let finalImageUrl = document.getElementById("prod-imagen-url")?.value || "";
         
-        if (fileInput.files && fileInput.files[0]) {
+        if (fileInput && fileInput.files && fileInput.files[0]) {
             btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Subiendo Foto...';
             const formData = new FormData();
             formData.append("file", fileInput.files[0]);
@@ -703,13 +707,13 @@ document.getElementById("form-producto").onsubmit = async (e) => {
             const uploadData = await uploadRes.json();
             if (uploadData.url) {
                 finalImageUrl = uploadData.url;
-            } else {
-                throw new Error("Error al subir imagen a Cloudinary");
+            } else if (uploadData.error) {
+                showToast(uploadData.error, "warning");
             }
         }
 
         const kilos = parseFloat(document.getElementById("prod-stock").value || 0);
-        const gramos = parseFloat(document.getElementById("prod-gramos").value || 0);
+        const gramos = parseFloat(document.getElementById("prod-gramos")?.value || 0);
         const stockTotal = kilos + (gramos / 1000);
         
         const body = {
@@ -717,8 +721,8 @@ document.getElementById("form-producto").onsubmit = async (e) => {
             minimo: tipo === "plato" ? parseInt(document.getElementById("prod-minimo").value) : parseFloat(document.getElementById("prod-minimo").value),
             precio_kilo: parseFloat(document.getElementById("prod-precio").value),
             tipo: tipo,
-            imagen_url: finalImageUrl,
-            descripcion_publica: document.getElementById("prod-descripcion").value
+            imagen_url: finalImageUrl || null,
+            descripcion_publica: document.getElementById("prod-descripcion")?.value || null
         };
 
         const url = id ? `/carniceria/producto/${id}` : nq("/carniceria/producto");
