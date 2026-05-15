@@ -1,8 +1,10 @@
 import time
 from collections import defaultdict
-from fastapi import FastAPI, Depends, Cookie, Response, Request, HTTPException, status
+from fastapi import FastAPI, Depends, Cookie, Response, Request, HTTPException, status, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+import cloudinary
+import cloudinary.uploader
 from pydantic import BaseModel, validator
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -24,6 +26,14 @@ import os
 import html
 
 load_dotenv()
+
+# Configuración de Cloudinary
+cloudinary.config(
+  cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
+  api_key = os.getenv("CLOUDINARY_API_KEY"),
+  api_secret = os.getenv("CLOUDINARY_API_SECRET"),
+  secure = True
+)
 
 def sanitize_html(text: str) -> str:
     return html.escape(text).strip()
@@ -123,6 +133,8 @@ class ProductoRequest(BaseModel):
     minimo: float
     precio_kilo: float
     tipo: str = "kilo"
+    imagen_url: Optional[str] = None
+    descripcion_publica: Optional[str] = None
 
 class ProductoUpdate(BaseModel):
     nombre: Optional[str] = None
@@ -130,6 +142,8 @@ class ProductoUpdate(BaseModel):
     minimo: Optional[float] = None
     precio_kilo: Optional[float] = None
     tipo: Optional[str] = None
+    imagen_url: Optional[str] = None
+    descripcion_publica: Optional[str] = None
 
 class VentaRequest(BaseModel):
     producto: str
@@ -212,6 +226,45 @@ def asadero(db: Session = Depends(get_db), token: str = Cookie(default=None)):
         
     with open("templates/asadero.html", "r", encoding="utf-8") as f:
         return f.read()
+
+@app.get("/catalogo", response_class=HTMLResponse)
+def catalogo_page():
+    with open("templates/catalogo.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+@app.get("/api/catalogo")
+def get_catalogo(db: Session = Depends(get_db)):
+    prods = db.query(Producto).filter(Producto.stock > 0).all()
+    resultado = {
+        "carniceria": [],
+        "asadero": []
+    }
+    for p in prods:
+        item = {
+            "nombre": p.nombre,
+            "precio": p.precio_kilo,
+            "tipo": p.tipo,
+            "imagen": p.imagen_url or "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+            "descripcion": p.descripcion_publica or "",
+            "stock": p.stock
+        }
+        if p.negocio == "asadero":
+            resultado["asadero"].append(item)
+        else:
+            resultado["carniceria"].append(item)
+    return resultado
+
+@app.post("/subir-imagen")
+async def subir_imagen(file: UploadFile = File(...), token: str = Cookie(default=None)):
+    if not verificar_token(token):
+        raise HTTPException(status_code=401)
+    
+    try:
+        # Subir a Cloudinary
+        result = cloudinary.uploader.upload(file.file, folder="carnimarket")
+        return {"url": result.get("secure_url")}
+    except Exception as e:
+        return {"error": str(e)}
 
 # --- AUTENTICACIÓN ---
 
@@ -459,7 +512,7 @@ def crear_producto(p: ProductoRequest, negocio: str = "carniceria", db: Session 
     existe = db.query(Producto).filter(Producto.nombre == p.nombre).first()
     if existe:
         return {"error": "El producto ya existe"}
-    nuevo = Producto(nombre=p.nombre, stock=p.stock, minimo=p.minimo, precio_kilo=p.precio_kilo, tipo=tipo, negocio=negocio)
+    nuevo = Producto(nombre=p.nombre, stock=p.stock, minimo=p.minimo, precio_kilo=p.precio_kilo, tipo=tipo, negocio=negocio, imagen_url=p.imagen_url, descripcion_publica=p.descripcion_publica)
     db.add(nuevo)
     db.commit()
     ahora = obtener_hora_colombia()
@@ -476,6 +529,8 @@ def editar_producto_completo(id: int, data: ProductoUpdate, db: Session = Depend
     if data.minimo is not None: p.minimo = data.minimo
     if data.nombre is not None: p.nombre = data.nombre
     if data.tipo is not None and data.tipo in ["kilo", "plato"]: p.tipo = data.tipo
+    if data.imagen_url is not None: p.imagen_url = data.imagen_url
+    if data.descripcion_publica is not None: p.descripcion_publica = data.descripcion_publica
     
     if data.stock is not None:
         dif = data.stock - p.stock

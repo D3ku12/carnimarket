@@ -123,6 +123,8 @@ function abrirModal(id) {
     if (id === 'modal-venta') initModalVenta();
     if (id === 'modal-producto') { 
         initModalProd();
+        quitarFoto();
+        document.getElementById("prod-descripcion").value = "";
     }
 }
 function cerrarModal(id) {
@@ -603,6 +605,32 @@ function formatFechaGCal(fecha) {
     return `${partes[0]}${partes[1]}${partes[2]}T000000Z`;
 }
 
+// --- LÓGICA DE CATÁLOGO / IMÁGENES ---
+
+function previewImage(input) {
+    const preview = document.getElementById('prod-foto-preview');
+    const container = document.getElementById('preview-container');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            container.style.display = 'block';
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function quitarFoto() {
+    const preview = document.getElementById('prod-foto-preview');
+    const container = document.getElementById('preview-container');
+    const input = document.getElementById('prod-foto-file');
+    const hidden = document.getElementById('prod-imagen-url');
+    if (input) input.value = "";
+    if (hidden) hidden.value = "";
+    if (preview) preview.src = "";
+    if (container) container.style.display = 'none';
+}
+
 // --- LÓGICA DE EDICIÓN ---
 
 function prepararEdicionProd(nombre, info) {
@@ -618,6 +646,18 @@ function prepararEdicionProd(nombre, info) {
     document.getElementById("prod-precio").value = info.precio_kilo;
     document.getElementById("prod-tipo-original").value = info.tipo || "kilo";
     document.getElementById("prod-tipo").value = info.tipo || "kilo";
+    document.getElementById("prod-descripcion").value = info.descripcion_publica || "";
+    document.getElementById("prod-imagen-url").value = info.imagen_url || "";
+    
+    if (info.imagen_url) {
+        const preview = document.getElementById('prod-foto-preview');
+        const container = document.getElementById('preview-container');
+        preview.src = info.imagen_url;
+        container.style.display = 'block';
+    } else {
+        quitarFoto();
+    }
+    
     document.getElementById("titulo-modal-prod").innerHTML = "<i class='fas fa-edit'></i> Editar " + nombre;
     
     const tipo = info.tipo || "kilo";
@@ -638,6 +678,7 @@ function prepararEdicionCli(c) {
 document.getElementById("form-producto").onsubmit = async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
+    const originalHtml = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
     btn.disabled = true;
 
@@ -646,6 +687,27 @@ document.getElementById("form-producto").onsubmit = async (e) => {
         const nombre = document.getElementById("prod-nombre").value;
         const tipo = document.getElementById("prod-tipo").value;
         
+        // Manejar subida de imagen si hay archivo seleccionado
+        const fileInput = document.getElementById("prod-foto-file");
+        let finalImageUrl = document.getElementById("prod-imagen-url").value;
+        
+        if (fileInput.files && fileInput.files[0]) {
+            btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Subiendo Foto...';
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            
+            const uploadRes = await fetch("/subir-imagen", {
+                method: "POST",
+                body: formData
+            });
+            const uploadData = await uploadRes.json();
+            if (uploadData.url) {
+                finalImageUrl = uploadData.url;
+            } else {
+                throw new Error("Error al subir imagen a Cloudinary");
+            }
+        }
+
         const kilos = parseFloat(document.getElementById("prod-stock").value || 0);
         const gramos = parseFloat(document.getElementById("prod-gramos").value || 0);
         const stockTotal = kilos + (gramos / 1000);
@@ -654,7 +716,9 @@ document.getElementById("form-producto").onsubmit = async (e) => {
             nombre: nombre, stock: stockTotal,
             minimo: tipo === "plato" ? parseInt(document.getElementById("prod-minimo").value) : parseFloat(document.getElementById("prod-minimo").value),
             precio_kilo: parseFloat(document.getElementById("prod-precio").value),
-            tipo: tipo
+            tipo: tipo,
+            imagen_url: finalImageUrl,
+            descripcion_publica: document.getElementById("prod-descripcion").value
         };
 
         const url = id ? `/carniceria/producto/${id}` : nq("/carniceria/producto");
@@ -673,7 +737,7 @@ document.getElementById("form-producto").onsubmit = async (e) => {
     } catch(err) {
         showToast(err.message || "Error al guardar producto", "error");
     } finally {
-        btn.innerHTML = 'Guardar Cambios';
+        btn.innerHTML = originalHtml;
         btn.disabled = false;
     }
 };

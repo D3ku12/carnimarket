@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Digital | CarniMarket & Asadero</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥩</text></svg>">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #c44536;
+            --primary-dark: #772014;
+            --gold: #d4af37;
+            --dark: #0f0f0f;
+            --dark-card: #1a1a1a;
+            --text: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --white: #ffffff;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--dark);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Background texture */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://www.transparenttextures.com/patterns/black-paper.png');
+            opacity: 0.3;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Header & Nav */
+        header {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1544025162-d76694265947?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .logo-container h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 4.5rem;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 0.5rem;
+            animation: fadeInDown 1.2s ease;
+        }
+
+        .logo-container p {
+            font-size: 1.2rem;
+            color: var(--gold);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            animation: fadeInUp 1.2s ease;
+        }
+
+        .scroll-down {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--white);
+            font-size: 1.5rem;
+            animation: bounce 2s infinite;
+            cursor: pointer;
+        }
+
+        /* Sticky Nav */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass);
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        nav a.active, nav a:hover {
+            color: var(--primary);
+        }
+
+        nav a.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; height: 2px;
+            background-color: var(--primary);
+        }
+
+        /* Sections */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+        }
+
+        section {
+            margin-bottom: 6rem;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3.5rem;
+            position: relative;
+        }
+
+        .section-title h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            color: var(--white);
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 3px;
+            background: var(--primary);
+            margin: 0 auto;
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2.5rem;
+        }
+
+        /* Product Card */
+        .card {
+            background: var(--dark-card);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid var(--glass);
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .card-img {
+            width: 100%;
+            height: 250px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .card:hover .card-img img {
+            transform: scale(1.1);
+        }
+
+        .badge-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.8rem;
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--white);
+            margin-right: 10px;
+        }
+
+        .card-price {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            color: var(--gold);
+            font-weight: 700;
+        }
+
+        .card-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            height: 45px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .card-footer {
+            border-top: 1px solid var(--glass);
+            padding-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-order {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 8px 18px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .btn-order:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Footer */
+        footer {
+            background: #080808;
+            padding: 4rem 1.5rem;
+            text-align: center;
+            border-top: 1px solid var(--glass);
+        }
+
+        .footer-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            color: var(--white);
+            margin-bottom: 1rem;
+        }
+
+        .footer-info {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            max-width: 500px;
+            margin: 0 auto 2rem;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .social-links a {
+            color: var(--white);
+            font-size: 1.5rem;
+            transition: color 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--primary);
+        }
+
+        .copyright {
+            color: #444;
+            font-size: 0.8rem;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translate(-50%, 0); }
+            40% { transform: translate(-50%, -10px); }
+            60% { transform: translate(-50%, -5px); }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .logo-container h1 { font-size: 2.8rem; }
+            .section-title h2 { font-size: 2.2rem; }
+            nav { gap: 1rem; }
+            nav a { font-size: 0.75rem; }
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        /* Loading Skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <header id="inicio">
+        <div class="logo-container">
+            <h1>CarniMarket</h1>
+            <p>Carnicería & Asadero Gourmet</p>
+        </div>
+        <div class="scroll-down" onclick="document.getElementById('carniceria').scrollIntoView({behavior: 'smooth'})">
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <nav id="sticky-nav">
+        <a href="#inicio" onclick="scrollToSec(event, 'inicio')">Inicio</a>
+        <a href="#carniceria" id="nav-carn" onclick="scrollToSec(event, 'carniceria')">Carnicería</a>
+        <a href="#asadero" id="nav-asad" onclick="scrollToSec(event, 'asadero')">Asadero</a>
+    </nav>
+
+    <div class="container">
+        <!-- SECCIÓN CARNICERÍA -->
+        <section id="carniceria">
+            <div class="section-title">
+                <h2>Nuestra Carnicería</h2>
+            </div>
+            <div id="grid-carniceria" class="grid">
+                <!-- Se llenará dinámicamente -->
+            </div>
+        </section>
+
+        <!-- SECCIÓN ASADERO -->
+        <section id="asadero">
+            <div class="section-title">
+                <h2>El Asadero</h2>
+            </div>
+            <div id="grid-asadero" class="grid">
+                <!-- Se llenará dinámicamente -->
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div class="footer-logo">CarniMarket</div>
+        <p class="footer-info">La mejor selección de cortes premium y el sabor inigualable del asado tradicional, directamente a su mesa.</p>
+        <div class="social-links">
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-facebook"></i></a>
+            <a href="#"><i class="fab fa-whatsapp"></i></a>
+        </div>
+        <p class="copyright">&copy; 2026 CarniMarket. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        async function cargarCatalogo() {
+            try {
+                const res = await fetch("/api/catalogo");
+                const data = await res.json();
+
+                renderSection("grid-carniceria", data.carniceria);
+                renderSection("grid-asadero", data.asadero);
+            } catch (e) {
+                console.error("Error cargando catálogo", e);
+            }
+        }
+
+        function renderSection(id, productos) {
+            const container = document.getElementById(id);
+            if (!productos || productos.length === 0) {
+                container.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:var(--text-muted);">No hay productos disponibles por el momento.</p>`;
+                return;
+            }
+
+            container.innerHTML = productos.map(p => {
+                const precioStr = p.tipo === "plato" ? `$${p.precio.toLocaleString()} / plato` : `$${p.precio.toLocaleString()} / kg`;
+                return `
+                <div class="card">
+                    <div class="card-img">
+                        <img src="${p.imagen}" alt="${p.nombre}">
+                        <div class="badge-status">Disponible</div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-header">
+                            <h3 class="card-title">${p.nombre}</h3>
+                            <span class="card-price">${precioStr}</span>
+                        </div>
+                        <p class="card-desc">${p.descripcion || "Consulte por disponibilidad y frescura de este excelente corte premium."}</p>
+                        <div class="card-footer">
+                            <span style="font-size:0.8rem; color:var(--gold); font-weight:600;">
+                                <i class="fas fa-check-circle"></i> Calidad Premium
+                            </span>
+                            <a href="https://wa.me/573000000000?text=Hola,%20quisiera%20pedir%20${encodeURIComponent(p.nombre)}" target="_blank" class="btn-order">Pedir ahora</a>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join("");
+        }
+
+        function scrollToSec(e, id) {
+            e.preventDefault();
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Highlight nav on scroll
+        window.addEventListener('scroll', () => {
+            const sections = ['carniceria', 'asadero'];
+            let current = 'inicio';
+            
+            sections.forEach(s => {
+                const el = document.getElementById(s);
+                if (window.pageYOffset >= el.offsetTop - 150) {
+                    current = s;
+                }
+            });
+
+            document.querySelectorAll('nav a').forEach(a => {
+                a.classList.remove('active');
+                if (a.getAttribute('href') === '#' + current || (current === 'inicio' && a.getAttribute('href') === '#inicio')) {
+                    a.classList.add('active');
+                }
+            });
+        });
+
+        window.onload = cargarCatalogo;
+    </script>
+</body>
+</html>

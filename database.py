@@ -46,6 +46,8 @@ class Producto(Base):
     precio_kilo = Column(Float, default=0)
     tipo = Column(String, default="kilo")
     negocio = Column(String, default="carniceria")
+    imagen_url = Column(String, nullable=True)
+    descripcion_publica = Column(String, nullable=True)
 
 # Tabla de ventas
 class Venta(Base):
@@ -145,6 +147,14 @@ def init_db():
                 conn.commit()
             if 'acceso_asadero' not in columnas_usuarios:
                 conn.execute(text("ALTER TABLE usuarios ADD COLUMN acceso_asadero BOOLEAN DEFAULT 1"))
+                conn.commit()
+            
+            # Migration: agregar imagen_url y descripcion_publica a productos
+            if 'imagen_url' not in columnas_productos:
+                conn.execute(text("ALTER TABLE productos ADD COLUMN imagen_url TEXT"))
+                conn.commit()
+            if 'descripcion_publica' not in columnas_productos:
+                conn.execute(text("ALTER TABLE productos ADD COLUMN descripcion_publica TEXT"))
                 conn.commit()
     except Exception as e:
         print(f"Migration error: {e}")
