@@ -520,12 +520,12 @@ def registrar_venta(v: VentaRequest, negocio: str = "carniceria", db: Session = 
     if tipo_producto == "plato":
         if v.unidad != "plato":
             return {"error": "Este producto se vende solo por platos"}
-        # Siempre descontar stock (encargado o no, para tener control)
-        if p.stock > 0:
-            if v.cantidad <= p.stock:
-                p.stock -= v.cantidad
-            else:
-                p.stock = 0
+        
+        # Verificar stock para platos
+        if v.cantidad > p.stock:
+            return {"error": f"Stock insuficiente ({int(p.stock)} platos disponibles)"}
+            
+        p.stock -= v.cantidad
         kilos = 0
         total = v.cantidad * p.precio_kilo
     else:

@@ -121,7 +121,9 @@ function abrirModal(id) {
     const form = modal.querySelector('form');
     if (form) form.querySelectorAll('input').forEach(input => input.value = "");
     if (id === 'modal-venta') initModalVenta();
-    if (id === 'modal-producto') { document.getElementById("prod-tipo").value = "kilo"; cambiarTipoProducto(); }
+    if (id === 'modal-producto') { 
+        initModalProd();
+    }
 }
 function cerrarModal(id) {
     document.getElementById(id).classList.remove('open');
@@ -864,9 +866,10 @@ async function cargarSelectores() {
     window.productosData = prods;
     document.getElementById("venta-producto").innerHTML = '<option value="">Selecciona un corte...</option>' + Object.keys(prods).map(p => {
         const prod = prods[p];
+        const sinStock = prod.stock <= 0 ? " (SIN STOCK)" : "";
         const stock = prod.tipo === "plato" ? `${prod.stock} platos` : `${prod.stock}kg`;
         const precio = prod.tipo === "plato" ? `$${prod.precio_kilo.toLocaleString()}/plato` : `$${prod.precio_kilo.toLocaleString()}/kg`;
-        return `<option value="${p}" data-tipo="${prod.tipo}">${p} — Stock: ${stock} — ${precio}</option>`;
+        return `<option value="${p}" data-tipo="${prod.tipo}">${p}${sinStock} — Stock: ${stock} — ${precio}</option>`;
     }).join("");
     
     const resC = await fetch("/admin/clientes");
@@ -905,7 +908,27 @@ function cambiarTipoProducto() {
     if (campoGramos && campoGramos.parentElement) campoGramos.parentElement.style.display = tipo === "plato" ? "none" : "";
 }
 
-function initModalProd() { cambiarTipoProducto(); }
+function initModalProd() { 
+    const tipoSelect = document.getElementById("prod-tipo");
+    if (tipoSelect) {
+        if (NEGOCIO === "carniceria") {
+            tipoSelect.value = "kilo";
+            // Hide plato option
+            Array.from(tipoSelect.options).forEach(opt => {
+                if (opt.value === "plato") opt.style.display = "none";
+                else opt.style.display = "";
+            });
+        } else {
+            tipoSelect.value = "plato";
+            // Hide kilo option
+            Array.from(tipoSelect.options).forEach(opt => {
+                if (opt.value === "kilo") opt.style.display = "none";
+                else opt.style.display = "";
+            });
+        }
+    }
+    cambiarTipoProducto(); 
+}
 
 window.currentRol = null;
 window.onload = async () => {
