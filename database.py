@@ -143,10 +143,10 @@ def init_db():
                 conn.commit()
             columnas_usuarios = [c['name'] for c in inspector.get_columns('usuarios')]
             if 'acceso_carniceria' not in columnas_usuarios:
-                conn.execute(text("ALTER TABLE usuarios ADD COLUMN acceso_carniceria BOOLEAN DEFAULT 1"))
+                conn.execute(text("ALTER TABLE usuarios ADD COLUMN acceso_carniceria BOOLEAN DEFAULT TRUE"))
                 conn.commit()
             if 'acceso_asadero' not in columnas_usuarios:
-                conn.execute(text("ALTER TABLE usuarios ADD COLUMN acceso_asadero BOOLEAN DEFAULT 1"))
+                conn.execute(text("ALTER TABLE usuarios ADD COLUMN acceso_asadero BOOLEAN DEFAULT TRUE"))
                 conn.commit()
             
             # Migration: agregar imagen_url y descripcion_publica a productos
