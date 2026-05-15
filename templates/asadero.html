@@ -31,7 +31,7 @@
         <div class="logo">
             <h1><i class="fas fa-fire"></i> Asadero</h1>
             <div class="header-right">
-                <a href="/admin" class="btn-negocio" title="Ir a Carnicería" style="text-decoration:none; background:linear-gradient(135deg,#c44536,#a63028); color:#fff; padding:6px 14px; border-radius:8px; font-size:.78rem; font-weight:700; display:inline-flex; align-items:center; gap:6px; margin-right:4px;">
+                <a href="/carniceria" class="btn-negocio" title="Ir a Carnicería" style="text-decoration:none; background:linear-gradient(135deg,#c44536,#a63028); color:#fff; padding:6px 14px; border-radius:8px; font-size:.78rem; font-weight:700; display:inline-flex; align-items:center; gap:6px; margin-right:4px;">
                     <i class="fas fa-drumstick-bite"></i> Carnicería
                 </a>
                 <div class="user-badge" id="user-info">
@@ -145,7 +145,7 @@
                 <div class="card-header">
                     <h2><i class="fas fa-cash-register"></i> Registro de Ventas</h2>
                     <div class="acciones">
-                        <a id="btn-exportar-ventas" href="/admin/exportar/ventas?negocio=asadero" class="btn-green" target="_blank"><i class="fas fa-file-excel"></i></a>
+                        <a id="btn-exportar-ventas" href="/carniceria/exportar/ventas?negocio=asadero" class="btn-green" target="_blank"><i class="fas fa-file-excel"></i></a>
                         <button class="btn-primary" onclick="abrirModal('modal-venta')"><i class="fas fa-plus"></i> Venta</button>
                     </div>
                 </div>
@@ -205,7 +205,7 @@
                     <div class="filtro-grupo"><label>Desde</label><input type="date" id="caja-fecha-inicio" onchange="filtrarCaja()"></div>
                     <div class="filtro-grupo"><label>Hasta</label><input type="date" id="caja-fecha-fin" onchange="filtrarCaja()"></div>
                     <button class="btn-secondary" onclick="limpiarFiltrosCaja()">Limpiar</button>
-                    <a id="btn-exportar-caja" href="/admin/exportar/caja?negocio=asadero" class="btn-green" target="_blank"><i class="fas fa-file-excel"></i></a>
+                    <a id="btn-exportar-caja" href="/carniceria/exportar/caja?negocio=asadero" class="btn-green" target="_blank"><i class="fas fa-file-excel"></i></a>
                 </div>
                 <div id="stats-caja" class="stat-grid"></div>
             </div>

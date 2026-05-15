@@ -187,11 +187,11 @@ def login_page():
     with open("templates/login.html", "r", encoding="utf-8") as f:
         return f.read()
 
-@app.get("/admin", response_class=HTMLResponse)
-def admin(token: str = Cookie(default=None)):
+@app.get("/carniceria", response_class=HTMLResponse)
+def carniceria_page(token: str = Cookie(default=None)):
     if not token or not verificar_token(token):
         return RedirectResponse(url="/login", status_code=302)
-    with open("templates/admin.html", "r", encoding="utf-8") as f:
+    with open("templates/carniceria.html", "r", encoding="utf-8") as f:
         return f.read()
 
 @app.get("/asadero", response_class=HTMLResponse)
@@ -264,9 +264,9 @@ def verificar_auth(token: str = Cookie(default=None)):
         return {"rol": "empleado", "nombre": ""}
 
 # --- GESTIÓN DE USUARIOS ---
-@app.get("/admin/usuarios")
+@app.get("/carniceria/usuarios")
 def listar_usuarios(db: Session = Depends(get_db), token: str = Cookie(default=None)):
-    print(f"/admin/usuarios - cookie: {token[:20] if token else None}")
+    print(f"/carniceria/usuarios - cookie: {token[:20] if token else None}")
     email = verificar_token(token) if token else None
     print(f"email decodificado: {email}")
     if not email:
@@ -303,7 +303,7 @@ def listar_usuarios(db: Session = Depends(get_db), token: str = Cookie(default=N
             })
     return resultado
 
-@app.post("/admin/usuario")
+@app.post("/carniceria/usuario")
 def crear_usuario(data: dict, db: Session = Depends(get_db), token: str = Cookie(default=None)):
     if not verificar_token(token):
         raise HTTPException(status_code=401, detail="No autorizado")
@@ -324,7 +324,7 @@ def crear_usuario(data: dict, db: Session = Depends(get_db), token: str = Cookie
     db.commit()
     return {"mensaje": "Usuario creado"}
 
-@app.put("/admin/usuario/{id}")
+@app.put("/carniceria/usuario/{id}")
 def editar_usuario(id: int, data: dict, db: Session = Depends(get_db), token: str = Cookie(default=None)):
     if not verificar_token(token):
         raise HTTPException(status_code=401, detail="No autorizado")
@@ -348,7 +348,7 @@ def editar_usuario(id: int, data: dict, db: Session = Depends(get_db), token: st
     db.commit()
     return {"mensaje": "Usuario actualizado"}
 
-@app.delete("/admin/usuario/{id}")
+@app.delete("/carniceria/usuario/{id}")
 def eliminar_usuario(id: int, db: Session = Depends(get_db), token: str = Cookie(default=None)):
     if not verificar_token(token):
         raise HTTPException(status_code=401, detail="No autorizado")
@@ -431,7 +431,7 @@ def listar_inventario(negocio: str = "carniceria", db: Session = Depends(get_db)
             pass
     return result
 
-@app.post("/admin/producto")
+@app.post("/carniceria/producto")
 def crear_producto(p: ProductoRequest, negocio: str = "carniceria", db: Session = Depends(get_db)):
     tipo = p.tipo if p.tipo in ["kilo", "plato"] else "kilo"
     existe = db.query(Producto).filter(Producto.nombre == p.nombre).first()
@@ -445,7 +445,7 @@ def crear_producto(p: ProductoRequest, negocio: str = "carniceria", db: Session 
     db.commit()
     return {"mensaje": "Producto creado con éxito"}
 
-@app.put("/admin/producto/{id}")
+@app.put("/carniceria/producto/{id}")
 def editar_producto_completo(id: int, data: ProductoUpdate, db: Session = Depends(get_db)):
     p = db.query(Producto).filter(Producto.id == id).first()
     if not p: return {"error": "No existe"}
@@ -464,7 +464,7 @@ def editar_producto_completo(id: int, data: ProductoUpdate, db: Session = Depend
     db.commit()
     return {"mensaje": "Producto actualizado"}
 
-@app.delete("/admin/producto/{id}")
+@app.delete("/carniceria/producto/{id}")
 def eliminar_producto_por_id(id: int, db: Session = Depends(get_db)):
     p = db.query(Producto).filter(Producto.id == id).first()
     if p:
@@ -475,19 +475,19 @@ def eliminar_producto_por_id(id: int, db: Session = Depends(get_db)):
 
 # --- GESTIÓN DE CLIENTES ---
 
-@app.get("/admin/clientes")
+@app.get("/carniceria/clientes")
 def get_clientes(db: Session = Depends(get_db)):
     clientes = db.query(Cliente).order_by(Cliente.nombre).all()
     return [{"id": c.id, "nombre": c.nombre, "telefono": c.telefono, "direccion": c.direccion, "fecha_registro": c.fecha_registro.strftime("%Y-%m-%d") if c.fecha_registro else "—"} for c in clientes]
 
-@app.post("/admin/cliente")
+@app.post("/carniceria/cliente")
 def crear_cliente(c: ClienteRequest, db: Session = Depends(get_db)):
     nuevo = Cliente(nombre=c.nombre, telefono=c.telefono, direccion=c.direccion, fecha_registro=obtener_hora_colombia())
     db.add(nuevo)
     db.commit()
     return {"mensaje": "Cliente guardado"}
 
-@app.put("/admin/cliente/{id}")
+@app.put("/carniceria/cliente/{id}")
 def editar_cliente_completo(id: int, data: ClienteUpdate, db: Session = Depends(get_db)):
     c = db.query(Cliente).filter(Cliente.id == id).first()
     if not c: return {"error": "No encontrado"}
@@ -497,7 +497,7 @@ def editar_cliente_completo(id: int, data: ClienteUpdate, db: Session = Depends(
     db.commit()
     return {"mensaje": "Cliente actualizado"}
 
-@app.delete("/admin/cliente/{id}")
+@app.delete("/carniceria/cliente/{id}")
 def eliminar_cliente(id: int, db: Session = Depends(get_db)):
     c = db.query(Cliente).filter(Cliente.id == id).first()
     if c:
@@ -584,7 +584,7 @@ def registrar_venta(v: VentaRequest, negocio: str = "carniceria", db: Session = 
     else:
         return {"mensaje": "Venta exitosa", "producto": v.producto, "kilos": kilos, "subtotal": total, "stock_restante": p.stock}
 
-@app.get("/admin/ventas")
+@app.get("/carniceria/ventas")
 def listar_ventas(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
@@ -602,12 +602,12 @@ def listar_ventas(
     ventas = query.order_by(Venta.fecha_venta.desc()).limit(150).all()
     return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "cantidad": getattr(v, 'cantidad', v.kilos) or v.kilos, "subtotal": v.subtotal, "monto_pagado": v.monto_pagado or 0, "pagado": v.pagado, "notas": v.notas, "fecha_vencimiento": v.fecha_vencimiento.strftime("%Y-%m-%d") if v.fecha_vencimiento else ""} for v in ventas]
 
-@app.get("/admin/encargados")
+@app.get("/carniceria/encargados")
 def listar_encargados(negocio: str = "carniceria", db: Session = Depends(get_db)):
     ventas = db.query(Venta).filter(Venta.pagado == "encargado", Venta.negocio == negocio).order_by(Venta.fecha_venta.desc()).all()
     return [{"id": v.id, "fecha_venta": v.fecha_venta.strftime("%Y-%m-%d %H:%M"), "cliente": v.cliente_nombre, "direccion": v.direccion or "", "producto": v.producto, "kilos": v.kilos, "subtotal": v.subtotal, "monto_pagado": v.monto_pagado or 0, "notas": v.notas} for v in ventas]
 
-@app.get("/admin/encargados/toggle/{id}")
+@app.get("/carniceria/encargados/toggle/{id}")
 def toggle_encargado(id: int, db: Session = Depends(get_db)):
     v = db.query(Venta).filter(Venta.id == id).first()
     if not v: return {"error": "No existe"}
@@ -623,7 +623,7 @@ def toggle_encargado(id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensaje": "Estado actualizado", "pagado": v.pagado}
 
-@app.put("/admin/encargados/{id}")
+@app.put("/carniceria/encargados/{id}")
 def confirmar_encargado(id: int, db: Session = Depends(get_db)):
     v = db.query(Venta).filter(Venta.id == id).first()
     if not v:
@@ -685,7 +685,7 @@ async def registrar_abono(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         return {"error": str(e)}
 
-@app.put("/admin/venta/{id}")
+@app.put("/carniceria/venta/{id}")
 def corregir_venta(id: int, data: dict, db: Session = Depends(get_db), token: str = Cookie(default=None)):
     if not verificar_token(token):
         raise HTTPException(status_code=401)
@@ -732,7 +732,7 @@ def corregir_venta(id: int, data: dict, db: Session = Depends(get_db), token: st
     db.commit()
     return {"mensaje": "Venta corregida"}
 
-@app.put("/admin/venta/{id}/pago")
+@app.put("/carniceria/venta/{id}/pago")
 def toggle_pago_venta(id: int, db: Session = Depends(get_db)):
     v = db.query(Venta).filter(Venta.id == id).first()
     if not v: return {"error": "No existe"}
@@ -746,7 +746,7 @@ def toggle_pago_venta(id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensaje": "Estado de pago actualizado", "pagado": v.pagado}
 
-@app.delete("/admin/venta/{id}")
+@app.delete("/carniceria/venta/{id}")
 def eliminar_venta(id: int, db: Session = Depends(get_db)):
     v = db.query(Venta).filter(Venta.id == id).first()
     if not v: return {"error": "No existe"}
@@ -763,19 +763,19 @@ def eliminar_venta(id: int, db: Session = Depends(get_db)):
 
 # --- GESTIÓN DE GASTOS ---
 
-@app.post("/admin/gasto")
+@app.post("/carniceria/gasto")
 def registrar_gasto(g: GastoRequest, negocio: str = "carniceria", db: Session = Depends(get_db)):
     nuevo = Gasto(descripcion=g.descripcion, categoria=g.categoria, monto=g.monto, fecha=obtener_hora_colombia(), negocio=negocio)
     db.add(nuevo)
     db.commit()
     return {"mensaje": "Gasto registrado"}
 
-@app.get("/admin/gastos")
+@app.get("/carniceria/gastos")
 def listar_gastos(negocio: str = "carniceria", db: Session = Depends(get_db)):
     gs = db.query(Gasto).filter(Gasto.negocio == negocio).order_by(Gasto.fecha.desc()).all()
     return [{"id": g.id, "fecha": g.fecha.strftime("%Y-%m-%d"), "descripcion": g.descripcion, "monto": g.monto, "categoria": g.categoria} for g in gs]
 
-@app.delete("/admin/gasto/{id}")
+@app.delete("/carniceria/gasto/{id}")
 def eliminar_gasto(id: int, db: Session = Depends(get_db)):
     g = db.query(Gasto).filter(Gasto.id == id).first()
     if not g: return {"error": "No existe"}
@@ -785,14 +785,14 @@ def eliminar_gasto(id: int, db: Session = Depends(get_db)):
 
 # --- REPORTES Y CAJA ---
 
-@app.get("/admin/caja")
+@app.get("/carniceria/caja")
 def estado_caja(negocio: str = "carniceria", db: Session = Depends(get_db)):
     ingresos = db.query(func.sum(Venta.subtotal)).filter(Venta.pagado == "pagado", Venta.negocio == negocio).scalar() or 0
     egresos = db.query(func.sum(Gasto.monto)).filter(Gasto.negocio == negocio).scalar() or 0
     pendiente = db.query(func.sum(Venta.subtotal)).filter(Venta.pagado == "encargado", Venta.negocio == negocio).scalar() or 0
     return {"saldo_real": ingresos - egresos, "ingresos": ingresos, "egresos": egresos, "pendiente": pendiente}
 
-@app.get("/admin/caja-detalle")
+@app.get("/carniceria/caja-detalle")
 def caja_detalle(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
@@ -834,8 +834,8 @@ def caja_detalle(
     except Exception as e:
         return {"error": str(e), "ventas_pagadas": 0, "ventas_deben": 0, "pendiente": 0, "total_ventas": 0, "gastos": 0, "saldo_real": 0}
 
-@app.get("/admin/dashboard")
-def get_dashboard_data(periodo: str = "7dias", negocio: str = "carniceria", db: Session = Depends(get_db)):
+@app.get("/carniceria/dashboard")
+def dashboard(periodo: str = "7dias", negocio: str = "carniceria", db: Session = Depends(get_db)):
     ahora = obtener_hora_colombia()
     inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
     fin_dia = ahora.replace(hour=23, minute=59, second=59, microsecond=999999)
@@ -877,8 +877,8 @@ def get_dashboard_data(periodo: str = "7dias", negocio: str = "carniceria", db: 
         "periodo": periodo
     }
 
-@app.get("/admin/deudas")
-def get_reporte_deudas(db: Session = Depends(get_db), negocio: str = "carniceria", fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None):
+@app.get("/carniceria/deudas")
+def listar_deudas(db: Session = Depends(get_db), negocio: str = "carniceria", fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None):
     query = db.query(Venta).filter(Venta.pagado == "debe", Venta.negocio == negocio)
 
     if fecha_inicio:
@@ -928,13 +928,13 @@ def get_reporte_deudas(db: Session = Depends(get_db), negocio: str = "carniceria
         })
     return {"deudas": res, "total_pendiente": sum(x["total"] for x in res)}
 
-@app.get("/admin/historial")
-def ver_historial_movimientos(negocio: str = "carniceria", db: Session = Depends(get_db)):
+@app.get("/carniceria/historial")
+def ver_historial(negocio: str = "carniceria", db: Session = Depends(get_db)):
     logs = db.query(Historial).filter(Historial.negocio == negocio).order_by(Historial.fecha.desc()).limit(100).all()
     return [{"fecha": l.fecha.strftime("%Y-%m-%d %H:%M"), "producto": l.producto, "tipo": l.tipo, "cantidad": l.cantidad, "motivo": l.motivo} for l in logs]
 
-@app.get("/admin/exportar/caja")
-def generar_excel_caja(
+@app.get("/carniceria/exportar/caja")
+def exportar_caja_xlsx(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
     negocio: str = "carniceria",
@@ -970,8 +970,8 @@ def generar_excel_caja(
     stream = io.BytesIO(); wb.save(stream); stream.seek(0)
     return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f"attachment; filename={filename}"})
 
-@app.get("/admin/exportar/ventas")
-def generar_excel_ventas(
+@app.get("/carniceria/exportar/ventas")
+def exportar_ventas_xlsx(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
     negocio: str = "carniceria",

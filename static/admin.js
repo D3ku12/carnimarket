@@ -154,8 +154,8 @@ async function filtrarDashboard() {
     document.getElementById("stats-dashboard").innerHTML = Array(5).fill('<div class="skeleton skeleton-stat"></div>').join('');
     
     try {
-        const res = await fetch(nq(`/admin/dashboard?periodo=${periodo}`));
-        const resCaja = await fetch(nq("/admin/caja"));
+        const res = await fetch(nq(`/carniceria/dashboard?periodo=${periodo}`));
+        const resCaja = await fetch(nq("/carniceria/caja"));
         const data = await res.json();
         const caja = await resCaja.json();
 
@@ -260,7 +260,7 @@ async function cargarInventario() {
 
 async function cargarClientes() {
     try {
-        const res = await fetch("/admin/clientes");
+        const res = await fetch("/carniceria/clientes");
         const data = await res.json();
         if (data.length === 0) {
             document.getElementById("tabla-clientes").innerHTML = getEmptyState("No hay clientes registrados", "fa-users");
@@ -282,7 +282,7 @@ async function cargarClientes() {
 
 async function cargarGastos() {
     try {
-        const res = await fetch(nq("/admin/gastos"));
+        const res = await fetch(nq("/carniceria/gastos"));
         const data = await res.json();
         if (data.length === 0) {
             document.getElementById("tabla-gastos").innerHTML = getEmptyState("No hay gastos registrados", "fa-receipt");
@@ -304,7 +304,7 @@ async function cargarGastos() {
 
 async function cargarEncargados() {
     try {
-        const res = await fetch(nq("/admin/encargados"));
+        const res = await fetch(nq("/carniceria/encargados"));
         const data = await res.json();
         if (data.length === 0) {
             document.getElementById("tabla-encargados").innerHTML = getEmptyState("No hay encargos pendientes", "fa-clock");
@@ -351,7 +351,7 @@ document.getElementById("form-cambiar-estado").onsubmit = async (e) => {
     const id = document.getElementById("cambio-id").value;
     const estado = document.getElementById("cambio-estado").value;
     
-    const res = await fetch(`/admin/venta/${id}`, {
+    const res = await fetch(`/carniceria/venta/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pagado: estado })
@@ -376,13 +376,13 @@ async function filtrarCaja() {
     const fecha_inicio = document.getElementById("caja-fecha-inicio")?.value || "";
     const fecha_fin = document.getElementById("caja-fecha-fin")?.value || "";
     
-    let url = "/admin/caja-detalle";
+    let url = "/carniceria/caja-detalle";
     const params = new URLSearchParams();
     if (fecha_inicio) params.append("fecha_inicio", fecha_inicio);
     if (fecha_fin) params.append("fecha_fin", fecha_fin);
     if (params.toString()) url += "?" + params.toString();
     
-    document.getElementById("btn-exportar-caja").href = nq("/admin/exportar/caja" + (params.toString() ? "?" + params.toString() : ""));
+    document.getElementById("btn-exportar-caja").href = nq("/carniceria/exportar/caja" + (params.toString() ? "?" + params.toString() : ""));
     
     try {
         const res = await fetch(nq(url));
@@ -441,13 +441,13 @@ async function filtrarVentas() {
     const fecha_fin = document.getElementById("ventas-fecha-fin")?.value || "";
     const tbody = document.getElementById("tabla-ventas");
     
-    let url = "/admin/ventas";
+    let url = "/carniceria/ventas";
     const params = new URLSearchParams();
     if (fecha_inicio) params.append("fecha_inicio", fecha_inicio);
     if (fecha_fin) params.append("fecha_fin", fecha_fin);
     if (params.toString()) url += "?" + params.toString();
     
-    document.getElementById("btn-exportar-ventas").href = nq("/admin/exportar/ventas" + (params.toString() ? "?" + params.toString() : ""));
+    document.getElementById("btn-exportar-ventas").href = nq("/carniceria/exportar/ventas" + (params.toString() ? "?" + params.toString() : ""));
     
     try {
         const res = await fetch(nq(url));
@@ -500,7 +500,7 @@ async function prepararEdicionVenta(id, cliente, producto, kilos, montoPagado, p
     
     let clientes = [];
     try {
-        const res = await fetch("/admin/clientes");
+        const res = await fetch("/carniceria/clientes");
         clientes = await res.json();
     } catch(e) {
         console.error("Error cargando clientes", e);
@@ -543,7 +543,7 @@ document.getElementById("form-editar-venta").onsubmit = async (e) => {
         const clienteNombre = document.getElementById("edit-venta-cliente").value;
         const body = { kilos: kilos, monto_pagado: montoPagado, pagado: document.getElementById("edit-venta-pagado").value, cliente_nombre: clienteNombre };
         
-        const res = await fetch(`/admin/venta/${id}`, {
+        const res = await fetch(`/carniceria/venta/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body)
@@ -571,7 +571,7 @@ function limpiarFiltrosVentas() {
 
 async function cargarDeudas() {
     try {
-        const res = await fetch(nq("/admin/deudas"));
+        const res = await fetch(nq("/carniceria/deudas"));
         const data = await res.json();
         if (data.deudas.length === 0) {
             document.getElementById("tabla-deudas").innerHTML = getEmptyState("No hay deudas pendientes", "fa-check-circle");
@@ -657,7 +657,7 @@ document.getElementById("form-producto").onsubmit = async (e) => {
             tipo: tipo
         };
 
-        const url = id ? `/admin/producto/${id}` : nq("/admin/producto");
+        const url = id ? `/carniceria/producto/${id}` : nq("/carniceria/producto");
         const res = await fetch(id ? url : url, {
             method: id ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
@@ -691,7 +691,7 @@ document.getElementById("form-cliente").onsubmit = async (e) => {
             direccion: document.getElementById("cli-dir").value
         };
 
-        const res = await fetch(id ? `/admin/cliente/${id}` : "/admin/cliente", {
+        const res = await fetch(id ? `/carniceria/cliente/${id}` : "/carniceria/cliente", {
             method: id ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body)
@@ -716,7 +716,7 @@ document.getElementById("form-gasto").onsubmit = async (e) => {
             categoria: document.getElementById("gasto-cat").value,
             monto: parseFloat(document.getElementById("gasto-monto").value)
         };
-        const res = await fetch(nq("/admin/gasto"), {
+        const res = await fetch(nq("/carniceria/gasto"), {
             method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
         });
         const data = await res.json();
@@ -803,7 +803,7 @@ async function cambiarEstadoVenta(id, nuevoEstado, saldo) {
 
 function eliminarCliente(id) {
     showConfirm("Eliminar Cliente", "¿Estás seguro de eliminar este cliente?", async () => {
-        const res = await fetch(`/admin/cliente/${id}`, { method: "DELETE" });
+        const res = await fetch(`/carniceria/cliente/${id}`, { method: "DELETE" });
         if(res.ok) { showToast("Cliente eliminado", "success"); cargarClientes(); }
         else showToast("Error al eliminar", "error");
     });
@@ -811,7 +811,7 @@ function eliminarCliente(id) {
 
 function eliminarProducto(id) {
     showConfirm("Eliminar Producto", "Se perderá todo el historial asociado. ¿Continuar?", async () => {
-        const res = await fetch(`/admin/producto/${id}`, { method: "DELETE" });
+        const res = await fetch(`/carniceria/producto/${id}`, { method: "DELETE" });
         if(res.ok) { showToast("Producto eliminado", "success"); cargarInventario(); }
         else showToast("Error al eliminar", "error");
     });
@@ -819,7 +819,7 @@ function eliminarProducto(id) {
 
 function eliminarVenta(id) {
     showConfirm("Eliminar Venta", "Se restaurará el stock del producto. ¿Continuar?", async () => {
-        const res = await fetch(`/admin/venta/${id}`, { method: "DELETE" });
+        const res = await fetch(`/carniceria/venta/${id}`, { method: "DELETE" });
         if(res.ok) { showToast("Venta eliminada", "success"); cargarVentas(); cargarDashboard(); }
         else showToast("Error al eliminar", "error");
     });
@@ -827,7 +827,7 @@ function eliminarVenta(id) {
 
 function eliminarGasto(id) {
     showConfirm("Eliminar Gasto", "¿Estás seguro de eliminar este gasto?", async () => {
-        const res = await fetch(`/admin/gasto/${id}`, { method: "DELETE" });
+        const res = await fetch(`/carniceria/gasto/${id}`, { method: "DELETE" });
         if(res.ok) { showToast("Gasto eliminado", "success"); cargarGastos(); cargarDashboard(); }
         else showToast("Error al eliminar", "error");
     });
@@ -872,7 +872,7 @@ async function cargarSelectores() {
         return `<option value="${p}" data-tipo="${prod.tipo}">${p}${sinStock} — Stock: ${stock} — ${precio}</option>`;
     }).join("");
     
-    const resC = await fetch("/admin/clientes");
+    const resC = await fetch("/carniceria/clientes");
     const clis = await resC.json();
     window.clientesData = clis;
     document.getElementById("lista-clientes").innerHTML = clis.map(c => `<option value="${c.nombre}">`).join("");
@@ -947,7 +947,7 @@ window.onload = async () => {
 
 async function cargarUsuarios() {
     try {
-        const res = await fetch("/admin/usuarios");
+        const res = await fetch("/carniceria/usuarios");
         const data = await res.json();
         
         if (!res.ok || !Array.isArray(data)) {
@@ -1007,7 +1007,7 @@ abrirModal = function(id) {
 
 function eliminarUsuario(id) {
     showConfirm("Eliminar Usuario", "¿Estás seguro de eliminar este usuario?", async () => {
-        const res = await fetch(`/admin/usuario/${id}`, { method: "DELETE" });
+        const res = await fetch(`/carniceria/usuario/${id}`, { method: "DELETE" });
         if (res.ok) { showToast("Usuario eliminado", "success"); cargarUsuarios(); }
         else showToast("Error al eliminar", "error");
     });
@@ -1034,7 +1034,7 @@ document.getElementById("form-usuario").onsubmit = async (e) => {
             body.activo = document.getElementById("user-activo").value === "true";
         }
 
-        const url = id ? `/admin/usuario/${id}` : "/admin/usuario";
+        const url = id ? `/carniceria/usuario/${id}` : "/carniceria/usuario";
         const method = id ? "PUT" : "POST";
 
         const res = await fetch(url, {
