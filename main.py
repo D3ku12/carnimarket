@@ -188,16 +188,28 @@ def login_page():
         return f.read()
 
 @app.get("/carniceria", response_class=HTMLResponse)
-def carniceria_page(token: str = Cookie(default=None)):
-    if not token or not verificar_token(token):
+def carniceria_page(db: Session = Depends(get_db), token: str = Cookie(default=None)):
+    email = verificar_token(token) if token else None
+    if not email:
         return RedirectResponse(url="/login", status_code=302)
+    
+    u = db.query(Usuario).filter(Usuario.email == email).first()
+    if not u or not u.activo or not u.acceso_carniceria:
+        raise HTTPException(status_code=404)
+        
     with open("templates/carniceria.html", "r", encoding="utf-8") as f:
         return f.read()
 
 @app.get("/asadero", response_class=HTMLResponse)
-def asadero(token: str = Cookie(default=None)):
-    if not token or not verificar_token(token):
+def asadero(db: Session = Depends(get_db), token: str = Cookie(default=None)):
+    email = verificar_token(token) if token else None
+    if not email:
         return RedirectResponse(url="/login", status_code=302)
+        
+    u = db.query(Usuario).filter(Usuario.email == email).first()
+    if not u or not u.activo or not u.acceso_asadero:
+        raise HTTPException(status_code=404)
+        
     with open("templates/asadero.html", "r", encoding="utf-8") as f:
         return f.read()
 
@@ -290,6 +302,8 @@ def listar_usuarios(db: Session = Depends(get_db), token: str = Cookie(default=N
                 "nombre": x.nombre or "", 
                 "rol": x.rol or "empleado", 
                 "activo": x.activo or False,
+                "acceso_carniceria": x.acceso_carniceria,
+                "acceso_asadero": x.acceso_asadero,
                 "ultimo_login": ultimo
             })
         except Exception:
@@ -299,6 +313,8 @@ def listar_usuarios(db: Session = Depends(get_db), token: str = Cookie(default=N
                 "nombre": "", 
                 "rol": "empleado", 
                 "activo": False, 
+                "acceso_carniceria": True,
+                "acceso_asadero": True,
                 "ultimo_login": ""
             })
     return resultado
@@ -318,7 +334,9 @@ def crear_usuario(data: dict, db: Session = Depends(get_db), token: str = Cookie
         email=data.get("email", "").lower().strip(),
         password_hash=pwd_context.hash(data.get("password", "")),
         nombre=data.get("nombre", "").strip(),
-        rol=data.get("rol", "empleado")
+        rol=data.get("rol", "empleado"),
+        acceso_carniceria=data.get("acceso_carniceria", True),
+        acceso_asadero=data.get("acceso_asadero", True)
     )
     db.add(nuevo)
     db.commit()
@@ -342,6 +360,10 @@ def editar_usuario(id: int, data: dict, db: Session = Depends(get_db), token: st
         usuario.rol = data["rol"]
     if data.get("activo") is not None:
         usuario.activo = data["activo"]
+    if data.get("acceso_carniceria") is not None:
+        usuario.acceso_carniceria = data["acceso_carniceria"]
+    if data.get("acceso_asadero") is not None:
+        usuario.acceso_asadero = data["acceso_asadero"]
     if data.get("password"):
         usuario.password_hash = pwd_context.hash(data["password"])
     

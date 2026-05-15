@@ -410,11 +410,27 @@
                             <option value="admin">Administrador</option>
                         </select>
                     </div>
-                    <div class="form-group" style="flex:1; display:none;" id="group-activo">
-                        <label>Estado</label>
+                    <div class="form-group" id="group-activo">
+                        <label>Estado General</label>
                         <select id="user-activo">
                             <option value="true">Activo</option>
-                            <option value="false">Inactivo</option>
+                            <option value="false">Inactivo (Bloqueo total)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row" style="display:flex; gap:10px;">
+                    <div class="form-group" style="flex:1">
+                        <label>Acceso Carnicería</label>
+                        <select id="user-acc-carn">
+                            <option value="true">Sí</option>
+                            <option value="false">No (404)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Acceso Asadero</label>
+                        <select id="user-acc-asad">
+                            <option value="true">Sí</option>
+                            <option value="false">No (404)</option>
                         </select>
                     </div>
                 </div>

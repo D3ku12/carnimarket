@@ -24,6 +24,8 @@ class Usuario(Base):
     activo = Column(Boolean, default=True)
     fecha_registro = Column(DateTime, default=datetime.now)
     ultimo_login = Column(DateTime, nullable=True)
+    acceso_carniceria = Column(Boolean, default=True)
+    acceso_asadero = Column(Boolean, default=True)
 
 # Tabla de clientes
 class Cliente(Base):
@@ -136,6 +138,13 @@ def init_db():
             columnas_historial = [c['name'] for c in inspector.get_columns('historial')]
             if 'negocio' not in columnas_historial:
                 conn.execute(text("ALTER TABLE historial ADD COLUMN negocio VARCHAR DEFAULT 'carniceria'"))
+                conn.commit()
+            columnas_usuarios = [c['name'] for c in inspector.get_columns('usuarios')]
+            if 'acceso_carniceria' not in columnas_usuarios:
+                conn.execute(text("ALTER TABLE usuarios ADD COLUMN acceso_carniceria BOOLEAN DEFAULT 1"))
+                conn.commit()
+            if 'acceso_asadero' not in columnas_usuarios:
+                conn.execute(text("ALTER TABLE usuarios ADD COLUMN acceso_asadero BOOLEAN DEFAULT 1"))
                 conn.commit()
     except Exception as e:
         print(f"Migration error: {e}")

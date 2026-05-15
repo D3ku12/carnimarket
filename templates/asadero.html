@@ -430,11 +430,27 @@
                     </select>
                 </div>
                 <div class="form-group" id="group-activo">
-                    <label>Estado</label>
+                    <label>Estado General</label>
                     <select id="user-activo">
                         <option value="true">Activo</option>
-                        <option value="false">Inactivo (Sin acceso)</option>
+                        <option value="false">Inactivo (Bloqueo total)</option>
                     </select>
+                </div>
+                <div class="row" style="display:flex; gap:10px;">
+                    <div class="form-group" style="flex:1">
+                        <label>Acceso Carnicería</label>
+                        <select id="user-acc-carn">
+                            <option value="true">Sí</option>
+                            <option value="false">No (404)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Acceso Asadero</label>
+                        <select id="user-acc-asad">
+                            <option value="true">Sí</option>
+                            <option value="false">No (404)</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="cerrarModal('modal-usuario')">Cerrar</button>
