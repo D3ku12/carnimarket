@@ -484,16 +484,27 @@ async function filtrarVentas() {
     } catch(e) { showToast("Error cargando ventas", "error"); }
 }
 
-function prepararEdicionVenta(id, cliente, producto, kilos, montoPagado, pagado) {
+async function prepararEdicionVenta(id, cliente, producto, kilos, montoPagado, pagado) {
     abrirModal('modal-editar-venta');
     document.getElementById("edit-venta-id").value = id;
     
     const selectCliente = document.getElementById("edit-venta-cliente");
-    let optionsHtml = `<option value="Cliente General">Cliente General</option>`;
-    if (window.clientesData) {
-        optionsHtml += window.clientesData.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join("");
+    selectCliente.innerHTML = `<option value="">Cargando clientes...</option>`;
+    
+    let clientes = [];
+    try {
+        const res = await fetch("/admin/clientes");
+        clientes = await res.json();
+    } catch(e) {
+        console.error("Error cargando clientes", e);
     }
-    if (cliente.toLowerCase() !== "cliente general" && (!window.clientesData || !window.clientesData.find(c => c.nombre === cliente))) {
+    
+    let optionsHtml = `<option value="Cliente General">Cliente General</option>`;
+    clientes.forEach(c => {
+        optionsHtml += `<option value="${c.nombre}">${c.nombre}</option>`;
+    });
+    
+    if (cliente.toLowerCase() !== "cliente general" && !clientes.find(c => c.nombre === cliente)) {
         optionsHtml += `<option value="${cliente}">${cliente}</option>`;
     }
     selectCliente.innerHTML = optionsHtml;
