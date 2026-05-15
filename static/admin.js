@@ -114,7 +114,7 @@ function abrirModal(id) {
     const modal = document.getElementById(id);
     modal.classList.add('open');
     const form = modal.querySelector('form');
-    if (form) form.querySelectorAll('input:not([type="hidden"])').forEach(input => input.value = "");
+    if (form) form.querySelectorAll('input').forEach(input => input.value = "");
     if (id === 'modal-venta') initModalVenta();
     if (id === 'modal-producto') { document.getElementById("prod-tipo").value = "kilo"; cambiarTipoProducto(); }
 }
