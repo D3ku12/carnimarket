@@ -264,14 +264,7 @@
                 <input type="hidden" id="prod-id">
                 <input type="hidden" id="prod-tipo-original">
                 <div class="form-group"><label>Nombre del Producto</label><input type="text" id="prod-nombre" required></div>
-                <div class="form-group">
-                    <label>Tipo de Venta</label>
-                    <select id="prod-tipo" onchange="cambiarTipoProducto()">
-                        <option value="kilo">Por Kilo (permite kilos o gramos)</option>
-                        <option value="plato">Por Plato (solo platos)</option>
-                    </select>
-                    <small style="color:var(--text-muted); font-size:11px;">Si es "por plato", no se puede usar kilos/gramos</small>
-                </div>
+                <input type="hidden" id="prod-tipo">
                 <div class="row" style="display:flex; gap:10px;">
                     <div class="form-group" style="flex:1"><label>Stock <span id="label-stock">(kg)</span></label><input type="number" id="prod-stock" step="0.1" required></div>
                     <div class="form-group" style="flex:1"><label>Stock Gramos (g)</label><input type="number" id="prod-gramos" step="1" placeholder="0"></div>

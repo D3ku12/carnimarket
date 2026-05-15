@@ -909,22 +909,12 @@ function cambiarTipoProducto() {
 }
 
 function initModalProd() { 
-    const tipoSelect = document.getElementById("prod-tipo");
-    if (tipoSelect) {
+    const tipoInput = document.getElementById("prod-tipo");
+    if (tipoInput) {
         if (NEGOCIO === "carniceria") {
-            tipoSelect.value = "kilo";
-            // Hide plato option
-            Array.from(tipoSelect.options).forEach(opt => {
-                if (opt.value === "plato") opt.style.display = "none";
-                else opt.style.display = "";
-            });
+            tipoInput.value = "kilo";
         } else {
-            tipoSelect.value = "plato";
-            // Hide kilo option
-            Array.from(tipoSelect.options).forEach(opt => {
-                if (opt.value === "kilo") opt.style.display = "none";
-                else opt.style.display = "";
-            });
+            tipoInput.value = "plato";
         }
     }
     cambiarTipoProducto(); 
