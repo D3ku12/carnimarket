@@ -42,8 +42,9 @@ try:
             CLOUDINARY_OK = True
         else:
             CLOUDINARY_OK = False
-except Exception:
+except Exception as e:
     CLOUDINARY_OK = False
+    CLOUDINARY_ERROR_MSG = str(e)
 
 def sanitize_html(text: str) -> str:
     return html.escape(text).strip()
@@ -271,7 +272,8 @@ async def subir_imagen(file: UploadFile = File(...), token: str = Cookie(default
     
     if not CLOUDINARY_OK:
         url_set = "SI" if os.getenv("CLOUDINARY_URL") else "NO"
-        return {"error": f"Error: CLOUDINARY_URL detectada en Railway = {url_set}. Revisa que esté bien escrita."}
+        error_detail = CLOUDINARY_ERROR_MSG if "CLOUDINARY_ERROR_MSG" in globals() else "No se detectaron las variables"
+        return {"error": f"Error (URL={url_set}): {error_detail}"}
     
     try:
         result = cloudinary.uploader.upload(file.file, folder="carnimarket")
