@@ -965,9 +965,13 @@ function initModalVenta() {
 }
 
 function cambiarTipoProducto() {
-    const tipo = document.getElementById("prod-tipo").value;
-    document.getElementById("label-stock").textContent = tipo === "plato" ? "(platos)" : "(kg)";
-    document.getElementById("label-precio").textContent = tipo === "plato" ? "por Plato" : "por Kilo";
+    const tipo = document.getElementById("prod-tipo")?.value || "kilo";
+    const lblStock = document.getElementById("label-stock");
+    const lblPrecio = document.getElementById("label-precio");
+    
+    if (lblStock) lblStock.textContent = tipo === "plato" ? "(platos)" : "(kg)";
+    if (lblPrecio) lblPrecio.textContent = tipo === "plato" ? "por Plato" : "por Kilo";
+    
     const campoGramos = document.getElementById("prod-gramos");
     if (campoGramos && campoGramos.parentElement) campoGramos.parentElement.style.display = tipo === "plato" ? "none" : "";
 }
