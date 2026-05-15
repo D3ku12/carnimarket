@@ -3,8 +3,6 @@ from collections import defaultdict
 from fastapi import FastAPI, Depends, Cookie, Response, Request, HTTPException, status, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-import cloudinary
-import cloudinary.uploader
 from pydantic import BaseModel, validator
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -27,13 +25,19 @@ import html
 
 load_dotenv()
 
-# Configuración de Cloudinary
-cloudinary.config(
-  cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
-  api_key = os.getenv("CLOUDINARY_API_KEY"),
-  api_secret = os.getenv("CLOUDINARY_API_SECRET"),
-  secure = True
-)
+# Configuración de Cloudinary (opcional)
+try:
+    import cloudinary
+    import cloudinary.uploader
+    cloudinary.config(
+      cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
+      api_key = os.getenv("CLOUDINARY_API_KEY"),
+      api_secret = os.getenv("CLOUDINARY_API_SECRET"),
+      secure = True
+    )
+    CLOUDINARY_OK = True
+except Exception:
+    CLOUDINARY_OK = False
 
 def sanitize_html(text: str) -> str:
     return html.escape(text).strip()
@@ -259,8 +263,10 @@ async def subir_imagen(file: UploadFile = File(...), token: str = Cookie(default
     if not verificar_token(token):
         raise HTTPException(status_code=401)
     
+    if not CLOUDINARY_OK:
+        return {"error": "Cloudinary no está configurado. Añade las variables CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET en Railway."}
+    
     try:
-        # Subir a Cloudinary
         result = cloudinary.uploader.upload(file.file, folder="carnimarket")
         return {"url": result.get("secure_url")}
     except Exception as e:
