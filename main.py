@@ -208,8 +208,8 @@ def carniceria_page(db: Session = Depends(get_db), token: str = Cookie(default=N
         return RedirectResponse(url="/login", status_code=302)
     
     u = db.query(Usuario).filter(Usuario.email == email).first()
-    if not u or not u.activo or not u.acceso_carniceria:
-        raise HTTPException(status_code=404)
+    if not u or not u.activo:
+        return RedirectResponse(url="/login", status_code=302)
         
     with open("templates/carniceria.html", "r", encoding="utf-8") as f:
         return f.read()
@@ -221,8 +221,8 @@ def asadero(db: Session = Depends(get_db), token: str = Cookie(default=None)):
         return RedirectResponse(url="/login", status_code=302)
         
     u = db.query(Usuario).filter(Usuario.email == email).first()
-    if not u or not u.activo or not u.acceso_asadero:
-        raise HTTPException(status_code=404)
+    if not u or not u.activo:
+        return RedirectResponse(url="/login", status_code=302)
         
     with open("templates/asadero.html", "r", encoding="utf-8") as f:
         return f.read()
