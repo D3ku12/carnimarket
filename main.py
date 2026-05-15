@@ -29,13 +29,17 @@ load_dotenv()
 try:
     import cloudinary
     import cloudinary.uploader
-    cloudinary.config(
-      cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
-      api_key = os.getenv("CLOUDINARY_API_KEY"),
-      api_secret = os.getenv("CLOUDINARY_API_SECRET"),
-      secure = True
-    )
-    CLOUDINARY_OK = True
+    cloudinary_url = os.getenv("CLOUDINARY_URL")
+    if cloudinary_url:
+        cloudinary.config(cloudinary_url=cloudinary_url, secure=True)
+    else:
+        cloudinary.config(
+          cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
+          api_key = os.getenv("CLOUDINARY_API_KEY"),
+          api_secret = os.getenv("CLOUDINARY_API_SECRET"),
+          secure = True
+        )
+    CLOUDINARY_OK = bool(os.getenv("CLOUDINARY_URL") or os.getenv("CLOUDINARY_CLOUD_NAME"))
 except Exception:
     CLOUDINARY_OK = False
 
