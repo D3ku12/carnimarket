@@ -696,6 +696,15 @@ def corregir_venta(id: int, data: dict, db: Session = Depends(get_db), token: st
         v.pagado = nuevo_estado
     
     if "notas" in data: v.notas = data["notas"]
+    if "cliente_nombre" in data:
+        nuevo_cliente = data["cliente_nombre"]
+        # Solo actualizamos si el cliente es diferente y si es "Cliente general" el original
+        # O si el backend no restringe, ya lo restingimos en el frontend.
+        # Pero podemos asegurarnos de que se actualice la dirección también.
+        v.cliente_nombre = nuevo_cliente
+        cliente_obj = db.query(Cliente).filter(Cliente.nombre == nuevo_cliente).first()
+        if cliente_obj:
+            v.direccion = cliente_obj.direccion
     if "monto_pagado" in data:
         v.monto_pagado = float(data["monto_pagado"])
         if v.monto_pagado >= v.subtotal:

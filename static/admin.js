@@ -487,7 +487,24 @@ async function filtrarVentas() {
 function prepararEdicionVenta(id, cliente, producto, kilos, montoPagado, pagado) {
     abrirModal('modal-editar-venta');
     document.getElementById("edit-venta-id").value = id;
-    document.getElementById("edit-venta-cliente").value = cliente;
+    
+    const selectCliente = document.getElementById("edit-venta-cliente");
+    let optionsHtml = `<option value="Cliente General">Cliente General</option>`;
+    if (window.clientesData) {
+        optionsHtml += window.clientesData.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join("");
+    }
+    if (cliente.toLowerCase() !== "cliente general" && (!window.clientesData || !window.clientesData.find(c => c.nombre === cliente))) {
+        optionsHtml += `<option value="${cliente}">${cliente}</option>`;
+    }
+    selectCliente.innerHTML = optionsHtml;
+    selectCliente.value = cliente;
+    
+    if (cliente.toLowerCase() === "cliente general") {
+        selectCliente.disabled = false;
+    } else {
+        selectCliente.disabled = true;
+    }
+    
     document.getElementById("edit-venta-producto").value = producto;
     document.getElementById("edit-venta-gramos").value = Math.round(kilos * 1000);
     document.getElementById("edit-venta-abono").value = montoPagado;
@@ -505,7 +522,8 @@ document.getElementById("form-editar-venta").onsubmit = async (e) => {
         const gramos = parseFloat(document.getElementById("edit-venta-gramos").value);
         const kilos = gramos / 1000;
         const montoPagado = Number(document.getElementById("edit-venta-abono").value);
-        const body = { kilos: kilos, monto_pagado: montoPagado, pagado: document.getElementById("edit-venta-pagado").value };
+        const clienteNombre = document.getElementById("edit-venta-cliente").value;
+        const body = { kilos: kilos, monto_pagado: montoPagado, pagado: document.getElementById("edit-venta-pagado").value, cliente_nombre: clienteNombre };
         
         const res = await fetch(`/admin/venta/${id}`, {
             method: "PUT",
